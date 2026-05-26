@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
+    <title>ソフトテニス試合ノート</title>
+    <link rel="manifest" href="manifest.webmanifest?v=75" />
+    <link rel="stylesheet" href="styles.css?v=75" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Match Analysis</p>
+          <h1>ソフトテニス試合ノート</h1>
+        </div>
+        <button class="icon-button" id="menuButton" type="button" aria-label="メニュー">...</button>
+      </header>
+
+      <section class="start-guide" aria-label="使い方">
+        <strong id="nextStep">最初は自ペアのサービス</strong>
+        <span id="screenGuide">ポイント後に、サービスの入り方、内容、誰のプレー、得点側を確認</span>
+      </section>
+
+      <div class="side-legend" aria-label="色分け">
+        <span class="own">青: 自分・自チーム</span>
+        <span class="opp">赤: 相手</span>
+      </div>
+
+      <details class="trial-guide">
+        <summary>テスト利用の説明</summary>
+        <div>
+          <p>試合を見ている人が、1ポイントごとに内容を残すためのテスト版です。選手本人が試合中に入力する想定ではありません。</p>
+          <ol>
+            <li>試合前にアプリを開き、新規試合で試合情報を入れる</li>
+            <li>ポイントが終わったら、サービス、内容、誰のプレー、到達位置を選ぶ</li>
+            <li>得点した側を押して1ポイント保存する</li>
+            <li>試合後に分析と履歴を見て、次の練習テーマを決める</li>
+          </ol>
+          <p>入力データはこの端末のブラウザ内に保存されます。管理者やコーチへ自動送信されません。</p>
+          <p>通信が不安定な会場に備えて、試合前に一度この画面を開いてください。保存容量やブラウザ設定によってはデータが消える場合があります。</p>
+        </div>
+      </details>
+
+      <section class="match-info" id="matchInfo" aria-label="試合情報"></section>
+
+      <section class="live-scorebar" aria-label="現在のスコア">
+        <div class="live-meta">
+          <strong id="liveMatchStatus">G1</strong>
+          <span id="liveServerLabel">S: 自</span>
+        </div>
+        <div class="live-score-table" aria-label="ゲームカウントとポイントカウント">
+          <span class="score-corner"></span>
+          <span class="score-head">ゲーム</span>
+          <span class="score-head point-head">ポイント</span>
+          <span class="score-label own" id="liveTeamAName">自</span>
+          <strong class="score-cell games own" id="liveTeamAGames">0</strong>
+          <strong class="score-cell points own" id="liveTeamAPoints">0</strong>
+          <span class="score-label opp" id="liveTeamBName">相</span>
+          <strong class="score-cell games opp" id="liveTeamBGames">0</strong>
+          <strong class="score-cell points opp" id="liveTeamBPoints">0</strong>
+        </div>
+      </section>
+
+      <section class="match-alert" id="matchAlert" aria-live="polite" hidden></section>
+
+      <section class="scoreboard" aria-label="スコアボード">
+        <div class="team team-a">
+          <label for="teamAName">自ペア</label>
+          <input id="teamAName" value="自ペア" maxlength="40" />
+          <strong id="teamAGames">0</strong>
+          <span id="teamAPoints">0</span>
+        </div>
+        <div class="match-state">
+          <span id="matchStatus">第1ゲーム</span>
+          <small id="serverLabel">サービスサイド: 自ペア</small>
+        </div>
+        <div class="team team-b">
+          <label for="teamBName">相手</label>
+          <input id="teamBName" value="相手" maxlength="40" />
+          <strong id="teamBGames">0</strong>
+          <span id="teamBPoints">0</span>
+        </div>
+      </section>
+
+      <nav class="tabs" aria-label="表示切替">
+        <button class="tab active" data-tab="record" type="button">記録</button>
+        <button class="tab" data-tab="analysis" type="button">分析</button>
+        <button class="tab" data-tab="history" type="button">履歴</button>
+      </nav>
+
+      <section class="panel active" id="recordPanel">
+        <div class="record-flow" id="recordStart" tabindex="-1">
+          <div class="control-group">
+            <span>サービスサイド</span>
+            <div class="segmented" id="serverControl">
+              <button class="active" data-server="A" type="button">自</button>
+              <button data-server="B" type="button">相手</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <span>サービスの入り方</span>
+            <div class="chips compact" id="serveControl">
+              <button class="active" data-serve="第1サービスで開始" type="button" title="第1サービスで開始">1st</button>
+              <button data-serve="第2サービスで開始" type="button" title="第2サービスで開始">2nd</button>
+              <button data-serve="ダブルフォールト" type="button" title="ダブルフォールト">DF</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <span>ポイント内容</span>
+            <div class="chips" id="outcomeControl">
+              <div class="chip-section">
+                <strong>得点パターン</strong>
+                <div>
+                  <button class="active" data-outcome="ストローク得点" type="button" title="ストローク得点">ストローク</button>
+                  <button data-outcome="ボレー得点" type="button" title="ボレー得点">ボレー</button>
+                  <button data-outcome="スマッシュ得点" type="button" title="スマッシュ得点">スマッシュ</button>
+                  <button data-outcome="サービス得点" type="button" title="サービス得点">サーブ</button>
+                  <button data-outcome="レシーブ得点" type="button" title="レシーブ得点">レシーブ</button>
+                  <button data-outcome="ロビング得点" type="button" title="ロビング得点">ロビング</button>
+                </div>
+              </div>
+              <div class="chip-section">
+                <strong>ミス / 失点パターン</strong>
+                <div>
+                  <button data-outcome="ダブルフォールト" type="button" title="ダブルフォールト">DF</button>
+                  <button data-outcome="レシーブミス" type="button">レシーブミス</button>
+                  <button data-outcome="ストロークミス" type="button">ストロークミス</button>
+                  <button data-outcome="ボレーミス" type="button">ボレーミス</button>
+                  <button data-outcome="スマッシュミス" type="button">スマッシュミス</button>
+                  <button data-outcome="その他" type="button">その他</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <span>誰のプレー？</span>
+            <div class="chips compact" id="playerControl">
+              <button class="active" data-player="不明" type="button">不明</button>
+              <button data-player="A前衛" type="button" id="playerAFrontButton">自ペア前衛</button>
+              <button data-player="A後衛" type="button" id="playerARearButton">自ペア後衛</button>
+              <button data-player="B前衛" type="button" id="playerBFrontButton">相手前衛</button>
+              <button data-player="B後衛" type="button" id="playerBRearButton">相手後衛</button>
+              <button data-player="A選手" type="button" id="playerASinglesButton" hidden>自分</button>
+              <button data-player="B選手" type="button" id="playerBSinglesButton" hidden>相手</button>
+            </div>
+          </div>
+
+          <div class="save-point-section">
+            <strong>得点した側を押して保存</strong>
+            <div class="winner-grid">
+              <button class="point-button own" data-winner="A" type="button">自ペア<br />1ポイント</button>
+              <button class="point-button opp" data-winner="B" type="button">相手ペア<br />1ポイント</button>
+            </div>
+          </div>
+        </div>
+
+        <details class="detail-panel">
+          <summary>詳細記録</summary>
+
+          <section class="court-card" aria-label="コース記録">
+            <div class="section-title">
+              <strong>ボールの到達位置</strong>
+              <span id="courtModeLabel">未記録でもOK</span>
+            </div>
+            <div class="half-court">
+              <button class="out-zone out-back" data-course="バックアウト" data-result="バックアウト">バックアウト</button>
+              <button class="out-zone out-left" data-course="左サイドアウト" data-result="サイドアウト">左サイドアウト</button>
+              <div class="court">
+                <div class="court-lines" aria-hidden="true">
+                  <span class="court-line baseline"></span>
+                  <span class="court-line doubles-left-line"></span>
+                  <span class="court-line doubles-right-line"></span>
+                  <span class="court-line left-line"></span>
+                  <span class="court-line right-line"></span>
+                  <span class="court-line service-line"></span>
+                  <span class="court-line service-left-line"></span>
+                  <span class="court-line service-right-line"></span>
+                  <span class="court-line center-service-line"></span>
+                  <span class="court-line net-line"></span>
+                </div>
+                <div class="court-zones">
+                  <button data-course="左奥" data-result="イン">左奥</button>
+                  <button data-course="中央奥" data-result="イン">中央奥</button>
+                  <button data-course="右奥" data-result="イン">右奥</button>
+                  <button data-course="左中" data-result="イン">左中</button>
+                  <button data-course="中央" data-result="イン">中央</button>
+                  <button data-course="右中" data-result="イン">右中</button>
+                  <button data-course="左前" data-result="イン">左前</button>
+                  <button data-course="中央前" data-result="イン">中央前</button>
+                  <button data-course="右前" data-result="イン">右前</button>
+                </div>
+              </div>
+              <button class="out-zone out-right" data-course="右サイドアウト" data-result="サイドアウト">右サイドアウト</button>
+              <button class="out-zone out-net" data-course="ネット" data-result="ネット">ネット</button>
+            </div>
+          </section>
+
+          <div class="control-group">
+            <span>ボールの結果（自動・修正用）</span>
+            <div class="chips compact" id="resultControl">
+              <button class="active" data-result="不明" type="button">不明</button>
+              <button data-result="イン" type="button">イン</button>
+              <button data-result="ネット" type="button">ネット</button>
+              <button data-result="サイドアウト" type="button">サイドアウト</button>
+              <button data-result="バックアウト" type="button">バックアウト</button>
+            </div>
+          </div>
+
+          <div class="control-grid">
+            <label>
+              最後のショット
+              <select id="shotSelect">
+                <option>ストローク</option>
+                <option>ボレー</option>
+                <option>スマッシュ</option>
+                <option>サービス</option>
+                <option>レシーブ</option>
+                <option>ロビング</option>
+                <option>ショートボール</option>
+                <option>ツイスト</option>
+                <option>ドロップショット</option>
+              </select>
+            </label>
+            <label>
+              ラリー数
+              <select id="rallyInput">
+                <option value="0">0 本</option>
+                <option value="1">1 本</option>
+                <option value="2">2 本</option>
+                <option value="3" selected>3 本</option>
+                <option value="4">4 本</option>
+                <option value="5">5 本</option>
+                <option value="6-9">6-9 本</option>
+                <option value="10+">10 本以上</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="control-group">
+            <span>打球面</span>
+            <div class="chips compact" id="handControl">
+              <button class="active" data-hand="不明" type="button">不明</button>
+              <button data-hand="フォアハンド" type="button">フォアハンド</button>
+              <button data-hand="バックハンド" type="button">バックハンド</button>
+              <button data-hand="正面処理" type="button">正面処理</button>
+            </div>
+          </div>
+
+          <label class="memo-label">
+            メモ
+            <textarea id="memoInput" rows="2" maxlength="160" placeholder="例: レシーブで相手後衛を動かせた"></textarea>
+          </label>
+        </details>
+
+        <div class="rule-note" id="ruleNote"></div>
+
+        <div class="action-row">
+          <button class="secondary" id="undoButton" type="button">前のポイントに戻す</button>
+        </div>
+        <p class="undo-note">直前の1ポイントだけ戻します。スコア、分析、履歴にも反映されます。</p>
+      </section>
+
+      <section class="panel" id="analysisPanel">
+        <div class="howto-card">
+          <strong>チェンジサイズは上から2つだけ</strong>
+          <p>移動を含めて短時間なので、試合中は一言と次の狙いだけ確認します。詳しい内訳は試合後に見ます。</p>
+        </div>
+        <div class="coach-notes" id="coachNotes"></div>
+        <div class="opponent-view" id="opponentView"></div>
+        <div class="analysis-save">
+          <button class="secondary" id="saveAnalysisMemoButton" type="button">今の分析を残す</button>
+          <div id="analysisMemoList" class="analysis-memo-list"></div>
+        </div>
+        <div class="analysis-summary" id="analysisSummary"></div>
+        <div class="chart-block emphasis">
+          <h2>失点した場面</h2>
+          <div id="phaseBars" class="bars"></div>
+        </div>
+        <details class="detail-panel analysis-details">
+          <summary>試合後に詳しく見る</summary>
+          <div class="score-quality" id="scoreQuality"></div>
+          <div class="chart-block">
+            <h2>どうやって取ったか</h2>
+            <div id="scoringBars" class="bars"></div>
+          </div>
+          <div class="chart-block">
+            <h2>相手のミスパターン</h2>
+            <div id="opponentErrorBars" class="bars"></div>
+          </div>
+          <div class="chart-block">
+            <h2>どうやって失点したか</h2>
+            <div id="errorBars" class="bars"></div>
+          </div>
+          <div class="chart-block">
+            <h2>プレイヤー別</h2>
+            <div id="playerBars" class="bars"></div>
+          </div>
+          <div class="stats-grid" id="statsGrid"></div>
+          <div class="chart-block">
+            <h2>ボールの到達位置</h2>
+            <div id="courseBars" class="bars"></div>
+          </div>
+          <div class="chart-block">
+            <h2>フォア/バックの傾向</h2>
+            <div id="handBars" class="bars"></div>
+          </div>
+          <div class="chart-block detail-analysis">
+            <h2>ネット/アウトの内訳</h2>
+            <div id="resultBars" class="bars"></div>
+          </div>
+        </details>
+      </section>
+
+      <section class="panel" id="historyPanel">
+        <div class="howto-card">
+          <strong>試合後のふり返り</strong>
+          <p>上から新しい順です。得点側、内容、誰のプレー、到達位置を短く確認します。</p>
+        </div>
+        <ol class="point-list" id="pointList"></ol>
+      </section>
+    </main>
+
+    <dialog id="actionMenuDialog">
+      <form method="dialog" class="dialog-content menu-dialog">
+        <h2>メニュー</h2>
+        <button id="openNewMatchButton" type="button">新規試合</button>
+        <button id="previewSummaryImageButton" type="button">サマリー画像を表示</button>
+        <button id="exportCsvButton" type="button">CSVを出力</button>
+        <button class="secondary" value="cancel" type="submit">閉じる</button>
+      </form>
+    </dialog>
+
+    <dialog id="summaryImageDialog">
+      <form method="dialog" class="dialog-content summary-dialog">
+        <h2>サマリー画像</h2>
+        <p>内容を確認してから端末に保存できます。画像はこの端末内で作成され、自動送信されません。</p>
+        <img id="summaryPreviewImage" alt="試合サマリー画像のプレビュー" />
+        <div class="dialog-actions">
+          <button id="downloadSummaryImageButton" type="button">画像を保存</button>
+          <button class="secondary" value="cancel" type="submit">閉じる</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="newMatchDialog">
+      <form method="dialog" class="dialog-content">
+        <h2>新規試合</h2>
+        <label>
+          種別
+          <select id="matchTypeSelect">
+            <option value="doubles" selected>ダブルス</option>
+            <option value="singles">シングルス</option>
+          </select>
+        </label>
+        <label>
+          <span id="dialogTeamALabel">自ペア名</span>
+          <input id="dialogTeamA" value="自ペア" maxlength="40" />
+        </label>
+        <div class="dialog-grid doubles-field">
+          <label>
+            自ペア前衛
+            <input id="dialogAFront" value="自ペア前衛" maxlength="40" />
+          </label>
+          <label>
+            自ペア後衛
+            <input id="dialogARear" value="自ペア後衛" maxlength="40" />
+          </label>
+        </div>
+        <label>
+          <span id="dialogTeamBLabel">相手ペア名</span>
+          <input id="dialogTeamB" value="相手ペア" maxlength="40" />
+        </label>
+        <div class="dialog-grid doubles-field">
+          <label>
+            相手前衛
+            <input id="dialogBFront" value="相手前衛" maxlength="40" />
+          </label>
+          <label>
+            相手後衛
+            <input id="dialogBRear" value="相手後衛" maxlength="40" />
+          </label>
+        </div>
+        <label class="doubles-field">
+          相手の基本布陣
+          <select id="opponentFormationSelect">
+            <option>不明</option>
+            <option>雁行陣</option>
+            <option>W前衛</option>
+            <option>W後衛</option>
+            <option>その他</option>
+          </select>
+        </label>
+        <label>
+          試合形式
+          <select id="matchFormatSelect">
+            <option value="5">5ゲームマッチ</option>
+            <option value="7" selected>7ゲームマッチ</option>
+            <option value="9">9ゲームマッチ</option>
+            <option value="final">ファイナルゲームのみ</option>
+          </select>
+        </label>
+        <div class="dialog-grid">
+          <label>
+            日付
+            <input id="matchDateInput" type="date" />
+          </label>
+          <label>
+            時間帯
+            <select id="matchTimeSelect">
+              <option>未記録</option>
+              <option>朝</option>
+              <option>午前</option>
+              <option>昼</option>
+              <option>午後</option>
+              <option>夕方</option>
+              <option>夜</option>
+            </select>
+          </label>
+        </div>
+        <div class="dialog-grid">
+          <label>
+            天気
+            <select id="weatherSelect">
+              <option>未記録</option>
+              <option>晴れ</option>
+              <option>くもり</option>
+              <option>雨</option>
+              <option>小雨</option>
+              <option>雪</option>
+              <option>強風</option>
+            </select>
+          </label>
+          <label>
+            気温
+            <select id="temperatureInput">
+              <option value="">未記録</option>
+              <option>5℃未満</option>
+              <option>5-9℃</option>
+              <option>10-14℃</option>
+              <option>15-19℃</option>
+              <option>20-24℃</option>
+              <option>25-29℃</option>
+              <option>30℃以上</option>
+            </select>
+          </label>
+        </div>
+        <div class="dialog-grid">
+          <label>
+            風
+            <select id="windSelect">
+              <option>未記録</option>
+              <option>なし</option>
+              <option>弱い</option>
+              <option>強い</option>
+            </select>
+          </label>
+          <label>
+            風向き
+            <select id="windSideSelect">
+              <option>未記録</option>
+              <option>風上</option>
+              <option>風下</option>
+              <option>横風</option>
+            </select>
+          </label>
+        </div>
+        <div class="dialog-grid">
+          <label>
+            コート種別
+            <select id="surfaceSelect">
+              <option>未記録</option>
+              <option>クレー</option>
+              <option>オムニ</option>
+              <option>ハード</option>
+              <option>インドア（体育館）</option>
+              <option>その他</option>
+            </select>
+          </label>
+          <label>
+            コート状態
+            <select id="courtConditionSelect">
+              <option>未記録</option>
+              <option>乾いている</option>
+              <option>湿っている</option>
+              <option>滑りやすい</option>
+              <option>砂が多い</option>
+              <option>荒れている</option>
+            </select>
+          </label>
+        </div>
+        <div class="dialog-grid">
+          <label>
+            区分
+            <select id="eventInput">
+              <option>未記録</option>
+              <option>公式戦</option>
+              <option>練習試合</option>
+              <option>校内戦</option>
+              <option>練習</option>
+              <option>その他</option>
+            </select>
+          </label>
+          <label>
+            コート
+            <select id="venueInput">
+              <option>未記録</option>
+              <option>第1コート</option>
+              <option>第2コート</option>
+              <option>第3コート</option>
+              <option>第4コート</option>
+              <option>第5コート</option>
+              <option>第6コート</option>
+            </select>
+          </label>
+        </div>
+        <div class="action-row">
+          <button class="secondary" value="cancel" type="submit">閉じる</button>
+          <button id="startMatchButton" value="default" type="submit">開始</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="app.js?v=75" defer></script>
+  </body>
+</html>
