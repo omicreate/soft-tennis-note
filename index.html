@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=75" />
-    <link rel="stylesheet" href="styles.css?v=75" />
+    <link rel="manifest" href="manifest.webmanifest?v=77" />
+    <link rel="stylesheet" href="styles.css?v=77" />
   </head>
   <body>
     <main class="app-shell">
@@ -460,15 +460,6 @@
               <option>強い</option>
             </select>
           </label>
-          <label>
-            風向き
-            <select id="windSideSelect">
-              <option>未記録</option>
-              <option>風上</option>
-              <option>風下</option>
-              <option>横風</option>
-            </select>
-          </label>
         </div>
         <div class="dialog-grid">
           <label>
@@ -507,16 +498,37 @@
             </select>
           </label>
           <label>
+            大会名
+            <input id="tournamentInput" value="未記録" maxlength="50" />
+          </label>
+        </div>
+        <div class="dialog-grid">
+          <label>
+            開催地／会場
+            <input id="venueNameInput" value="未記録" maxlength="50" />
+          </label>
+          <label>
             コート
-            <select id="venueInput">
-              <option>未記録</option>
-              <option>第1コート</option>
-              <option>第2コート</option>
-              <option>第3コート</option>
-              <option>第4コート</option>
-              <option>第5コート</option>
-              <option>第6コート</option>
-            </select>
+            <input id="venueInput" list="courtOptions" value="未記録" maxlength="30" />
+            <datalist id="courtOptions">
+              <option value="未記録"></option>
+              <option value="第1コート"></option>
+              <option value="第2コート"></option>
+              <option value="第3コート"></option>
+              <option value="第4コート"></option>
+              <option value="第5コート"></option>
+              <option value="第6コート"></option>
+              <option value="第7コート"></option>
+              <option value="第8コート"></option>
+              <option value="第9コート"></option>
+              <option value="第10コート"></option>
+              <option value="第11コート"></option>
+              <option value="第12コート"></option>
+              <option value="第13コート"></option>
+              <option value="第14コート"></option>
+              <option value="第15コート"></option>
+              <option value="第16コート"></option>
+            </datalist>
           </label>
         </div>
         <div class="action-row">
@@ -526,6 +538,6 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=75" defer></script>
+    <script src="app.js?v=77" defer></script>
   </body>
 </html>

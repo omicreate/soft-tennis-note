@@ -24,6 +24,8 @@ const defaultState = {
     courtCondition: "未記録",
     opponentFormation: "不明",
     event: "",
+    tournament: "",
+    venueName: "",
     venue: ""
   },
   server: "A",
@@ -130,10 +132,11 @@ const elements = {
   weatherSelect: $("#weatherSelect"),
   temperatureInput: $("#temperatureInput"),
   windSelect: $("#windSelect"),
-  windSideSelect: $("#windSideSelect"),
   surfaceSelect: $("#surfaceSelect"),
   courtConditionSelect: $("#courtConditionSelect"),
   eventInput: $("#eventInput"),
+  tournamentInput: $("#tournamentInput"),
+  venueNameInput: $("#venueNameInput"),
   venueInput: $("#venueInput")
 };
 
@@ -452,11 +455,13 @@ function newMatch() {
     weather: elements.weatherSelect.value,
     temperature: elements.temperatureInput.value,
     wind: elements.windSelect.value,
-    windSide: elements.windSideSelect.value,
+    windSide: "未記録",
     surface: elements.surfaceSelect.value,
     courtCondition: elements.courtConditionSelect.value,
     opponentFormation: state.matchType === "singles" ? "不明" : elements.opponentFormationSelect.value,
     event: elements.eventInput.value,
+    tournament: elements.tournamentInput.value.trim(),
+    venueName: elements.venueNameInput.value.trim(),
     venue: elements.venueInput.value
   };
   saveState();
@@ -562,12 +567,14 @@ function getCompactMatchStatus() {
 
 function renderMatchInfo() {
   const info = state.matchInfo || defaultState.matchInfo;
-  const weather = [info.weather, info.temperature ? `${info.temperature}℃` : "", info.wind !== "未記録" ? `風:${info.wind}` : "", info.windSide !== "未記録" ? info.windSide : ""]
+  const weather = [info.weather, info.temperature ? `${info.temperature}℃` : "", info.wind !== "未記録" ? `風:${info.wind}` : ""]
     .filter(Boolean)
     .filter((item) => item !== "未記録")
     .join(" / ");
   const court = [info.surface !== "未記録" ? info.surface : "", info.courtCondition !== "未記録" ? info.courtCondition : ""].filter(Boolean).join(" / ");
   const matchTypeLabel = state.matchType === "singles" ? "シングルス" : "ダブルス";
+  const tournament = info.tournament && info.tournament !== "未記録" ? info.tournament : "";
+  const venueName = info.venueName && info.venueName !== "未記録" ? info.venueName : "";
   const rows = [
     matchTypeLabel,
     matchFormatLabel(),
@@ -577,6 +584,8 @@ function renderMatchInfo() {
     court,
     state.matchType !== "singles" && info.opponentFormation !== "不明" ? `相手:${info.opponentFormation}` : "",
     info.event !== "未記録" ? info.event : "",
+    tournament,
+    venueName,
     info.venue !== "未記録" ? info.venue : ""
   ].filter(Boolean);
   elements.matchInfo.textContent = rows.length ? rows.join(" ・ ") : matchFormatLabel();
@@ -1017,7 +1026,7 @@ function render() {
 
 function exportCsv() {
   const rows = [
-    ["No", "日付", "時間帯", "天気", "気温", "風", "風向き", "コート種別", "コート状態", "種別", "相手基本布陣", "区分", "コート", "試合形式", "得点側", "サービスサイド", "ゲーム", "ポイント", "場面", "サービスの入り方", "ポイント内容", "ボールの結果", "誰のプレー", "ショット", "打球面", "コース", "ラリー数", "ゲーム取得", "メモ", "記録時刻"],
+    ["No", "日付", "時間帯", "天気", "気温", "風", "風向き", "コート種別", "コート状態", "種別", "相手基本布陣", "区分", "大会名", "開催地／会場", "コート", "試合形式", "得点側", "サービスサイド", "ゲーム", "ポイント", "場面", "サービスの入り方", "ポイント内容", "ボールの結果", "誰のプレー", "ショット", "打球面", "コース", "ラリー数", "ゲーム取得", "メモ", "記録時刻"],
     ...state.points.map((point, index) => [
       index + 1,
       state.matchInfo.date,
@@ -1031,6 +1040,8 @@ function exportCsv() {
       state.matchType === "singles" ? "シングルス" : "ダブルス",
       state.matchInfo.opponentFormation,
       state.matchInfo.event,
+      state.matchInfo.tournament,
+      state.matchInfo.venueName,
       state.matchInfo.venue,
       matchFormatLabel(),
       displayName(point.winner),
@@ -1096,18 +1107,21 @@ function getSummaryImageData() {
   const info = state.matchInfo || defaultState.matchInfo;
   const typeLabel = state.matchType === "singles" ? "シングルス" : "ダブルス";
   const opponentError = topEntry(countByOutcomeType("error", state.points.filter((point) => point.winner === "A")));
-  const weather = [info.weather, info.temperature ? `${info.temperature}℃` : "", info.wind !== "未記録" ? `風:${info.wind}` : "", info.windSide !== "未記録" ? info.windSide : ""]
+  const weather = [info.weather, info.temperature ? `${info.temperature}℃` : "", info.wind !== "未記録" ? `風:${info.wind}` : ""]
     .filter(Boolean)
     .filter((item) => item !== "未記録")
     .join(" / ");
   const court = [info.surface !== "未記録" ? info.surface : "", info.courtCondition !== "未記録" ? info.courtCondition : ""].filter(Boolean).join(" / ");
+  const tournament = info.tournament && info.tournament !== "未記録" ? info.tournament : "";
+  const venueName = info.venueName && info.venueName !== "未記録" ? info.venueName : "";
   const conditionRows = [
     ["日時", [info.date || "日付未記録", info.timeOfDay !== "未記録" ? info.timeOfDay : ""].filter(Boolean).join(" / ")],
-    ["大会・区分", info.event && info.event !== "未記録" ? info.event : "未記録"],
-    ["会場", info.venue && info.venue !== "未記録" ? info.venue : "未記録"],
+    ["大会名", tournament || "未記録"],
+    ["開催地／会場", venueName || "未記録"],
+    ["区分", info.event && info.event !== "未記録" ? info.event : "未記録"],
     ["天候・気温", [info.weather !== "未記録" ? info.weather : "", info.temperature ? `${info.temperature}℃` : ""].filter(Boolean).join(" / ") || "未記録"],
-    ["風", [info.wind !== "未記録" ? info.wind : "", info.windSide !== "未記録" ? info.windSide : ""].filter(Boolean).join(" / ") || "未記録"],
-    ["コート", court || "未記録"],
+    ["風", info.wind !== "未記録" ? info.wind : "未記録"],
+    ["コート", [info.venue && info.venue !== "未記録" ? info.venue : "", court].filter(Boolean).join(" / ") || "未記録"],
     ["相手布陣", state.matchType === "singles" ? "シングルス" : info.opponentFormation || "不明"]
   ];
 
@@ -1125,6 +1139,8 @@ function getSummaryImageData() {
       weather,
       court,
       info.event !== "未記録" ? info.event : "",
+      tournament,
+      venueName,
       info.venue !== "未記録" ? info.venue : ""
     ].filter(Boolean),
     summaryRows: [
@@ -1391,10 +1407,11 @@ function openNewMatchDialog() {
   elements.weatherSelect.value = state.matchInfo.weather || "未記録";
   elements.temperatureInput.value = state.matchInfo.temperature || "";
   elements.windSelect.value = state.matchInfo.wind || "未記録";
-  elements.windSideSelect.value = state.matchInfo.windSide || "未記録";
   elements.surfaceSelect.value = state.matchInfo.surface || "未記録";
   elements.courtConditionSelect.value = state.matchInfo.courtCondition || "未記録";
   elements.eventInput.value = state.matchInfo.event || "未記録";
+  elements.tournamentInput.value = state.matchInfo.tournament || "未記録";
+  elements.venueNameInput.value = state.matchInfo.venueName || "未記録";
   elements.venueInput.value = state.matchInfo.venue || "未記録";
   updateMatchTypeFields();
   elements.dialog.showModal();
