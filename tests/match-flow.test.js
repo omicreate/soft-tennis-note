@@ -34,6 +34,7 @@ function createElement(selector = "") {
 function createAppContext(savedStateText = null) {
   const elements = new Map();
   const savedWrites = [];
+  const savedStorage = new Map();
 
   function element(selector) {
     if (!elements.has(selector)) elements.set(selector, createElement(selector));
@@ -63,13 +64,17 @@ function createAppContext(savedStateText = null) {
       createElement
     },
     localStorage: {
-      getItem: () => savedStateText,
-      setItem: (_key, value) => savedWrites.push(value)
+      getItem: (key) => savedStorage.has(key) ? savedStorage.get(key) : savedStateText,
+      setItem: (key, value) => {
+        savedStorage.set(key, value);
+        savedWrites.push(value);
+      }
     },
     location: { protocol: "file:" },
     navigator: {},
     assert,
     __elements: elements,
+    savedStorage,
     savedWrites
   };
 
@@ -269,6 +274,11 @@ const scenarioCode = `
   assert.equal(state.matchInfo.startTime, "08:45", "試合情報編集で開始時刻を修正");
   assert.equal(state.matchInfo.endTime, "09:30", "試合情報編集で終了時刻を修正");
   assert.equal(state.points.length, 1, "試合情報編集では履歴を消さない");
+  newMatch();
+  const archivedMatches = loadArchivedMatches();
+  assert.equal(archivedMatches.length >= 1, true, "新規試合前に記録済み試合を自動保存");
+  assert.equal(archivedMatches[0].state.teams.A, "修正 自チーム", "保存済み試合に直前の入力データを残す");
+  assert.equal(archivedMatches[0].pointCount, 1, "保存済み試合にポイント数を残す");
   assert.equal(getCurrentTimeOfDay(new Date("2026-05-26T08:00:00")), "朝", "8時台は朝");
   assert.equal(getCurrentTimeOfDay(new Date("2026-05-26T10:00:00")), "午前", "10時台は午前");
   assert.equal(getCurrentTimeOfDay(new Date("2026-05-26T14:00:00")), "午後", "14時台は午後");

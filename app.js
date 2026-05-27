@@ -1,4 +1,6 @@
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
+const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
+const MAX_ARCHIVED_MATCHES = 30;
 const SCORING_OUTCOMES = ["ストローク得点", "ボレー得点", "スマッシュ得点", "サービス得点", "レシーブ得点", "ロビング得点"];
 const ERROR_OUTCOMES = ["ダブルフォールト", "レシーブミス", "ストロークミス", "ボレーミス", "スマッシュミス", "その他"];
 const TRIAL_GUIDES = {
@@ -149,10 +151,14 @@ const elements = {
   actionMenuDialog: $("#actionMenuDialog"),
   summaryImageDialog: $("#summaryImageDialog"),
   summaryPreviewImage: $("#summaryPreviewImage"),
+  archivedMatchesDialog: $("#archivedMatchesDialog"),
+  archivedMatchList: $("#archivedMatchList"),
   menuButton: $("#menuButton"),
   openNewMatchButton: $("#openNewMatchButton"),
   editMatchInfoButton: $("#editMatchInfoButton"),
   previewSummaryImageButton: $("#previewSummaryImageButton"),
+  openArchiveButton: $("#openArchiveButton"),
+  shareSummaryImageButton: $("#shareSummaryImageButton"),
   downloadSummaryImageButton: $("#downloadSummaryImageButton"),
   exportCsvButton: $("#exportCsvButton"),
   matchTypeSelect: $("#matchTypeSelect"),
@@ -267,6 +273,74 @@ function normalizeHand(hand) {
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadArchivedMatches() {
+  try {
+    const archived = JSON.parse(localStorage.getItem(ARCHIVE_STORAGE_KEY));
+    return Array.isArray(archived) ? archived : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveArchivedMatches(matches) {
+  localStorage.setItem(ARCHIVE_STORAGE_KEY, JSON.stringify(matches.slice(0, MAX_ARCHIVED_MATCHES)));
+}
+
+function matchHasRecordableData(matchState = state) {
+  return !!(
+    matchState.finished ||
+    matchState.points?.length ||
+    matchState.analysisMemos?.length ||
+    matchState.games?.A ||
+    matchState.games?.B
+  );
+}
+
+function displayNameFromState(matchState, side) {
+  if (side === "A") return matchState.matchType === "singles" ? matchState.teams?.A || "自分" : matchState.teams?.A || "自チーム";
+  return matchState.matchType === "singles" ? matchState.teams?.B || "相手" : matchState.teams?.B || "相手ペア";
+}
+
+function archiveSignature(matchState = state) {
+  const lastPoint = matchState.points?.at?.(-1) || {};
+  return JSON.stringify({
+    teams: matchState.teams,
+    players: matchState.players,
+    matchInfo: matchState.matchInfo,
+    games: matchState.games,
+    points: matchState.points?.length || 0,
+    lastPoint: lastPoint.id || lastPoint.at || ""
+  });
+}
+
+function buildArchivedMatchTitle(matchState = state) {
+  const info = matchState.matchInfo || defaultState.matchInfo;
+  const date = info.date || "日付未記録";
+  const event = info.tournament || info.event || "";
+  const score = `${matchState.games?.A ?? 0}-${matchState.games?.B ?? 0}`;
+  return [date, event, `${displayNameFromState(matchState, "A")} vs ${displayNameFromState(matchState, "B")}`, score].filter(Boolean).join(" / ");
+}
+
+function archiveCurrentMatch(reason = "manual") {
+  if (!matchHasRecordableData(state)) return null;
+  const snapshot = normalizeState(structuredClone(state));
+  const signature = archiveSignature(snapshot);
+  const archived = loadArchivedMatches().filter((entry) => entry.signature !== signature);
+  const entry = {
+    id: crypto.randomUUID?.() || `${Date.now()}`,
+    savedAt: new Date().toISOString(),
+    reason,
+    signature,
+    title: buildArchivedMatchTitle(snapshot),
+    pointCount: snapshot.points.length,
+    games: { ...snapshot.games },
+    finished: snapshot.finished,
+    state: snapshot
+  };
+  saveArchivedMatches([entry, ...archived]);
+  return entry;
 }
 
 function getLegacyServeStart(point) {
@@ -530,6 +604,7 @@ function applyMatchDialogValues({ resetMatch }) {
 }
 
 function newMatch() {
+  archiveCurrentMatch("new-match");
   applyMatchDialogValues({ resetMatch: true });
 }
 
@@ -1717,14 +1792,20 @@ function drawSummaryImage(canvas, summary) {
   drawClampedText(ctx, footer, 56, 1794, 968, 32, 2);
 }
 
-function createSummaryImageDataUrl() {
+function createSummaryImageDataUrl(matchState = state) {
   const canvas = document.createElement("canvas");
-  drawSummaryImage(canvas, getSummaryImageData());
+  const originalState = state;
+  state = normalizeState(structuredClone(matchState));
+  try {
+    drawSummaryImage(canvas, getSummaryImageData());
+  } finally {
+    state = originalState;
+  }
   return canvas.toDataURL("image/png");
 }
 
-function previewSummaryImage() {
-  elements.summaryPreviewImage.src = createSummaryImageDataUrl();
+function previewSummaryImage(matchState = state) {
+  elements.summaryPreviewImage.src = createSummaryImageDataUrl(matchState);
   elements.summaryImageDialog.showModal();
 }
 
@@ -1734,6 +1815,72 @@ function downloadSummaryPreview() {
   link.href = dataUrl;
   link.download = `soft-tennis-summary-${new Date().toISOString().slice(0, 10)}.png`;
   link.click();
+}
+
+function dataUrlToBlob(dataUrl) {
+  const [header, data] = dataUrl.split(",");
+  const mimeType = header.match(/data:(.*?);base64/)?.[1] || "image/png";
+  const binary = atob(data);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return new Blob([bytes], { type: mimeType });
+}
+
+async function shareSummaryPreview() {
+  const dataUrl = elements.summaryPreviewImage.src || createSummaryImageDataUrl();
+  const title = "ソフトテニス試合ノート";
+  const text = "試合サマリー画像を共有します。";
+  try {
+    const blob = dataUrlToBlob(dataUrl);
+    const file = new File([blob], `soft-tennis-summary-${new Date().toISOString().slice(0, 10)}.png`, { type: "image/png" });
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ title, text, files: [file] });
+      return;
+    }
+    if (navigator.share) {
+      await navigator.share({ title, text });
+      return;
+    }
+  } catch {
+    // 共有がキャンセルされた場合やブラウザ非対応時は保存操作に切り替える。
+  }
+  downloadSummaryPreview();
+}
+
+function renderArchivedMatches() {
+  const archived = loadArchivedMatches();
+  elements.archivedMatchList.innerHTML = archived.length
+    ? archived
+        .map((entry) => {
+          const date = new Date(entry.savedAt);
+          const savedAt = Number.isNaN(date.getTime())
+            ? ""
+            : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+          const status = entry.finished ? "終了" : "途中";
+          return `
+            <article class="archive-item">
+              <strong>${escapeHtml(entry.title || "保存済み試合")}</strong>
+              <span>${escapeHtml(savedAt)}保存 / ${escapeHtml(status)} / ${entry.pointCount || 0}点</span>
+              <div>
+                <button class="action-button action-preview" data-archive-action="summary" data-archive-id="${escapeHtml(entry.id)}" type="button">サマリー</button>
+                <button class="secondary action-button action-edit" data-archive-action="restore" data-archive-id="${escapeHtml(entry.id)}" type="button">開く</button>
+              </div>
+            </article>
+          `;
+        })
+        .join("")
+    : `<p>保存済み試合はまだありません。新規試合を作る時、記録済みの試合が自動でここに残ります。</p>`;
+}
+
+function openArchivedMatches() {
+  renderArchivedMatches();
+  elements.archivedMatchesDialog.showModal();
+}
+
+function findArchivedMatch(id) {
+  return loadArchivedMatches().find((entry) => entry.id === id);
 }
 
 function openMatchDialog(mode = "new") {
@@ -1790,6 +1937,26 @@ elements.previewSummaryImageButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
   previewSummaryImage();
 });
+elements.openArchiveButton.addEventListener("click", () => {
+  elements.actionMenuDialog.close();
+  openArchivedMatches();
+});
+elements.archivedMatchList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-archive-action]");
+  if (!button) return;
+  const archived = findArchivedMatch(button.dataset.archiveId);
+  if (!archived?.state) return;
+  if (button.dataset.archiveAction === "summary") {
+    previewSummaryImage(archived.state);
+    return;
+  }
+  archiveCurrentMatch("before-restore");
+  state = normalizeState(structuredClone(archived.state));
+  saveState();
+  elements.archivedMatchesDialog.close();
+  render();
+});
+elements.shareSummaryImageButton.addEventListener("click", shareSummaryPreview);
 elements.downloadSummaryImageButton.addEventListener("click", downloadSummaryPreview);
 elements.exportCsvButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
