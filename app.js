@@ -1588,23 +1588,17 @@ function drawSummaryImage(canvas, summary) {
   y = bullet(`各ゲーム ${summary.gameScoreRows.slice(0, 9).map(([label, score]) => `${label} ${score}`).join(" / ")}`, y, "neutral", 2);
   y += 10;
 
-  y = heading("条件", y);
-  summary.conditionRows.slice(0, 5).forEach(([label, value]) => {
-    y = bullet(`${label}: ${value}`, y, "neutral", 1);
+  y = heading(summary.quickTitle, y);
+  summary.quickItems.slice(0, 2).forEach((item) => {
+    y = bullet(item, y, "neutral", 2);
   });
-  y += 10;
+  y += 8;
 
   y = heading("試合の要点", y);
   summary.summaryRows.forEach(([label, value, tone]) => {
     y = bullet(`${label}: ${value}`, y, tone, 1);
   });
   y += 10;
-
-  y = heading(summary.quickTitle, y);
-  summary.quickItems.slice(0, 2).forEach((item) => {
-    y = bullet(item, y, "neutral", 2);
-  });
-  y += 8;
 
   y = heading(summary.reviewTitle, y);
   summary.reviewItems.slice(0, 2).forEach((item) => {
@@ -1614,6 +1608,12 @@ function drawSummaryImage(canvas, summary) {
 
   y = heading("詳しい数字", y);
   [...summary.detailRows, ...summary.phaseRows].slice(0, 8).forEach(([label, value]) => {
+    y = bullet(`${label}: ${value}`, y, "neutral", 1);
+  });
+  y += 8;
+
+  y = heading("条件", y);
+  summary.conditionRows.slice(0, 4).forEach(([label, value]) => {
     y = bullet(`${label}: ${value}`, y, "neutral", 1);
   });
 
