@@ -1,3 +1,4 @@
+const APP_VERSION = "v123";
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
 const MAX_ARCHIVED_MATCHES = 30;
@@ -2077,7 +2078,10 @@ $(".half-court").addEventListener("click", (event) => {
 });
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  navigator.serviceWorker.register("sw.js").catch(() => {});
+  navigator.serviceWorker
+    .register(`sw.js?${APP_VERSION}`)
+    .then((registration) => registration.update())
+    .catch(() => {});
 }
 
 render();

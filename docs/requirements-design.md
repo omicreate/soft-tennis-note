@@ -1,7 +1,7 @@
 # ソフトテニス試合ノート 要件・設計書
 
 最終更新: 2026-05-27  
-対象バージョン: v122  
+対象バージョン: v123  
 対象ファイル: `index.html`, `styles.css`, `app.js`, `sw.js`
 
 ## 1. アプリ概要
@@ -564,10 +564,12 @@ CSV出力時は `escapeCsvCell()` を使い、CSV注入やカンマ・ダブル�
 ```
 
 キャッシュ名はバージョンごとに更新する。  
-`index.html` の `app.js?v=数字`、`styles.css?v=数字`、`manifest.webmanifest?v=数字` と `sw.js` の `CACHE_NAME` は同じ数字にそろえる。
+`index.html` の `app.js?v=数字`、`styles.css?v=数字`、`manifest.webmanifest?v=数字`、`app.js` の `APP_VERSION`、`sw.js` の `CACHE_NAME` は同じ数字にそろえる。
+
+サービスワーカー登録も `sw.js?v数字` 相当で行い、新しいサービスワーカーは `skipWaiting()` と `clients.claim()` で早めに有効化する。
 
 ```js
-soft-tennis-logger-v122
+soft-tennis-logger-v123
 ```
 
 ## 14. テスト
