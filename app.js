@@ -941,6 +941,42 @@ function cleanPriorityText(text) {
   return String(text).replace(/[。．.]+$/u, "").replace(/。 +/g, "。").trim();
 }
 
+function buildSummaryComments(data = getAnalysisData()) {
+  if (!data.total) return ["まだ記録が少ないため、数ポイント記録して傾向を見る"];
+  const comments = [];
+  const wonTotal = data.ownPoints || 1;
+  const attackRate = Math.round((data.ownScoredByPattern / wonTotal) * 100);
+  const opponentErrorRate = Math.round((data.ownPointsByOpponentError / wonTotal) * 100);
+
+  if (data.pointDiff > 0) {
+    comments.push(`合計ポイントは${formatPointDiff(data.pointDiff)}。ゲーム結果だけでなく内容でも押せている`);
+  } else if (data.pointDiff < 0) {
+    comments.push(`合計ポイントは${formatPointDiff(data.pointDiff)}。ゲーム前半や簡単な失点を減らす余地がある`);
+  } else {
+    comments.push(`合計ポイントは${formatPointDiff(data.pointDiff)}。勝敗に関係なく内容は接戦`);
+  }
+
+  if (data.ownLostByOwnError > data.ownScoredByPattern) {
+    comments.push(`ミス失点${data.ownLostByOwnError}本が得点パターン${data.ownScoredByPattern}本を上回る。まず失点を減らす`);
+  } else if (attackRate >= 60) {
+    comments.push(`得点の${attackRate}%が自チームの得点パターン。良い形を次の試合でも再現したい`);
+  } else if (opponentErrorRate >= 60) {
+    comments.push(`得点の${opponentErrorRate}%が相手ミス。相手が崩れた配球や狙い所を確認したい`);
+  }
+
+  if (data.ownDoubleFaults > 0 || data.ownReceiveMisses > 0) {
+    comments.push(`DF${data.ownDoubleFaults}本、レシーブミス${data.ownReceiveMisses}本。サービス・レシーブの入りを優先`);
+  }
+  if (data.ownEarlyLost >= 3) {
+    comments.push(`最初の2本での失点が${data.ownEarlyLost}本。1本目、2本目は返球優先`);
+  }
+  if (data.topScore[1] > 0) {
+    comments.push(`主な得点は「${data.topScore[0]}」${data.topScore[1]}本。練習でも同じ形を確認`);
+  }
+
+  return comments.map(cleanPriorityText).slice(0, 5);
+}
+
 function rallyValue(rally) {
   if (rally === "6-9") return 7.5;
   if (rally === "10+") return 10;
@@ -1444,6 +1480,12 @@ function getSummaryImageData() {
       ["ミス失点", data.ownLostByOwnError, "opp"],
       ["個人別 + / -", getTopPlayerPlusMinusLabel(), "neutral"]
     ],
+    resultRows: [
+      ["試合結果", state.finished ? `${state.games.A}-${state.games.B}` : `途中 ${state.games.A}-${state.games.B}`],
+      ["現在ポイント", state.finished ? "終了" : `${pointLabel("A")}-${pointLabel("B")}`],
+      ["各ゲーム", getGamePointScoreRows().slice(0, 9).map(([label, score]) => `${label} ${score}`).join(" / ")]
+    ],
+    analysisComments: buildSummaryComments(data),
     quickTitle: latestMemo ? `今すぐ意識すること ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "今すぐ意識すること",
     quickItems: latestMemo ? (latestMemo.quickItems || []) : buildQuickCoachItems(data),
     reviewTitle: "あとで確認すること",
@@ -1582,38 +1624,40 @@ function drawSummaryImage(canvas, summary) {
   ctx.stroke();
   y += 42;
 
-  y = heading("試合", y);
+  y = heading("基本情報", y);
   y = bullet(summary.teams, y, "neutral", 1);
-  y = bullet(`ゲーム ${summary.gameScore} / ポイント ${summary.currentPointScore}`, y, "neutral", 1);
-  y = bullet(`各ゲーム ${summary.gameScoreRows.slice(0, 9).map(([label, score]) => `${label} ${score}`).join(" / ")}`, y, "neutral", 2);
+  summary.conditionRows.slice(0, 2).forEach(([label, value]) => {
+    y = bullet(`${label}: ${value}`, y, "neutral", 1);
+  });
   y += 10;
 
-  y = heading(summary.quickTitle, y);
-  summary.quickItems.slice(0, 2).forEach((item) => {
+  y = heading("試合結果", y);
+  summary.resultRows.forEach(([label, value]) => {
+    y = bullet(`${label}: ${value}`, y, "neutral", label === "各ゲーム" ? 2 : 1);
+  });
+  y += 10;
+
+  y = heading("分析コメント", y);
+  summary.analysisComments.slice(0, 5).forEach((item) => {
+    y = bullet(item, y, "neutral", 2);
+  });
+  y += 10;
+
+  y = heading("次に活かすこと", y);
+  [...summary.quickItems, ...summary.reviewItems].slice(0, 3).forEach((item) => {
     y = bullet(item, y, "neutral", 2);
   });
   y += 8;
 
-  y = heading("試合の要点", y);
-  summary.summaryRows.forEach(([label, value, tone]) => {
-    y = bullet(`${label}: ${value}`, y, tone, 1);
-  });
-  y += 10;
-
-  y = heading(summary.reviewTitle, y);
-  summary.reviewItems.slice(0, 2).forEach((item) => {
-    y = bullet(item, y, "neutral", 2);
-  });
-  y += 8;
-
-  y = heading("詳しい数字", y);
-  [...summary.detailRows, ...summary.phaseRows].slice(0, 8).forEach(([label, value]) => {
+  y = heading("根拠データ", y);
+  [...summary.summaryRows, ...summary.detailRows, ...summary.phaseRows].slice(0, 9).forEach(([label, value, tone]) => {
+    if (label === "記録ポイント") return;
     y = bullet(`${label}: ${value}`, y, "neutral", 1);
   });
   y += 8;
 
-  y = heading("条件", y);
-  summary.conditionRows.slice(0, 4).forEach(([label, value]) => {
+  y = heading("試合条件", y);
+  summary.conditionRows.slice(2, 6).forEach(([label, value]) => {
     y = bullet(`${label}: ${value}`, y, "neutral", 1);
   });
 
