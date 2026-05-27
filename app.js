@@ -1444,8 +1444,12 @@ function getSummaryImageData() {
       ["ミス失点", data.ownLostByOwnError, "opp"],
       ["個人別 + / -", getTopPlayerPlusMinusLabel(), "neutral"]
     ],
-    analysisMemoTitle: latestMemo ? `保存した分析 ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "あとで確認すること",
-    analysisMemoItems: latestMemo ? [...(latestMemo.quickItems || []), ...(latestMemo.reviewItems || latestMemo.items || [])].slice(0, 4) : buildPriorityItems(),
+    quickTitle: latestMemo ? `今すぐ意識すること ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "今すぐ意識すること",
+    quickItems: latestMemo ? (latestMemo.quickItems || []) : buildQuickCoachItems(data),
+    reviewTitle: "あとで確認すること",
+    reviewItems: latestMemo ? (latestMemo.reviewItems || latestMemo.items || []) : buildPriorityItems(),
+    analysisMemoTitle: latestMemo ? `保存した分析 ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "今すぐ意識すること",
+    analysisMemoItems: latestMemo ? [...(latestMemo.quickItems || []), ...(latestMemo.reviewItems || latestMemo.items || [])].slice(0, 4) : [...buildQuickCoachItems(data), ...buildPriorityItems()].slice(0, 4),
     priorityItems: latestMemo ? [...(latestMemo.quickItems || []), ...(latestMemo.reviewItems || latestMemo.items || [])].slice(0, 4) : buildPriorityItems(),
     detailRows: [
       ["主な得点パターン", `${data.topScore[0]} ${data.topScore[1]}`],
@@ -1645,16 +1649,29 @@ function drawSummaryImage(canvas, summary) {
   fillRoundedRect(ctx, 56, 1104, 968, 294, 18, panelColor);
   strokeRoundedRect(ctx, 56, 1104, 968, 294, 18, lineColor);
   ctx.fillStyle = "#0f766e";
-  ctx.font = '900 34px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  drawClampedText(ctx, summary.analysisMemoTitle, 88, 1160, 850, 38, 1);
-  ctx.font = '800 29px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  let y = 1210;
-  summary.analysisMemoItems.slice(0, 4).forEach((item, index) => {
+  ctx.font = '900 31px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
+  drawClampedText(ctx, summary.quickTitle, 88, 1154, 850, 34, 1);
+  ctx.font = '800 26px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
+  let y = 1198;
+  summary.quickItems.slice(0, 2).forEach((item, index) => {
     ctx.fillStyle = "#0f766e";
     ctx.fillText(`${index + 1}`, 104, y);
     ctx.fillStyle = inkColor;
-    y = drawClampedText(ctx, item, 142, y, 820, 34, 2);
-    y += 8;
+    y = drawClampedText(ctx, item, 142, y, 820, 31, 1);
+    y += 6;
+  });
+
+  ctx.fillStyle = mutedColor;
+  ctx.font = '900 27px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
+  drawClampedText(ctx, summary.reviewTitle, 88, 1290, 850, 30, 1);
+  ctx.font = '800 25px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
+  y = 1330;
+  summary.reviewItems.slice(0, 2).forEach((item, index) => {
+    ctx.fillStyle = mutedColor;
+    ctx.fillText(`${index + 1}`, 104, y);
+    ctx.fillStyle = inkColor;
+    y = drawClampedText(ctx, item, 142, y, 820, 30, 1);
+    y += 5;
   });
 
   fillRoundedRect(ctx, 56, 1426, 968, 316, 18, panelColor);
