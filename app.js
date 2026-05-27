@@ -1,4 +1,4 @@
-const APP_VERSION = "v125";
+const APP_VERSION = "v126";
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
 const MAX_ARCHIVED_MATCHES = 30;
@@ -164,6 +164,7 @@ const elements = {
   downloadSummaryImageButton: $("#downloadSummaryImageButton"),
   exportCsvButton: $("#exportCsvButton"),
   matchTypeSelect: $("#matchTypeSelect"),
+  resetMatchDialogButton: $("#resetMatchDialogButton"),
   dialogTeamA: $("#dialogTeamA"),
   dialogTeamB: $("#dialogTeamB"),
   matchDialogTitle: $("#matchDialogTitle"),
@@ -1962,6 +1963,42 @@ function openMatchDialog(mode = "new") {
   elements.dialog.showModal();
 }
 
+function resetMatchDialogFields() {
+  const now = new Date();
+  const matchType = elements.matchTypeSelect.value || "doubles";
+  elements.matchTypeSelect.value = matchType;
+  elements.dialogTeamA.value = matchType === "singles" ? "自分" : "自チーム";
+  elements.dialogTeamB.value = matchType === "singles" ? "相手選手" : "相手ペア";
+  elements.dialogAFront.value = "自前衛";
+  elements.dialogARear.value = "自後衛";
+  elements.dialogBFront.value = "相手前衛";
+  elements.dialogBRear.value = "相手後衛";
+  elements.opponentFormationSelect.value = "雁行陣";
+  elements.matchFormatSelect.value = "7";
+  elements.matchDateInput.value = now.toISOString().slice(0, 10);
+  elements.matchTimeSelect.value = getCurrentTimeOfDay(now);
+  elements.matchStartTimeInput.value = getCurrentClockTime(now);
+  elements.matchEndTimeInput.value = "";
+  elements.weatherSelect.value = "未記録";
+  elements.temperatureInput.value = "";
+  elements.windSelect.value = "未記録";
+  elements.surfaceSelect.value = "未記録";
+  elements.courtConditionSelect.value = "未記録";
+  elements.eventInput.value = "未記録";
+  elements.tournamentInput.value = "未記録";
+  elements.venueNameInput.value = "未記録";
+  elements.venueInput.value = "未記録";
+  updateMatchTypeFields();
+}
+
+function renderEnvironmentBadge() {
+  const badge = $("#environmentBadge");
+  if (!badge) return;
+  const isPreview = (location.pathname || "").includes("soft-tennis-note-preview") || (location.hostname || "").includes("preview");
+  badge.hidden = !isPreview;
+  document.body.classList.toggle("preview-environment", isPreview);
+}
+
 $$(".point-button").forEach((button) => {
   button.addEventListener("click", () => addPoint(button.dataset.winner));
 });
@@ -2009,6 +2046,7 @@ elements.archivedMatchList.addEventListener("click", (event) => {
 });
 elements.shareSummaryImageButton.addEventListener("click", shareSummaryPreview);
 elements.downloadSummaryImageButton.addEventListener("click", downloadSummaryPreview);
+elements.resetMatchDialogButton.addEventListener("click", resetMatchDialogFields);
 elements.exportCsvButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
   exportCsv();
@@ -2129,4 +2167,5 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
     .catch(() => {});
 }
 
+renderEnvironmentBadge();
 render();

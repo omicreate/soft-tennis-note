@@ -274,6 +274,11 @@ const scenarioCode = `
   assert.equal(state.matchInfo.startTime, "08:45", "試合情報編集で開始時刻を修正");
   assert.equal(state.matchInfo.endTime, "09:30", "試合情報編集で終了時刻を修正");
   assert.equal(state.points.length, 1, "試合情報編集では履歴を消さない");
+  resetMatchDialogFields();
+  assert.equal(testElements.get("#dialogTeamA").value, "自チーム", "リセットで自チーム名を初期値へ戻す");
+  assert.equal(testElements.get("#dialogARear").value, "自後衛", "リセットで後衛名を初期値へ戻す");
+  assert.equal(testElements.get("#matchFormatSelect").value, "7", "リセットで試合形式を7ゲームへ戻す");
+  assert.equal(testElements.get("#venueInput").value, "未記録", "リセットでコートを未記録へ戻す");
   newMatch();
   const archivedMatches = loadArchivedMatches();
   assert.equal(archivedMatches.length >= 1, true, "新規試合前に記録済み試合を自動保存");

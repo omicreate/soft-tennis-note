@@ -1,4 +1,4 @@
-const CACHE_NAME = "soft-tennis-logger-v125";
+const CACHE_NAME = "soft-tennis-logger-v126";
 const ASSETS = ["./", "index.html", "styles.css", "app.js", "manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {

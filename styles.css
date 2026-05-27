@@ -1026,6 +1026,10 @@ body:has(.tab[data-tab="history"].active) .team input {
   content: "□";
 }
 
+.action-reset::before {
+  content: "↺";
+}
+
 .action-edit::before {
   content: "✎";
 }
@@ -1192,9 +1196,28 @@ textarea {
 
 .action-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 12px;
+}
+
+.action-row .action-button {
+  min-width: min(100%, 112px);
+}
+
+.environment-badge {
+  display: grid;
+  place-items: center;
+  margin: -4px 0 10px;
+  border: 2px solid #f97316;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 0.88rem;
+  font-weight: 950;
+  letter-spacing: 0;
 }
 
 .undo-note {
@@ -2027,6 +2050,12 @@ dialog::backdrop {
 
   .start-guide {
     border-color: #1d4ed8;
+  }
+
+  .environment-badge {
+    border-color: #fb923c;
+    background: #431407;
+    color: #fed7aa;
   }
 
   .trial-guide,
