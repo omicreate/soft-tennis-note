@@ -544,6 +544,7 @@ function setActiveButton(containerSelector, dataName, value) {
 }
 
 function renderScore() {
+  const winner = getWinnerTeam();
   elements.teamALabel.textContent = ownDefaultName();
   elements.teamBLabel.textContent = opponentDefaultName();
   elements.teamAName.value = state.teams.A;
@@ -561,14 +562,12 @@ function renderScore() {
   renderPlayerButtons();
   renderCourtMode();
   renderMatchInfo();
+  renderWinnerState(winner);
 
   if (state.finished) {
-    const winner = getWinnerTeam();
-    elements.matchStatus.innerHTML = winner
-      ? `<span class="winner-label">WINNER</span><span class="winner-side">${escapeHtml(shortSideName(winner))}</span>`
-      : `<span class="winner-label">END</span>`;
-    elements.serverLabel.textContent = "試合終了";
-    elements.serverLabel.title = winner ? `WINNER: ${displayName(winner)}` : "試合終了";
+    elements.matchStatus.innerHTML = `<span class="finish-label">試合終了</span>`;
+    elements.serverLabel.textContent = winner ? `${shortSideName(winner)} 勝ち` : "終了";
+    elements.serverLabel.title = winner ? `${displayName(winner)}の勝ち` : "試合終了";
   } else if (state.matchFormat === "final") {
     elements.matchStatus.innerHTML = "";
     elements.matchStatus.textContent = "FG";
@@ -596,6 +595,25 @@ function renderScore() {
   }
 }
 
+function renderWinnerState(winner = getWinnerTeam()) {
+  const isFinished = state.finished && !!winner;
+  [
+    [".team-a", "A"],
+    [".team-b", "B"],
+    ["#liveTeamAName", "A"],
+    ["#liveTeamAGames", "A"],
+    ["#liveTeamAPoints", "A"],
+    ["#liveTeamBName", "B"],
+    ["#liveTeamBGames", "B"],
+    ["#liveTeamBPoints", "B"]
+  ].forEach(([selector, side]) => {
+    const element = $(selector);
+    if (!element) return;
+    element.classList.toggle("finished-winner", isFinished && winner === side);
+    element.classList.toggle("finished-loser", isFinished && winner !== side);
+  });
+}
+
 function renderLiveScore() {
   elements.liveTeamAName.textContent = state.matchType === "singles" ? "自" : "自";
   elements.liveTeamAName.title = displayName("A");
@@ -607,8 +625,8 @@ function renderLiveScore() {
   elements.liveTeamBPoints.textContent = pointLabel("B");
   if (state.finished) {
     const winner = getWinnerTeam();
-    elements.liveServerLabel.textContent = winner ? `WIN ${shortSideName(winner)}` : "試合終了";
-    elements.liveServerLabel.title = winner ? `WINNER: ${displayName(winner)}` : "試合終了";
+    elements.liveServerLabel.textContent = winner ? `${shortSideName(winner)} 勝ち` : "試合終了";
+    elements.liveServerLabel.title = winner ? `${displayName(winner)}の勝ち` : "試合終了";
   } else {
     elements.liveServerLabel.textContent = `S ${shortSideName(state.server)}`;
     elements.liveServerLabel.title = `サービス: ${displayName(state.server)}`;
@@ -642,7 +660,7 @@ function renderCourtMode() {
 }
 
 function getCompactMatchStatus() {
-  if (state.finished) return "END";
+  if (state.finished) return "終了";
   if (state.matchFormat === "final") return "FG";
   return `${state.games.A + state.games.B + 1}G`;
 }
@@ -1462,7 +1480,7 @@ function getSummaryImageData() {
   const winner = getWinnerTeam();
   const matchResultLabel = state.finished
     ? winner
-      ? `WINNER ${displayName(winner)}`
+      ? `${displayName(winner)}の勝ち`
       : "試合終了"
     : "試合中";
   const weather = [info.weather, info.temperature ? `${info.temperature}℃` : "", info.wind !== "未記録" ? `風:${info.wind}` : ""]

@@ -155,7 +155,7 @@ const testCode = `
   state.finished = true;
   state.games = { A: 4, B: 2 };
   const finishedSummaryImage = getSummaryImageData();
-  assert.deepEqual(finishedSummaryImage.resultRows[0], ["試合結果", "WINNER 自チーム"], "画像サマリーに勝った側を表示する");
+  assert.deepEqual(finishedSummaryImage.resultRows[0], ["試合結果", "自チームの勝ち"], "画像サマリーに勝った側を表示する");
   assert.deepEqual(finishedSummaryImage.resultRows[1], ["ゲームスコア", "4-2"], "画像サマリーに最終ゲームスコアを表示する");
   saveAnalysisMemo();
   const summaryImageWithMemo = getSummaryImageData();
