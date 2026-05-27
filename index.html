@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=111" />
-    <link rel="stylesheet" href="styles.css?v=111" />
+    <link rel="manifest" href="manifest.webmanifest?v=112" />
+    <link rel="stylesheet" href="styles.css?v=112" />
   </head>
   <body>
     <main class="app-shell">
@@ -141,13 +141,13 @@
           <div class="control-group">
             <span>プレイヤー</span>
             <div class="chips compact" id="playerControl">
-              <button class="active" data-player="不明" type="button">不明</button>
               <button data-player="A後衛" type="button" id="playerARearButton">自後衛</button>
               <button data-player="A前衛" type="button" id="playerAFrontButton">自前衛</button>
               <button data-player="B後衛" type="button" id="playerBRearButton">相手後衛</button>
               <button data-player="B前衛" type="button" id="playerBFrontButton">相手前衛</button>
               <button data-player="A選手" type="button" id="playerASinglesButton" hidden>自分</button>
               <button data-player="B選手" type="button" id="playerBSinglesButton" hidden>相手</button>
+              <button class="active player-unknown" data-player="不明" type="button">不明</button>
             </div>
           </div>
 
@@ -566,6 +566,6 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=111" defer></script>
+    <script src="app.js?v=112" defer></script>
   </body>
 </html>
