@@ -79,3 +79,4 @@ https://www.jsta.or.jp/about_softtennis/words
 - `app.js`: スコア進行、記録、分析、保存、CSV出力
 - `manifest.webmanifest`: PWA用マニフェスト
 - `sw.js`: オフラインキャッシュ用サービスワーカー
+- `docs/requirements-design.md`: 要件・設計書
