@@ -1,13 +1,42 @@
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const SCORING_OUTCOMES = ["ストローク得点", "ボレー得点", "スマッシュ得点", "サービス得点", "レシーブ得点", "ロビング得点"];
 const ERROR_OUTCOMES = ["ダブルフォールト", "レシーブミス", "ストロークミス", "ボレーミス", "スマッシュミス", "その他"];
+const TRIAL_GUIDES = {
+  record: {
+    summary: "テスト利用の説明（記録）",
+    lead: "記録ページは、試合を見ている人がポイント後すぐに残す画面です。選手本人が試合中に入力する想定ではありません。",
+    items: [
+      "サービス開始（1st/2nd/DF）を確認する",
+      "ポイント内容、プレイヤー、得点側を選ぶ",
+      "到達位置やメモは、余裕がある時だけ詳細記録に残す"
+    ]
+  },
+  analysis: {
+    summary: "テスト利用の説明（分析）",
+    lead: "分析ページは、試合中の短い確認と、試合後の振り返りに使う画面です。",
+    items: [
+      "上から順に、今の状況で気になる点を確認する",
+      "相手のミス、自チームの失点、序盤の失点を分けて見る",
+      "残したい内容は「この分析を保存」で保存する"
+    ]
+  },
+  history: {
+    summary: "テスト利用の説明（履歴）",
+    lead: "履歴ページは、入力ミスの確認と、試合後に1点ずつ振り返るための画面です。",
+    items: [
+      "直近のポイントから順に、得点側・内容・プレイヤーを確認する",
+      "スコア推移を見て、どの場面で流れが変わったか確認する",
+      "直前の入力を直したい時は、記録ページの「前のポイントに戻す」を使う"
+    ]
+  }
+};
 
 const defaultState = {
   matchType: "doubles",
-  teams: { A: "自ペア", B: "相手ペア" },
+  teams: { A: "自チーム", B: "相手ペア" },
   players: {
-    AFront: "自ペア前衛",
-    ARear: "自ペア後衛",
+    AFront: "自前衛",
+    ARear: "自後衛",
     BFront: "相手前衛",
     BRear: "相手後衛"
   },
@@ -16,13 +45,15 @@ const defaultState = {
   matchInfo: {
     date: "",
     timeOfDay: "未記録",
+    startTime: "",
+    endTime: "",
     weather: "未記録",
     temperature: "",
     wind: "未記録",
     windSide: "未記録",
     surface: "未記録",
     courtCondition: "未記録",
-    opponentFormation: "不明",
+    opponentFormation: "雁行陣",
     event: "",
     tournament: "",
     venueName: "",
@@ -43,6 +74,7 @@ const defaultState = {
 };
 
 let state = loadState();
+let matchDialogMode = "new";
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -86,6 +118,9 @@ const elements = {
   startGuide: $(".start-guide"),
   nextStep: $("#nextStep"),
   screenGuide: $("#screenGuide"),
+  trialGuideSummary: $("#trialGuideSummary"),
+  trialGuideLead: $("#trialGuideLead"),
+  trialGuideList: $("#trialGuideList"),
   ruleNote: $("#ruleNote"),
   courtModeLabel: $("#courtModeLabel"),
   shotSelect: $("#shotSelect"),
@@ -107,18 +142,23 @@ const elements = {
   playerBars: $("#playerBars"),
   courseBars: $("#courseBars"),
   pointList: $("#pointList"),
+  historyFilterSelect: $("#historyFilterSelect"),
+  historySortSelect: $("#historySortSelect"),
+  historyDateLabel: $("#historyDateLabel"),
   dialog: $("#newMatchDialog"),
   actionMenuDialog: $("#actionMenuDialog"),
   summaryImageDialog: $("#summaryImageDialog"),
   summaryPreviewImage: $("#summaryPreviewImage"),
   menuButton: $("#menuButton"),
   openNewMatchButton: $("#openNewMatchButton"),
+  editMatchInfoButton: $("#editMatchInfoButton"),
   previewSummaryImageButton: $("#previewSummaryImageButton"),
   downloadSummaryImageButton: $("#downloadSummaryImageButton"),
   exportCsvButton: $("#exportCsvButton"),
   matchTypeSelect: $("#matchTypeSelect"),
   dialogTeamA: $("#dialogTeamA"),
   dialogTeamB: $("#dialogTeamB"),
+  matchDialogTitle: $("#matchDialogTitle"),
   dialogTeamALabel: $("#dialogTeamALabel"),
   dialogTeamBLabel: $("#dialogTeamBLabel"),
   dialogAFront: $("#dialogAFront"),
@@ -129,6 +169,8 @@ const elements = {
   matchFormatSelect: $("#matchFormatSelect"),
   matchDateInput: $("#matchDateInput"),
   matchTimeSelect: $("#matchTimeSelect"),
+  matchStartTimeInput: $("#matchStartTimeInput"),
+  matchEndTimeInput: $("#matchEndTimeInput"),
   weatherSelect: $("#weatherSelect"),
   temperatureInput: $("#temperatureInput"),
   windSelect: $("#windSelect"),
@@ -297,13 +339,17 @@ function shortDisplayName(team) {
   const fallback = team === "A" ? ownDefaultName() : opponentDefaultName();
   const name = (state.teams[team] || fallback).trim();
   if (!name) return fallback;
-  if (["自ペア", "自分", "相手", "相手ペア", "相手選手"].includes(name)) return name.replace("選手", "");
+  if (["自ペア", "自チーム", "自分", "相手", "相手ペア", "相手選手"].includes(name)) return name.replace("選手", "");
   const compact = name.replace(/\s+/g, "").replace(/ペア$/, "").replace(/チーム$/, "");
   return [...compact].slice(0, 4).join("");
 }
 
+function shortSideName(team) {
+  return team === "A" ? "自" : "相";
+}
+
 function ownDefaultName() {
-  return state.matchType === "singles" ? "自分" : "自ペア";
+  return state.matchType === "singles" ? "自分" : "自チーム";
 }
 
 function opponentDefaultName() {
@@ -311,15 +357,15 @@ function opponentDefaultName() {
 }
 
 function ownSideLabel() {
-  return state.matchType === "singles" ? "自分" : "自ペア";
+  return state.matchType === "singles" ? "自分" : "自チーム";
 }
 
 function playerLabel(player) {
   const labels = {
-    A前衛: state.players.AFront,
     A後衛: state.players.ARear,
-    B前衛: state.players.BFront,
+    A前衛: state.players.AFront,
     B後衛: state.players.BRear,
+    B前衛: state.players.BFront,
     A選手: displayName("A"),
     B選手: displayName("B")
   };
@@ -382,6 +428,7 @@ function addPoint(winner) {
     memo: elements.memoInput.value.trim(),
     phase: getPhaseLabel(state.gamePoints),
     gameNumber: getGameNumber(state.games),
+    endTimeBefore: state.matchInfo?.endTime || "",
     scoreBefore: {
       games: { ...state.games },
       points: { ...state.gamePoints }
@@ -402,6 +449,9 @@ function addPoint(winner) {
 
   if (state.games[winner] >= state.gamesToWin) {
     state.finished = true;
+    if (!state.matchInfo.endTime) {
+      state.matchInfo.endTime = getCurrentClockTime();
+    }
   }
 
   entry.scoreAfter = {
@@ -431,27 +481,38 @@ function undoPoint() {
   state.games = { ...last.scoreBefore.games };
   state.gamePoints = { ...last.scoreBefore.points };
   state.server = last.server;
+  state.matchInfo.endTime = last.endTimeBefore || "";
   state.finished = false;
   saveState();
   render();
 }
 
-function newMatch() {
-  state = structuredClone(defaultState);
+function applyMatchDialogValues({ resetMatch }) {
+  if (resetMatch) {
+    state = structuredClone(defaultState);
+  }
   state.matchType = elements.matchTypeSelect.value;
   state.teams.A = elements.dialogTeamA.value.trim() || ownDefaultName();
   state.teams.B = elements.dialogTeamB.value.trim() || opponentDefaultName();
-  state.players.AFront = elements.dialogAFront.value.trim() || "自ペア前衛";
-  state.players.ARear = elements.dialogARear.value.trim() || "自ペア後衛";
+  state.players.AFront = elements.dialogAFront.value.trim() || "自前衛";
+  state.players.ARear = elements.dialogARear.value.trim() || "自後衛";
   state.players.BFront = elements.dialogBFront.value.trim() || "相手前衛";
   state.players.BRear = elements.dialogBRear.value.trim() || "相手後衛";
-  state.selectedPlayer = "不明";
-  state.analysisMemos = [];
+  if (resetMatch) {
+    state.selectedPlayer = "不明";
+    state.analysisMemos = [];
+    state.points = [];
+    state.gamePoints = { A: 0, B: 0 };
+    state.games = { A: 0, B: 0 };
+    state.finished = false;
+  }
   state.matchFormat = elements.matchFormatSelect.value;
   state.gamesToWin = gamesToWinFromFormat(state.matchFormat);
   state.matchInfo = {
     date: elements.matchDateInput.value,
     timeOfDay: elements.matchTimeSelect.value,
+    startTime: elements.matchStartTimeInput.value || (resetMatch ? getCurrentClockTime() : state.matchInfo.startTime || ""),
+    endTime: elements.matchEndTimeInput.value,
     weather: elements.weatherSelect.value,
     temperature: elements.temperatureInput.value,
     wind: elements.windSelect.value,
@@ -466,6 +527,14 @@ function newMatch() {
   };
   saveState();
   render();
+}
+
+function newMatch() {
+  applyMatchDialogValues({ resetMatch: true });
+}
+
+function updateMatchInfo() {
+  applyMatchDialogValues({ resetMatch: false });
 }
 
 function setActiveButton(containerSelector, dataName, value) {
@@ -483,7 +552,8 @@ function renderScore() {
   elements.teamBGames.textContent = state.games.B;
   elements.teamAPoints.textContent = pointLabel("A");
   elements.teamBPoints.textContent = pointLabel("B");
-  elements.serverLabel.textContent = `サービスサイド: ${displayName(state.server)}`;
+  elements.serverLabel.textContent = `S ${shortSideName(state.server)}`;
+  elements.serverLabel.title = `サービス: ${displayName(state.server)}`;
   renderLiveScore();
   renderMatchPointAlert();
   $(".point-button.own").innerHTML = `${escapeHtml(displayName("A"))}<br />1ポイント`;
@@ -496,9 +566,9 @@ function renderScore() {
     const winner = state.games.A > state.games.B ? "A" : "B";
     elements.matchStatus.textContent = `${displayName(winner)} 勝利`;
   } else if (state.matchFormat === "final") {
-    elements.matchStatus.textContent = "ファイナル";
+    elements.matchStatus.textContent = "FG";
   } else {
-    elements.matchStatus.textContent = `第${state.games.A + state.games.B + 1}ゲーム`;
+    elements.matchStatus.textContent = getCompactMatchStatus();
   }
 
   elements.liveMatchStatus.textContent = getCompactMatchStatus();
@@ -529,8 +599,8 @@ function renderLiveScore() {
   elements.liveTeamBGames.textContent = state.games.B;
   elements.liveTeamAPoints.textContent = pointLabel("A");
   elements.liveTeamBPoints.textContent = pointLabel("B");
-  elements.liveServerLabel.textContent = `S: ${shortDisplayName(state.server)}`;
-  elements.liveServerLabel.title = `サービスサイド: ${displayName(state.server)}`;
+  elements.liveServerLabel.textContent = `S ${shortSideName(state.server)}`;
+  elements.liveServerLabel.title = `サービス: ${displayName(state.server)}`;
 }
 
 function renderMatchPointAlert() {
@@ -544,7 +614,7 @@ function renderMatchPointAlert() {
   }
 
   const teamNames = teams.map(displayName).join("・");
-  const gameLabel = state.matchFormat === "final" || isFinalGame() ? "ファイナル" : `第${state.games.A + state.games.B + 1}ゲーム`;
+  const gameLabel = state.matchFormat === "final" || isFinalGame() ? "FG" : getCompactMatchStatus();
   elements.matchAlert.innerHTML = `
     <strong>マッチポイント: ${escapeHtml(teamNames)}</strong>
     <span>${escapeHtml(gameLabel)}。次の1ポイントで試合が決まります。</span>
@@ -562,7 +632,7 @@ function renderCourtMode() {
 function getCompactMatchStatus() {
   if (state.finished) return "END";
   if (state.matchFormat === "final") return "FG";
-  return `G${state.games.A + state.games.B + 1}`;
+  return `${state.games.A + state.games.B + 1}G`;
 }
 
 function renderMatchInfo() {
@@ -575,11 +645,13 @@ function renderMatchInfo() {
   const matchTypeLabel = state.matchType === "singles" ? "シングルス" : "ダブルス";
   const tournament = info.tournament && info.tournament !== "未記録" ? info.tournament : "";
   const venueName = info.venueName && info.venueName !== "未記録" ? info.venueName : "";
+  const timeRange = getMatchTimeRange(info);
   const rows = [
     matchTypeLabel,
     matchFormatLabel(),
     info.date,
     info.timeOfDay !== "未記録" ? info.timeOfDay : "",
+    timeRange,
     weather,
     court,
     state.matchType !== "singles" && info.opponentFormation !== "不明" ? `相手:${info.opponentFormation}` : "",
@@ -593,18 +665,27 @@ function renderMatchInfo() {
 
 function renderPlayerButtons() {
   const singles = state.matchType === "singles";
-  $("#playerAFrontButton").hidden = singles;
   $("#playerARearButton").hidden = singles;
-  $("#playerBFrontButton").hidden = singles;
+  $("#playerAFrontButton").hidden = singles;
   $("#playerBRearButton").hidden = singles;
+  $("#playerBFrontButton").hidden = singles;
   $("#playerASinglesButton").hidden = !singles;
   $("#playerBSinglesButton").hidden = !singles;
-  $("#playerAFrontButton").textContent = playerLabel("A前衛");
-  $("#playerARearButton").textContent = playerLabel("A後衛");
-  $("#playerBFrontButton").textContent = playerLabel("B前衛");
-  $("#playerBRearButton").textContent = playerLabel("B後衛");
+  $("#playerARearButton").innerHTML = formatPlayerButtonLabel(playerLabel("A後衛"));
+  $("#playerAFrontButton").innerHTML = formatPlayerButtonLabel(playerLabel("A前衛"));
+  $("#playerBRearButton").innerHTML = formatPlayerButtonLabel(playerLabel("B後衛"));
+  $("#playerBFrontButton").innerHTML = formatPlayerButtonLabel(playerLabel("B前衛"));
   $("#playerASinglesButton").textContent = displayName("A");
   $("#playerBSinglesButton").textContent = displayName("B");
+}
+
+function formatPlayerButtonLabel(label) {
+  const text = String(label || "");
+  const role = text.endsWith("後衛") ? "後衛" : text.endsWith("前衛") ? "前衛" : "";
+  if (!role) return escapeHtml(text);
+  const prefix = text.slice(0, -role.length) || role;
+  if (prefix === role) return `<span class="player-word">${escapeHtml(role)}</span>`;
+  return `<span class="player-word">${escapeHtml(prefix)}</span><span class="player-word">${escapeHtml(role)}</span>`;
 }
 
 function getNextStepText() {
@@ -618,21 +699,31 @@ function getActiveTab() {
   return $(".tab.active")?.dataset.tab || "record";
 }
 
+function renderTrialGuide() {
+  const guide = TRIAL_GUIDES[getActiveTab()] || TRIAL_GUIDES.record;
+  elements.trialGuideSummary.textContent = guide.summary;
+  elements.trialGuideLead.textContent = guide.lead;
+  elements.trialGuideList.innerHTML = guide.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+}
+
 function renderScreenGuide() {
   const tab = getActiveTab();
   if (tab !== "record") {
     elements.startGuide.hidden = true;
+    renderTrialGuide();
     return;
   }
   elements.startGuide.hidden = false;
   const matchPointTeams = getMatchPointTeams();
   if (matchPointTeams.length) {
     elements.nextStep.textContent = `マッチポイント: ${matchPointTeams.map(displayName).join("・")}`;
-    elements.screenGuide.textContent = "次の1ポイントで試合が決まります。サービス、内容、得点側だけ落ち着いて確認";
-    return;
-  }
-  elements.nextStep.textContent = getNextStepText();
-  elements.screenGuide.textContent = "ポイント後に、サービスの入り方、内容、誰のプレー、得点側を確認";
+  elements.screenGuide.textContent = "次の1ポイントで試合が決まります。サービス・内容・得点側を確認";
+  renderTrialGuide();
+  return;
+}
+elements.nextStep.textContent = getNextStepText();
+elements.screenGuide.textContent = "ポイント後に、サービス・内容・プレイヤー・得点側を確認";
+renderTrialGuide();
 }
 
 function getRuleNoteText() {
@@ -665,7 +756,7 @@ function summarize() {
     ["記録したポイント", state.points.length],
     ["取れたポイントの割合", `${Math.round((ownPoints / total) * 100)}%`],
     ["前半のゲーム", `${firstHalf.A}-${firstHalf.B}`],
-    [state.matchType === "singles" ? "自分で取った点" : "自分たちで取った点", ownScoredByPattern],
+    ["得点パターン", ownScoredByPattern],
     ["最初の2本で落とした点", ownEarlyLost],
     ["ダブルフォールト", ownDoubleFaults],
     ["第2サービスから始まった点", secondServeStarts],
@@ -696,6 +787,7 @@ function getAnalysisData() {
     ownPointsByOpponentError,
     ownLostByOwnError,
     ownLost: ownLost.length,
+    pointDiff: ownPoints - ownLost.length,
     pointRate: total ? Math.round((ownPoints / total) * 100) : 0,
     firstServeRate: servePoints.length ? Math.round((firstServeStarts / servePoints.length) * 100) : null,
     secondServeStarts,
@@ -714,14 +806,31 @@ function topEntry(counts) {
   return entries[0] || ["なし", 0];
 }
 
+function formatPointDiff(diff) {
+  if (diff > 0) return `+${diff}`;
+  if (diff < 0) return String(diff);
+  return "±0";
+}
+
+function pointDiffTone(diff) {
+  if (diff > 0) return "own";
+  if (diff < 0) return "opp";
+  return "neutral";
+}
+
 function renderAnalysisSummary() {
   const data = getAnalysisData();
   elements.analysisSummary.innerHTML = [
-    ["ポイント内訳", `${data.ownPoints}-${data.ownLost}`],
-    [state.matchType === "singles" ? "自分で取った点" : "自分たちで取った点", data.ownScoredByPattern],
-    ["相手のミスで取った点", data.ownPointsByOpponentError],
-    ["ミスで失った点", data.ownLostByOwnError]
-  ].map(([label, value]) => `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`).join("");
+    ["ポイント差", formatPointDiff(data.pointDiff), pointDiffTone(data.pointDiff)],
+    ["得点パターン", data.ownScoredByPattern, "own"],
+    ["相手ミス得点", data.ownPointsByOpponentError, "own"],
+    ["ミス失点", data.ownLostByOwnError, "opp"]
+  ].map(([label, value, tone]) => `
+    <article class="metric-${tone}">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </article>
+  `).join("");
 }
 
 function renderScoreQuality() {
@@ -730,7 +839,7 @@ function renderScoreQuality() {
   const attackRate = Math.round((data.ownScoredByPattern / totalWon) * 100);
   const errorRate = Math.round((data.ownPointsByOpponentError / totalWon) * 100);
   let label = "得点タイプ: バランス型";
-  let text = "自分たちの得点と相手のミスが混ざった試合です。";
+  let text = "得点パターンと相手ミス得点が混ざった試合です。";
 
   if (data.ownPoints === 0) {
     label = "得点タイプ: 未判定";
@@ -753,31 +862,36 @@ function renderScoreQuality() {
   `;
 }
 
-function renderCoachNotes() {
-  const data = getAnalysisData();
-  if (!data.total) {
-    elements.coachNotes.innerHTML = `<strong>チェンジサイズで一言</strong><p>まだ記録がありません。まずは1ポイント記録してください。</p>`;
-    return;
-  }
-
+function buildQuickCoachItems(data = getAnalysisData()) {
+  if (!data.total) return ["まだ記録がありません。まずは1ポイント記録してください。"];
   const notes = [];
   if (data.ownDoubleFaults > 0) notes.push(`第2サービスは安全優先。ダブルフォールトを止める。`);
   if (data.ownReceiveMisses > 0) notes.push(`レシーブはまず返す。強打より深く入れる。`);
   if (data.ownEarlyLost >= 3) notes.push(`最初の2本は返球優先。入りで簡単に落とさない。`);
   if (data.firstServeRate !== null && data.firstServeRate < 60) notes.push(`第1サービスは確率重視。入れてから展開する。`);
-  if (data.ownScoredByPattern < data.ownPointsByOpponentError) notes.push(`もらった点が多め。自分たちから取る形を1つ作る。`);
+  if (data.ownScoredByPattern < data.ownPointsByOpponentError) notes.push(`相手ミス得点が多め。自チームで取る形を1つ作る。`);
   if (data.topScore[1] > 0) notes.push(`良い形は「${data.topScore[0]}」。次も同じ形を使う。`);
   if (!notes.length) notes.push("大きな偏りは少なめ。今のリズムを崩さず、先にミスしない。");
+  return notes.slice(0, 2);
+}
 
-  elements.coachNotes.innerHTML = `<strong>チェンジサイズで一言</strong><ul>${notes.slice(0, 2).map((note) => `<li>${escapeHtml(note)}</li>`).join("")}</ul>`;
+function renderCoachNotes() {
+  const data = getAnalysisData();
+  if (!data.total) {
+    elements.coachNotes.innerHTML = `<strong>今すぐ意識すること</strong><p>まだ記録がありません。まずは1ポイント記録してください。</p>`;
+    return;
+  }
+
+  const notes = buildQuickCoachItems(data);
+  elements.coachNotes.innerHTML = `<strong>今すぐ意識すること</strong><ul>${notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}</ul>`;
 }
 
 function renderOpponentView() {
   const priorityItems = buildPriorityItems();
 
   elements.opponentView.innerHTML = `
-    <strong>優先度順メモ</strong>
-    <ul>${priorityItems.map((item, index) => `<li><b>P${index + 1}</b> ${escapeHtml(item)}</li>`).join("")}</ul>
+    <strong>あとで確認すること</strong>
+    <ul>${priorityItems.map((item, index) => `<li><b>${index + 1}</b> ${escapeHtml(item)}</li>`).join("")}</ul>
   `;
 }
 
@@ -923,6 +1037,38 @@ function countByPlayer(points = state.points) {
   }, {});
 }
 
+function playerSortOrder(label) {
+  const labels =
+    state.matchType === "singles"
+      ? [displayName("A"), displayName("B")]
+      : [playerLabel("A後衛"), playerLabel("A前衛"), playerLabel("B後衛"), playerLabel("B前衛")];
+  const index = labels.indexOf(label);
+  return index === -1 ? 99 : index;
+}
+
+function getPlayerPlusMinus() {
+  const counts = {};
+  state.points.forEach((point) => {
+    const label = playerLabel(point.player);
+    if (!label || label === "不明" || label === "未設定" || label === "未記録") return;
+    counts[label] = counts[label] || { plus: 0, minus: 0 };
+    if (isScoringOutcome(point.outcome)) counts[label].plus += 1;
+    if (isErrorOutcome(point.outcome)) counts[label].minus += 1;
+  });
+
+  return Object.entries(counts)
+    .map(([label, value]) => ({ label, plus: value.plus, minus: value.minus, diff: value.plus - value.minus }))
+    .filter((item) => item.plus > 0 || item.minus > 0)
+    .sort((a, b) => playerSortOrder(a.label) - playerSortOrder(b.label) || b.plus + b.minus - (a.plus + a.minus));
+}
+
+function getTopPlayerPlusMinusLabel() {
+  const entries = getPlayerPlusMinus();
+  if (!entries.length) return "未記録";
+  const top = [...entries].sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff) || b.plus + b.minus - (a.plus + a.minus))[0];
+  return `${top.label} +${top.plus} / -${top.minus} / ${formatPointDiff(top.diff)}`;
+}
+
 function renderStats() {
   const ownWon = state.points.filter((point) => point.winner === "A");
   const ownLost = state.points.filter((point) => point.winner === "B");
@@ -940,19 +1086,22 @@ function renderStats() {
   renderBars(elements.errorBars, countByOutcomeType("error", ownLost), "own");
   renderBars(elements.resultBars, countBy("result"));
   renderBars(elements.handBars, countBy("hand", ownLost));
-  renderBars(elements.playerBars, countByPlayer());
+  renderPlayerPlusMinus();
   renderBars(elements.courseBars, countBy("course"));
   renderAnalysisMemos();
 }
 
 function saveAnalysisMemo() {
-  const items = buildPriorityItems();
+  const quickItems = buildQuickCoachItems();
+  const reviewItems = buildPriorityItems();
   const memo = {
     at: new Date().toISOString(),
     pointCount: state.points.length,
     games: { ...state.games },
     points: { ...state.gamePoints },
-    items
+    quickItems,
+    reviewItems,
+    items: [...quickItems, ...reviewItems]
   };
   state.analysisMemos = [memo, ...(state.analysisMemos || [])].slice(0, 12);
   saveState();
@@ -966,9 +1115,13 @@ function renderAnalysisMemos() {
         const date = new Date(memo.at);
         const time = Number.isNaN(date.getTime()) ? "" : `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
         const score = `G ${memo.games?.A ?? 0}-${memo.games?.B ?? 0} / P ${memo.points?.A ?? 0}-${memo.points?.B ?? 0}`;
-        return `<article><strong>${escapeHtml(time)} ${escapeHtml(score)} ${escapeHtml(memo.pointCount)}点時点</strong><ul>${(memo.items || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></article>`;
+        const quickItems = memo.quickItems || [];
+        const reviewItems = memo.reviewItems || memo.items || [];
+        const quickHtml = quickItems.length ? `<p>今すぐ意識すること</p><ul>${quickItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : "";
+        const reviewHtml = reviewItems.length ? `<p>あとで確認すること</p><ul>${reviewItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : "";
+        return `<article><strong>${escapeHtml(time)} ${escapeHtml(score)} ${escapeHtml(memo.pointCount)}点時点</strong>${quickHtml}${reviewHtml}</article>`;
       }).join("")
-    : `<p>保存した分析メモはまだありません。</p>`;
+    : `<p>保存した分析はまだありません。</p>`;
 }
 
 function renderBars(container, counts, side = "") {
@@ -982,40 +1135,143 @@ function renderBars(container, counts, side = "") {
     : `<p class="empty">まだ記録がありません</p>`;
 }
 
+function renderPlayerPlusMinus() {
+  const entries = getPlayerPlusMinus();
+  elements.playerBars.innerHTML = entries.length
+    ? entries.map((item) => {
+        const tone = item.diff > 0 ? "own" : item.diff < 0 ? "opp" : "neutral";
+        return `
+          <div class="pm-row ${tone}">
+            <span>${escapeHtml(item.label)}</span>
+            <b class="plus">+${escapeHtml(item.plus)}</b>
+            <b class="minus">-${escapeHtml(item.minus)}</b>
+            <strong>${escapeHtml(formatPointDiff(item.diff))}</strong>
+          </div>
+        `;
+      }).join("")
+    : `<p class="empty">得点またはミスを、プレイヤー付きで記録すると表示されます</p>`;
+}
+
+function historyFilterLabel(value) {
+  return {
+    all: "すべて",
+    own: "自チーム得点",
+    opp: "相手得点",
+    errors: "ミスだけ",
+    late: "ゲーム終盤"
+  }[value] || "すべて";
+}
+
+function isLateGamePoint(point) {
+  return point.phase === "ゲーム終盤" || isGamePointAreaLoss(point) || isDeuceOrLaterLoss(point);
+}
+
+function filterHistoryPoints(points) {
+  const filter = elements.historyFilterSelect?.value || "all";
+  if (filter === "own") return points.filter((point) => point.winner === "A");
+  if (filter === "opp") return points.filter((point) => point.winner === "B");
+  if (filter === "errors") return points.filter((point) => isErrorOutcome(point.outcome));
+  if (filter === "late") return points.filter(isLateGamePoint);
+  return points;
+}
+
+function historyPhaseLabel(point) {
+  if (isDeuceOrLaterLoss(point)) return "デュース以降";
+  if (isGamePointAreaLoss(point)) return "ゲームポイント付近";
+  return point.phase || "場面不明";
+}
+
+function historyGameNumber(point) {
+  if (point.gameNumber) return point.gameNumber;
+  const games = point.scoreBefore?.games || { A: 0, B: 0 };
+  return (games.A || 0) + (games.B || 0) + 1;
+}
+
+function historyGameLabel(gameNumber) {
+  return state.matchFormat === "final" ? "FG" : `${gameNumber}G`;
+}
+
+function renderHistoryPoint(point) {
+  const number = state.points.indexOf(point) + 1;
+  const beforeGames = point.scoreBefore?.games || { A: 0, B: 0 };
+  const beforePoints = point.scoreBefore?.points || { A: 0, B: 0 };
+  const before = `G ${beforeGames.A}-${beforeGames.B} / P ${beforePoints.A}-${beforePoints.B}`;
+  const afterGames = point.scoreAfter?.games || beforeGames;
+  const afterPoints = point.scoreAfter?.points || beforePoints;
+  const after = `G ${afterGames.A}-${afterGames.B} / P ${afterPoints.A}-${afterPoints.B}`;
+  const winner = `${displayName(point.winner)}の得点`;
+  const actor = playerLabel(point.player);
+  const location = [point.course, point.result && point.result !== "イン" ? point.result : ""].filter(Boolean).join(" / ");
+  const service = `${point.serveStart || "サービス不明"} / S ${shortSideName(point.server)}`;
+  const meta = [location, historyPhaseLabel(point), service, point.memo].filter(Boolean).join("・");
+  const sideClass = point.winner === "A" ? "own" : "opp";
+  return `
+    <li class="history-item ${sideClass}">
+      <div class="history-head">
+        <span class="history-number">${escapeHtml(number)}点目</span>
+        <strong>${escapeHtml(winner)}</strong>
+      </div>
+      <div class="history-body">
+        <span class="history-main">${escapeHtml(point.outcome)}</span>
+        <span class="history-player">${escapeHtml(actor)}</span>
+        <span class="history-score">${escapeHtml(before)} → ${escapeHtml(after)}</span>
+      </div>
+      <small>${escapeHtml(meta)}</small>
+    </li>
+  `;
+}
+
+function renderHistoryGameGroup(points, index) {
+  const gameNumber = historyGameNumber(points[0]);
+  const originalOrder = points.slice().sort((a, b) => state.points.indexOf(a) - state.points.indexOf(b));
+  const lastPoint = originalOrder[originalOrder.length - 1];
+  const gameWinner = originalOrder.find((point) => point.gameWonBy)?.gameWonBy;
+  const afterPoints = lastPoint?.scoreAfter?.points || { A: 0, B: 0 };
+  const status = gameWinner ? `${shortSideName(gameWinner)}が取得` : `P ${afterPoints.A}-${afterPoints.B}`;
+  return `
+    <li class="history-game">
+      <details ${index === 0 ? "open" : ""}>
+        <summary>
+          <strong>${escapeHtml(historyGameLabel(gameNumber))}</strong>
+          <span>${escapeHtml(status)} / ${escapeHtml(points.length)}点</span>
+        </summary>
+        <ol class="history-game-list">
+          ${points.map(renderHistoryPoint).join("")}
+        </ol>
+      </details>
+    </li>
+  `;
+}
+
 function renderHistory() {
-  elements.pointList.innerHTML = state.points
-    .slice()
-    .reverse()
-    .map((point, index) => {
-      const number = state.points.length - index;
-      const beforeGames = point.scoreBefore?.games || { A: 0, B: 0 };
-      const beforePoints = point.scoreBefore?.points || { A: 0, B: 0 };
-      const before = `G ${beforeGames.A}-${beforeGames.B} / P ${beforePoints.A}-${beforePoints.B}`;
-      const afterGames = point.scoreAfter?.games || beforeGames;
-      const afterPoints = point.scoreAfter?.points || beforePoints;
-      const after = `G ${afterGames.A}-${afterGames.B} / P ${afterPoints.A}-${afterPoints.B}`;
-      const winner = `${displayName(point.winner)}の得点`;
-      const actor = playerLabel(point.player);
-      const location = [point.course, point.result && point.result !== "イン" ? point.result : ""].filter(Boolean).join(" / ");
-      const service = `${point.serveStart || "サービス不明"} / S:${shortDisplayName(point.server)}`;
-      const meta = [location, point.phase || "場面不明", service, point.memo].filter(Boolean).join("・");
-      const sideClass = point.winner === "A" ? "own" : "opp";
-      return `
-        <li class="history-item ${sideClass}">
-          <div class="history-head">
-            <span class="history-number">${escapeHtml(number)}点目</span>
-            <strong>${escapeHtml(winner)}</strong>
-          </div>
-          <div class="history-body">
-            <span class="history-main">${escapeHtml(point.outcome)}</span>
-            <span class="history-player">${escapeHtml(actor)}</span>
-            <span class="history-score">${escapeHtml(before)} → ${escapeHtml(after)}</span>
-          </div>
-          <small>${escapeHtml(meta)}</small>
-        </li>
-      `;
-    })
-    .join("");
+  const info = state.matchInfo || defaultState.matchInfo;
+  const date = info.date || "日付未記録";
+  const time = getMatchTimeRange(info);
+  elements.historyDateLabel.textContent = time ? `${date} / ${time}` : date;
+  const filteredPoints = filterHistoryPoints(state.points);
+  const filter = elements.historyFilterSelect?.value || "all";
+  if (!filteredPoints.length) {
+    elements.pointList.innerHTML = `<li class="history-empty">${escapeHtml(historyFilterLabel(filter))}に当てはまる履歴はまだありません</li>`;
+    return;
+  }
+
+  const orderedPoints = filteredPoints.slice();
+  if ((elements.historySortSelect?.value || "newest") === "newest") {
+    orderedPoints.reverse();
+  }
+
+  const groups = orderedPoints.reduce((acc, point) => {
+    const gameNumber = historyGameNumber(point);
+    const current = acc[acc.length - 1];
+    if (!current || current.gameNumber !== gameNumber) {
+      acc.push({ gameNumber, points: [point] });
+    } else {
+      current.points.push(point);
+    }
+    return acc;
+  }, []);
+
+  elements.pointList.innerHTML = groups.map((group, index) => renderHistoryGameGroup(group.points, index)).join("");
 }
 
 function render() {
@@ -1026,11 +1282,13 @@ function render() {
 
 function exportCsv() {
   const rows = [
-    ["No", "日付", "時間帯", "天気", "気温", "風", "風向き", "コート種別", "コート状態", "種別", "相手基本布陣", "区分", "大会名", "開催地／会場", "コート", "試合形式", "得点側", "サービスサイド", "ゲーム", "ポイント", "場面", "サービスの入り方", "ポイント内容", "ボールの結果", "誰のプレー", "ショット", "打球面", "コース", "ラリー数", "ゲーム取得", "メモ", "記録時刻"],
+    ["No", "日付", "時間帯", "開始時刻", "終了時刻", "天気", "気温", "風", "風向き", "コート種別", "コート状態", "種別", "相手基本布陣", "区分", "大会名", "開催地／会場", "コート", "試合形式", "得点側", "サービスサイド", "ゲーム", "ポイント", "場面", "サービスの入り方", "ポイント内容", "ボールの結果", "誰のプレー", "ショット", "打球面", "コース", "ラリー数", "ゲーム取得", "メモ", "記録時刻"],
     ...state.points.map((point, index) => [
       index + 1,
       state.matchInfo.date,
       state.matchInfo.timeOfDay,
+      state.matchInfo.startTime,
+      state.matchInfo.endTime,
       state.matchInfo.weather,
       state.matchInfo.temperature,
       state.matchInfo.wind,
@@ -1101,12 +1359,45 @@ function gameNumberLabel(gameNumber) {
   return state.matchFormat === "final" ? "FG" : `${gameNumber}G`;
 }
 
+function getCurrentTimeOfDay(date = new Date()) {
+  const hour = date.getHours();
+  if (hour < 5) return "夜";
+  if (hour < 9) return "朝";
+  if (hour < 12) return "午前";
+  if (hour < 13) return "昼";
+  if (hour < 17) return "午後";
+  if (hour < 19) return "夕方";
+  return "夜";
+}
+
+function getCurrentClockTime(date = new Date()) {
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function getMatchTimeRange(info = state.matchInfo || defaultState.matchInfo) {
+  const start = info.startTime || "";
+  const end = info.endTime || "";
+  if (start && end) return `${start}-${end}`;
+  if (start) return `${start}開始`;
+  if (end) return `${end}終了`;
+  return "";
+}
+
 function getSummaryImageData() {
   const data = getAnalysisData();
   const phaseCounts = getPhaseCounts();
   const info = state.matchInfo || defaultState.matchInfo;
   const typeLabel = state.matchType === "singles" ? "シングルス" : "ダブルス";
   const opponentError = topEntry(countByOutcomeType("error", state.points.filter((point) => point.winner === "A")));
+  const latestMemo = (state.analysisMemos || [])[0];
+  const latestMemoDate = latestMemo ? new Date(latestMemo.at) : null;
+  const latestMemoTime =
+    latestMemoDate && !Number.isNaN(latestMemoDate.getTime())
+      ? `${String(latestMemoDate.getHours()).padStart(2, "0")}:${String(latestMemoDate.getMinutes()).padStart(2, "0")}`
+      : "";
+  const latestMemoScore = latestMemo
+    ? `G ${latestMemo.games?.A ?? 0}-${latestMemo.games?.B ?? 0} / P ${latestMemo.points?.A ?? 0}-${latestMemo.points?.B ?? 0}`
+    : "";
   const weather = [info.weather, info.temperature ? `${info.temperature}℃` : "", info.wind !== "未記録" ? `風:${info.wind}` : ""]
     .filter(Boolean)
     .filter((item) => item !== "未記録")
@@ -1114,8 +1405,9 @@ function getSummaryImageData() {
   const court = [info.surface !== "未記録" ? info.surface : "", info.courtCondition !== "未記録" ? info.courtCondition : ""].filter(Boolean).join(" / ");
   const tournament = info.tournament && info.tournament !== "未記録" ? info.tournament : "";
   const venueName = info.venueName && info.venueName !== "未記録" ? info.venueName : "";
+  const timeRange = getMatchTimeRange(info);
   const conditionRows = [
-    ["日時", [info.date || "日付未記録", info.timeOfDay !== "未記録" ? info.timeOfDay : ""].filter(Boolean).join(" / ")],
+    ["日時", [info.date || "日付未記録", info.timeOfDay !== "未記録" ? info.timeOfDay : "", timeRange].filter(Boolean).join(" / ")],
     ["大会名", tournament || "未記録"],
     ["開催地／会場", venueName || "未記録"],
     ["区分", info.event && info.event !== "未記録" ? info.event : "未記録"],
@@ -1136,6 +1428,7 @@ function getSummaryImageData() {
     meta: [
       info.date || "日付未記録",
       info.timeOfDay !== "未記録" ? info.timeOfDay : "",
+      timeRange,
       weather,
       court,
       info.event !== "未記録" ? info.event : "",
@@ -1144,16 +1437,19 @@ function getSummaryImageData() {
       info.venue !== "未記録" ? info.venue : ""
     ].filter(Boolean),
     summaryRows: [
-      ["記録ポイント", data.total],
-      ["得点パターン", data.ownScoredByPattern],
-      ["相手ミス得点", data.ownPointsByOpponentError],
-      ["ミス失点", data.ownLostByOwnError]
+      ["ポイント差", formatPointDiff(data.pointDiff), pointDiffTone(data.pointDiff)],
+      ["得点パターン", data.ownScoredByPattern, "own"],
+      ["相手ミス得点", data.ownPointsByOpponentError, "own"],
+      ["ミス失点", data.ownLostByOwnError, "opp"]
     ],
-    priorityItems: buildPriorityItems(),
+    analysisMemoTitle: latestMemo ? `保存した分析 ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "あとで確認すること",
+    analysisMemoItems: latestMemo ? [...(latestMemo.quickItems || []), ...(latestMemo.reviewItems || latestMemo.items || [])].slice(0, 4) : buildPriorityItems(),
+    priorityItems: latestMemo ? [...(latestMemo.quickItems || []), ...(latestMemo.reviewItems || latestMemo.items || [])].slice(0, 4) : buildPriorityItems(),
     detailRows: [
       ["主な得点パターン", `${data.topScore[0]} ${data.topScore[1]}`],
       ["相手の主なミス", `${opponentError[0]} ${opponentError[1]}`],
       ["主な失点ミス", `${data.topError[0]} ${data.topError[1]}`],
+      ["個人別 + / -", getTopPlayerPlusMinusLabel()],
       ["第1サービス開始率", data.firstServeRate === null ? "-" : `${data.firstServeRate}%`]
     ],
     phaseRows: Object.entries(phaseCounts).filter(([, value]) => value > 0)
@@ -1314,18 +1610,17 @@ function drawSummaryImage(canvas, summary) {
     drawClampedText(ctx, value, x + 118, y, 318, 30, 1);
   });
 
-  const summaryStyles = [
-    { border: inkColor, fill: "#ffffff", text: inkColor },
-    { border: ownColor, fill: "#ffffff", text: ownColor },
-    { border: oppColor, fill: "#ffffff", text: oppColor },
-    { border: oppColor, fill: "#ffffff", text: oppColor }
-  ];
-  summary.summaryRows.forEach(([label, value], index) => {
+  const summaryStyles = {
+    neutral: { border: inkColor, fill: "#ffffff", text: inkColor },
+    own: { border: ownColor, fill: "#ffffff", text: ownColor },
+    opp: { border: oppColor, fill: "#ffffff", text: oppColor }
+  };
+  summary.summaryRows.forEach(([label, value, tone], index) => {
     const col = index % 2;
     const row = Math.floor(index / 2);
     const x = 56 + col * 492;
     const y = 836 + row * 126;
-    const style = summaryStyles[index];
+    const style = summaryStyles[tone] || summaryStyles.neutral;
     fillRoundedRect(ctx, x, y, 476, 104, 14, style.fill);
     strokeRoundedRect(ctx, x, y, 476, 104, 14, style.border, 4);
     ctx.fillStyle = style.text;
@@ -1339,12 +1634,12 @@ function drawSummaryImage(canvas, summary) {
   strokeRoundedRect(ctx, 56, 1118, 968, 318, 18, lineColor);
   ctx.fillStyle = "#0f766e";
   ctx.font = '900 34px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  ctx.fillText("優先度順メモ", 88, 1176);
+  drawClampedText(ctx, summary.analysisMemoTitle, 88, 1176, 850, 38, 1);
   ctx.font = '800 29px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
   let y = 1226;
-  summary.priorityItems.slice(0, 4).forEach((item, index) => {
+  summary.analysisMemoItems.slice(0, 4).forEach((item, index) => {
     ctx.fillStyle = "#0f766e";
-    ctx.fillText(`P${index + 1}`, 88, y);
+    ctx.fillText(`${index + 1}`, 104, y);
     ctx.fillStyle = inkColor;
     y = drawClampedText(ctx, item, 142, y, 820, 34, 2);
     y += 8;
@@ -1369,7 +1664,7 @@ function drawSummaryImage(canvas, summary) {
 
   ctx.fillStyle = mutedColor;
   ctx.font = '700 24px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  const footer = ["端末内で画像生成。データは自動送信されません。", ...summary.meta].join(" / ");
+  const footer = ["端末内で画像生成。開発者や管理者へ送られません。", ...summary.meta].join(" / ");
   drawClampedText(ctx, footer, 56, 1794, 968, 32, 2);
 }
 
@@ -1392,7 +1687,15 @@ function downloadSummaryPreview() {
   link.click();
 }
 
-function openNewMatchDialog() {
+function openMatchDialog(mode = "new") {
+  matchDialogMode = mode;
+  const info = state.matchInfo || defaultState.matchInfo;
+  const isEdit = mode === "edit";
+  const startButton = $("#startMatchButton");
+  elements.matchDialogTitle.textContent = isEdit ? "試合情報を編集" : "新規試合";
+  startButton.textContent = isEdit ? "保存" : "開始";
+  startButton.classList.toggle("action-save", isEdit);
+  startButton.classList.toggle("action-start", !isEdit);
   elements.matchTypeSelect.value = state.matchType || "doubles";
   elements.dialogTeamA.value = state.teams.A;
   elements.dialogTeamB.value = state.teams.B;
@@ -1400,19 +1703,21 @@ function openNewMatchDialog() {
   elements.dialogARear.value = state.players.ARear;
   elements.dialogBFront.value = state.players.BFront;
   elements.dialogBRear.value = state.players.BRear;
-  elements.opponentFormationSelect.value = state.matchInfo.opponentFormation || "不明";
+  elements.opponentFormationSelect.value = info.opponentFormation || "雁行陣";
   elements.matchFormatSelect.value = state.matchFormat || matchFormatFromGamesToWin(state.gamesToWin);
-  elements.matchDateInput.value = state.matchInfo.date || new Date().toISOString().slice(0, 10);
-  elements.matchTimeSelect.value = state.matchInfo.timeOfDay || "未記録";
-  elements.weatherSelect.value = state.matchInfo.weather || "未記録";
-  elements.temperatureInput.value = state.matchInfo.temperature || "";
-  elements.windSelect.value = state.matchInfo.wind || "未記録";
-  elements.surfaceSelect.value = state.matchInfo.surface || "未記録";
-  elements.courtConditionSelect.value = state.matchInfo.courtCondition || "未記録";
-  elements.eventInput.value = state.matchInfo.event || "未記録";
-  elements.tournamentInput.value = state.matchInfo.tournament || "未記録";
-  elements.venueNameInput.value = state.matchInfo.venueName || "未記録";
-  elements.venueInput.value = state.matchInfo.venue || "未記録";
+  elements.matchDateInput.value = info.date || new Date().toISOString().slice(0, 10);
+  elements.matchTimeSelect.value = info.timeOfDay && info.timeOfDay !== "未記録" ? info.timeOfDay : getCurrentTimeOfDay();
+  elements.matchStartTimeInput.value = isEdit ? info.startTime || "" : getCurrentClockTime();
+  elements.matchEndTimeInput.value = isEdit ? info.endTime || "" : "";
+  elements.weatherSelect.value = info.weather || "未記録";
+  elements.temperatureInput.value = info.temperature || "";
+  elements.windSelect.value = info.wind || "未記録";
+  elements.surfaceSelect.value = info.surface || "未記録";
+  elements.courtConditionSelect.value = info.courtCondition || "未記録";
+  elements.eventInput.value = info.event || "未記録";
+  elements.tournamentInput.value = info.tournament || "未記録";
+  elements.venueNameInput.value = info.venueName || "未記録";
+  elements.venueInput.value = info.venue || "未記録";
   updateMatchTypeFields();
   elements.dialog.showModal();
 }
@@ -1426,7 +1731,11 @@ elements.saveAnalysisMemoButton.addEventListener("click", saveAnalysisMemo);
 elements.menuButton.addEventListener("click", () => elements.actionMenuDialog.showModal());
 elements.openNewMatchButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
-  openNewMatchDialog();
+  openMatchDialog("new");
+});
+elements.editMatchInfoButton.addEventListener("click", () => {
+  elements.actionMenuDialog.close();
+  openMatchDialog("edit");
 });
 elements.previewSummaryImageButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
@@ -1437,20 +1746,26 @@ elements.exportCsvButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
   exportCsv();
 });
-$("#startMatchButton").addEventListener("click", newMatch);
+$("#startMatchButton").addEventListener("click", () => {
+  if (matchDialogMode === "edit") {
+    updateMatchInfo();
+  } else {
+    newMatch();
+  }
+});
 elements.matchTypeSelect.addEventListener("change", updateMatchTypeFields);
 
 function updateMatchTypeFields() {
   const singles = elements.matchTypeSelect.value === "singles";
-  elements.dialogTeamALabel.textContent = singles ? "自分の名前" : "自ペア名";
-  elements.dialogTeamBLabel.textContent = singles ? "相手選手名" : "相手ペア名";
+  elements.dialogTeamALabel.textContent = singles ? "自分の名前" : "自チーム名";
+  elements.dialogTeamBLabel.textContent = singles ? "相手選手名" : "相手名";
   $$(".doubles-field").forEach((field) => {
     field.hidden = singles;
   });
 
-  if (singles && elements.dialogTeamA.value === "自ペア") elements.dialogTeamA.value = "自分";
+  if (singles && ["自ペア", "自チーム"].includes(elements.dialogTeamA.value)) elements.dialogTeamA.value = "自分";
   if (singles && elements.dialogTeamB.value === "相手ペア") elements.dialogTeamB.value = "相手選手";
-  if (!singles && elements.dialogTeamA.value === "自分") elements.dialogTeamA.value = "自ペア";
+  if (!singles && elements.dialogTeamA.value === "自分") elements.dialogTeamA.value = "自チーム";
   if (!singles && elements.dialogTeamB.value === "相手選手") elements.dialogTeamB.value = "相手ペア";
 }
 
@@ -1465,6 +1780,9 @@ elements.teamBName.addEventListener("input", () => {
   saveState();
   renderScore();
 });
+
+elements.historyFilterSelect.addEventListener("change", renderHistory);
+elements.historySortSelect.addEventListener("change", renderHistory);
 
 $$(".tab").forEach((button) => {
   button.addEventListener("click", () => {

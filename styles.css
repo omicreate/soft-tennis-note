@@ -462,7 +462,7 @@ body:has(.tab[data-tab="history"].active) .team input {
 }
 
 .match-state {
-  width: 92px;
+  width: 74px;
   display: grid;
   place-items: center;
   padding: 8px;
@@ -470,13 +470,20 @@ body:has(.tab[data-tab="history"].active) .team input {
 }
 
 .match-state span {
-  font-size: 0.82rem;
-  font-weight: 800;
+  font-size: 1.02rem;
+  font-weight: 950;
+  line-height: 1.1;
+  word-break: keep-all;
+  white-space: nowrap;
 }
 
 .match-state small {
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1.15;
+  word-break: keep-all;
+  white-space: nowrap;
 }
 
 .court-card {
@@ -921,14 +928,122 @@ body:has(.tab[data-tab="history"].active) .team input {
   color: var(--ink);
   font-weight: 800;
   line-height: 1.2;
+  word-break: keep-all;
+  line-break: strict;
   overflow-wrap: anywhere;
   white-space: normal;
+}
+
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 0 clamp(9px, 2.8vw, 12px);
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+  word-break: keep-all;
+  line-break: strict;
+  white-space: normal;
+}
+
+.action-button::before {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.22);
+  color: currentColor;
+  font-size: 0.78rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.action-new::before {
+  content: "+";
+}
+
+.action-preview::before {
+  content: "▣";
+}
+
+.action-edit::before {
+  content: "✎";
+}
+
+.action-export::before {
+  content: "CSV";
+  font-size: 0.58rem;
+}
+
+.action-save::before {
+  content: "✓";
+}
+
+.action-undo::before {
+  content: "↩";
+}
+
+.action-close::before {
+  content: "×";
+}
+
+.action-start::before {
+  content: "▶";
+}
+
+.action-save,
+.action-preview,
+.action-edit {
+  background: var(--accent);
+  color: white;
+}
+
+.action-export {
+  background: #374151;
+  color: white;
+}
+
+.action-new,
+.action-start,
+#startMatchButton.action-start {
+  background: var(--own);
+  color: white;
+}
+
+.secondary.action-button {
+  background: #edf0ec;
+  color: var(--ink);
+}
+
+.secondary.action-button::before {
+  background: rgba(31, 41, 55, 0.08);
 }
 
 .segmented button.active,
 .chips button.active {
   background: var(--accent);
   color: white;
+}
+
+#playerControl button {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  line-break: strict;
+}
+
+#playerControl .player-word {
+  display: block;
+  white-space: nowrap;
 }
 
 .control-grid {
@@ -1029,15 +1144,15 @@ textarea {
 }
 
 .analysis-summary article {
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px;
-  background: #eff6ff;
+  background: var(--panel);
 }
 
 .analysis-summary span {
   display: block;
-  color: #1d4ed8;
+  color: var(--muted);
   font-size: 0.72rem;
   font-weight: 900;
 }
@@ -1047,6 +1162,29 @@ textarea {
   margin-top: 6px;
   color: var(--ink);
   font-size: 1.28rem;
+}
+
+.analysis-summary .metric-neutral {
+  border-color: var(--line);
+  background: var(--panel);
+}
+
+.analysis-summary .metric-own {
+  border-color: #bfdbfe;
+  background: var(--own-soft);
+}
+
+.analysis-summary .metric-own span {
+  color: var(--own);
+}
+
+.analysis-summary .metric-opp {
+  border-color: #fecaca;
+  background: var(--opp-soft);
+}
+
+.analysis-summary .metric-opp span {
+  color: var(--opp);
 }
 
 .coach-notes {
@@ -1156,8 +1294,16 @@ textarea {
   margin-bottom: 10px;
 }
 
-.analysis-save .secondary {
+.analysis-save .action-button {
   justify-self: start;
+}
+
+.analysis-save-note {
+  margin: -2px 0 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.5;
 }
 
 .analysis-memo-list {
@@ -1166,7 +1312,7 @@ textarea {
 }
 
 .analysis-memo-list p {
-  margin: 0;
+  margin: 6px 0 0;
   color: var(--muted);
   font-size: 0.76rem;
   font-weight: 800;
@@ -1188,7 +1334,7 @@ textarea {
 .analysis-memo-list ul {
   display: grid;
   gap: 4px;
-  margin: 0;
+  margin: 4px 0 0;
   padding-left: 18px;
   color: var(--muted);
   font-size: 0.74rem;
@@ -1278,11 +1424,140 @@ textarea {
   color: #b91c1c;
 }
 
+.pm-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 1fr) 48px 48px 58px;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 9px;
+  background: var(--panel);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.pm-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pm-row b,
+.pm-row strong {
+  border-radius: 6px;
+  padding: 5px 4px;
+  text-align: center;
+  line-height: 1;
+}
+
+.pm-row .plus {
+  background: var(--own-soft);
+  color: var(--own);
+}
+
+.pm-row .minus {
+  background: var(--opp-soft);
+  color: var(--opp);
+}
+
+.pm-row strong {
+  background: #f8fafc;
+  color: var(--ink);
+}
+
+.pm-row.own strong {
+  background: var(--own);
+  color: white;
+}
+
+.pm-row.opp strong {
+  background: var(--opp);
+  color: white;
+}
+
+.history-filter {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.history-filter span {
+  grid-column: 1 / -1;
+  color: var(--ink);
+  font-size: 0.76rem;
+  line-height: 1.35;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.history-filter select {
+  min-height: 38px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: white;
+  color: var(--ink);
+  font-weight: 900;
+}
+
 .point-list {
   display: grid;
   gap: 8px;
   margin: 0;
   padding: 0;
+  list-style: none;
+}
+
+.history-game {
+  list-style: none;
+}
+
+.history-game details {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.history-game summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px;
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.history-game summary strong {
+  color: var(--ink);
+  font-size: 0.98rem;
+}
+
+.history-game summary span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.history-game-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  border-top: 1px solid var(--line);
+  padding: 8px;
   list-style: none;
 }
 
@@ -1304,6 +1579,17 @@ textarea {
 .history-item.opp {
   border-left-color: var(--opp);
   background: #fff8f8;
+}
+
+.history-empty {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 14px 10px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-align: center;
 }
 
 .history-head {
@@ -1339,12 +1625,14 @@ textarea {
 .history-main,
 .history-player {
   min-width: 0;
-  overflow: hidden;
   color: var(--ink);
   font-size: 0.88rem;
   font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  word-break: keep-all;
+  line-break: strict;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .history-main {
@@ -1420,23 +1708,26 @@ dialog::backdrop {
   min-height: 50px;
   border-radius: 8px;
   padding: 0 14px;
-  background: #edf0ec;
-  color: var(--ink);
   font-weight: 900;
   text-align: left;
 }
 
-.menu-dialog button:first-of-type {
+.menu-dialog .action-button {
+  justify-content: flex-start;
+}
+
+.menu-dialog .action-new {
   background: var(--own);
   color: white;
 }
 
-.menu-dialog button:nth-of-type(2) {
+.menu-dialog .action-preview,
+.menu-dialog .action-edit {
   background: #0f766e;
   color: white;
 }
 
-.menu-dialog button:nth-of-type(3) {
+.menu-dialog .action-export {
   background: #374151;
   color: white;
 }
@@ -1477,8 +1768,6 @@ dialog::backdrop {
   min-height: 48px;
   border-radius: 8px;
   padding: 0 12px;
-  background: var(--own);
-  color: white;
   font-weight: 900;
 }
 
@@ -1549,6 +1838,8 @@ dialog::backdrop {
   .live-meta,
   .live-score-table,
   .quality-grid span,
+  .history-filter,
+  .history-game details,
   .analysis-memo-list article,
   .history-item {
     background: var(--panel);
@@ -1564,7 +1855,7 @@ dialog::backdrop {
   .score-cell.own,
   .team-a,
   .history-item.own,
-  .analysis-summary article,
+  .analysis-summary .metric-own,
   .chart-block.emphasis {
     border-color: #1d4ed8;
     background: var(--own-soft);
@@ -1573,6 +1864,7 @@ dialog::backdrop {
   .score-cell.opp,
   .team-b,
   .history-item.opp,
+  .analysis-summary .metric-opp,
   .opponent-view {
     border-color: #991b1b;
     background: var(--opp-soft);
@@ -1584,9 +1876,10 @@ dialog::backdrop {
   .history-item.own .history-main,
   .history-item.own .history-player,
   .history-item.own .history-head strong,
-  .analysis-summary span,
+  .analysis-summary .metric-own span,
   .bar-row.own b,
-  .bar-row.own span {
+  .bar-row.own span,
+  .pm-row .plus {
     color: #bfdbfe;
   }
 
@@ -1596,11 +1889,13 @@ dialog::backdrop {
   .history-item.opp .history-main,
   .history-item.opp .history-player,
   .history-item.opp .history-head strong,
+  .analysis-summary .metric-opp span,
   .opponent-view strong,
   .opponent-view p,
   .opponent-view ul,
   .bar-row.opp b,
-  .bar-row.opp span {
+  .bar-row.opp span,
+  .pm-row .minus {
     color: #fecaca;
   }
 
@@ -1632,17 +1927,25 @@ dialog::backdrop {
     color: var(--ink);
   }
 
-  .menu-dialog button:first-of-type {
+  .action-save,
+  .action-preview,
+  .action-edit,
+  .menu-dialog .action-edit,
+  .menu-dialog .action-preview {
+    background: var(--accent);
+    color: white;
+  }
+
+  .action-new,
+  .action-start,
+  #startMatchButton.action-start,
+  .menu-dialog .action-new {
     background: var(--own);
     color: white;
   }
 
-  .menu-dialog button:nth-of-type(2) {
-    background: #0f766e;
-    color: white;
-  }
-
-  .menu-dialog button:nth-of-type(3) {
+  .action-export,
+  .menu-dialog .action-export {
     background: #374151;
     color: white;
   }
@@ -1652,9 +1955,23 @@ dialog::backdrop {
     color: white;
   }
 
+  .dialog-actions .action-save {
+    background: var(--accent);
+    color: white;
+  }
+
   .dialog-actions .secondary {
     background: #1f2937;
     color: var(--ink);
+  }
+
+  .secondary.action-button {
+    background: #1f2937;
+    color: var(--ink);
+  }
+
+  .secondary.action-button::before {
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .summary-dialog img {
@@ -1683,6 +2000,11 @@ dialog::backdrop {
 
   .bar-track {
     background: #293548;
+  }
+
+  .history-filter select {
+    background: #0f172a;
+    color: var(--ink);
   }
 }
 
@@ -1793,7 +2115,7 @@ dialog::backdrop {
   }
 
   .match-state {
-    width: 82px;
+    width: 64px;
     padding: 6px;
   }
 
