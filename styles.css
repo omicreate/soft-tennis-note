@@ -1758,6 +1758,17 @@ dialog::backdrop {
   object-fit: contain;
 }
 
+.app-footer {
+  display: grid;
+  gap: 3px;
+  margin: 14px 0 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
 .dialog-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1976,6 +1987,10 @@ dialog::backdrop {
 
   .summary-dialog img {
     background: #f7f8fb;
+  }
+
+  .app-footer {
+    color: var(--muted);
   }
 
   select,
