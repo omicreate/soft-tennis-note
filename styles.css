@@ -1066,6 +1066,10 @@ body:has(.tab[data-tab="history"].active) .team input {
   font-size: 0.78rem;
 }
 
+#playerControl .player-unknown.active {
+  color: white;
+}
+
 #playerControl .player-word {
   display: block;
   white-space: nowrap;
