@@ -152,6 +152,11 @@ const testCode = `
   assert.equal(summaryImage.conditionRows.some(([label]) => label === "日時"), true, "画像サマリーに試合条件を含める");
   assert.equal(summaryImage.gameScore, "0-0", "画像サマリーに全体ゲームスコアを含める");
   assert.equal(summaryImage.gameScoreRows[0][1], "1-1", "画像サマリーに各ゲームのポイントスコアを含める");
+  state.finished = true;
+  state.games = { A: 4, B: 2 };
+  const finishedSummaryImage = getSummaryImageData();
+  assert.deepEqual(finishedSummaryImage.resultRows[0], ["試合結果", "WINNER 自チーム"], "画像サマリーに勝った側を表示する");
+  assert.deepEqual(finishedSummaryImage.resultRows[1], ["ゲームスコア", "4-2"], "画像サマリーに最終ゲームスコアを表示する");
   saveAnalysisMemo();
   const summaryImageWithMemo = getSummaryImageData();
   assert.match(summaryImageWithMemo.analysisMemoTitle, /保存した分析/, "画像サマリーに保存した分析の見出しを含める");

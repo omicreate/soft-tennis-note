@@ -1459,6 +1459,12 @@ function getSummaryImageData() {
   const latestMemoScore = latestMemo
     ? `G ${latestMemo.games?.A ?? 0}-${latestMemo.games?.B ?? 0} / P ${latestMemo.points?.A ?? 0}-${latestMemo.points?.B ?? 0}`
     : "";
+  const winner = getWinnerTeam();
+  const matchResultLabel = state.finished
+    ? winner
+      ? `WINNER ${displayName(winner)}`
+      : "試合終了"
+    : "試合中";
   const weather = [info.weather, info.temperature ? `${info.temperature}℃` : "", info.wind !== "未記録" ? `風:${info.wind}` : ""]
     .filter(Boolean)
     .filter((item) => item !== "未記録")
@@ -1506,7 +1512,8 @@ function getSummaryImageData() {
       ["個人別 + / -", getTopPlayerPlusMinusLabel(), "neutral"]
     ],
     resultRows: [
-      ["試合結果", state.finished ? `${state.games.A}-${state.games.B}` : `途中 ${state.games.A}-${state.games.B}`],
+      ["試合結果", matchResultLabel],
+      ["ゲームスコア", state.finished ? `${state.games.A}-${state.games.B}` : `途中 ${state.games.A}-${state.games.B}`],
       ["現在ポイント", state.finished ? "終了" : `${pointLabel("A")}-${pointLabel("B")}`],
       ["各ゲーム", getGamePointScoreRows().slice(0, 9).map(([label, score]) => `${label} ${score}`).join(" / ")]
     ],

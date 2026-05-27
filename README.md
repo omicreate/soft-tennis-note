@@ -87,3 +87,4 @@ https://www.jsta.or.jp/about_softtennis/words
 - `manifest.webmanifest`: PWA用マニフェスト
 - `sw.js`: オフラインキャッシュ用サービスワーカー
 - `docs/requirements-design.md`: 要件・設計書
+- `docs/deployment.md`: 公開・テスト環境の運用メモ
