@@ -1016,6 +1016,14 @@ function inferResult(outcome) {
   return "イン";
 }
 
+function inferResultFromCourse(course, presetResult = "") {
+  const value = String(course || "");
+  if (presetResult === "ネット" || value === "ネット") return "ネット";
+  if (presetResult === "サイドアウト" || value.includes("サイドアウト")) return "サイドアウト";
+  if (presetResult === "バックアウト" || value.includes("バックアウト")) return "バックアウト";
+  return "イン";
+}
+
 function countByOutcomeType(type, points = state.points) {
   const outcomes = type === "score" ? SCORING_OUTCOMES : ERROR_OUTCOMES;
   return points.reduce((acc, point) => {
@@ -1849,9 +1857,7 @@ $(".half-court").addEventListener("click", (event) => {
   const button = event.target.closest("button[data-course]");
   if (!button) return;
   state.selectedCourse = button.dataset.course;
-  if (button.dataset.result) {
-    state.selectedResult = button.dataset.result;
-  }
+  state.selectedResult = inferResultFromCourse(button.dataset.course, button.dataset.result);
   saveState();
   renderScore();
 });

@@ -276,6 +276,10 @@ const scenarioCode = `
   applyOutcomePreset("ダブルフォールト");
   assert.equal(state.selectedCourse, "未記録", "DF時は到達位置を未記録へ戻す");
   assert.equal(state.selectedResult, "不明", "DF時はボール結果を不明へ戻す");
+  assert.equal(inferResultFromCourse("左奥"), "イン", "コート内の到達位置はインへ寄せる");
+  assert.equal(inferResultFromCourse("ネット"), "ネット", "ネット到達はネット");
+  assert.equal(inferResultFromCourse("左サイドアウト"), "サイドアウト", "サイドアウト到達はサイドアウト");
+  assert.equal(inferResultFromCourse("バックアウト"), "バックアウト", "バックアウト到達はバックアウト");
 `;
 
 createAppContext();
