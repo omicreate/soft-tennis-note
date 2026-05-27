@@ -26,11 +26,18 @@
 1. `soft-tennis-note` で修正する
 2. ローカルで動作確認する
 3. テストが通ることを確認する
-4. `soft-tennis-note-preview` に同じ内容を反映する
-5. GitHub Desktopで `soft-tennis-note-preview` をPushする
-6. スマホで `https://omicreate.github.io/soft-tennis-note-preview/` を確認する
-7. 問題なければ `soft-tennis-note` をPushする
-8. スマホで `https://omicreate.github.io/soft-tennis-note/` を確認する
+4. `CHANGELOG.md` と必要なMarkdownを更新する
+5. `index.html` の読み込みバージョンと `sw.js` のキャッシュ名をそろえる
+6. `soft-tennis-note-preview` に同じ内容を反映する
+7. `soft-tennis-note-preview` をPushする
+8. スマホで `https://omicreate.github.io/soft-tennis-note-preview/` を確認する
+9. 問題なければ `soft-tennis-note` をPushする
+10. スマホで `https://omicreate.github.io/soft-tennis-note/` を確認する
+
+## バージョン確認
+
+ブラウザ上では、画面下部とメニュー内の `バージョン情報` で現在の版を確認する。  
+公開URLのHTMLでは、`app.js?v=数字` と `styles.css?v=数字` が最新になっているかを見る。
 
 ## GitHub側で最初に必要な作業
 

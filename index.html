@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=119" />
-    <link rel="stylesheet" href="styles.css?v=119" />
+    <link rel="manifest" href="manifest.webmanifest?v=120" />
+    <link rel="stylesheet" href="styles.css?v=120" />
   </head>
   <body>
     <main class="app-shell">
@@ -335,6 +335,7 @@
       </section>
 
       <footer class="app-footer">
+        <span class="app-version">v120・2026-05-27</span>
         <span>© 2026 OmiCreate</span>
         <span>無断転載・再配布・改変利用を禁じます</span>
       </footer>
@@ -346,6 +347,19 @@
         <button class="action-button action-new" id="openNewMatchButton" type="button">新規試合</button>
         <button class="action-button action-edit" id="editMatchInfoButton" type="button">試合情報を編集</button>
         <button class="action-button action-preview" id="previewSummaryImageButton" type="button">サマリー画像を表示</button>
+        <details class="version-menu">
+          <summary>バージョン情報</summary>
+          <dl>
+            <div>
+              <dt>現在の版</dt>
+              <dd>v120・2026-05-27</dd>
+            </div>
+            <div>
+              <dt>更新内容</dt>
+              <dd>決着時の勝者表示を改善。変更履歴と運用メモを整備。</dd>
+            </div>
+          </dl>
+        </details>
         <details class="admin-menu">
           <summary>管理用</summary>
           <button class="action-button action-export" id="exportCsvButton" type="button">CSVを出力</button>
@@ -566,6 +580,6 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=119" defer></script>
+    <script src="app.js?v=120" defer></script>
   </body>
 </html>
