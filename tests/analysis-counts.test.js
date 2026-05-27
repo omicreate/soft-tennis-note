@@ -142,6 +142,17 @@ const testCode = `
   assert.match(elements.analysisSummary.innerHTML, /ミス失点/, "分析サマリーに自チームミス失点を表示する");
 
   setPoints([
+    point({ winner: "A", outcome: "ストローク得点", player: "A後衛" }),
+    point({ winner: "B", outcome: "ボレーミス", player: "B前衛" })
+  ]);
+  renderPlayerPlusMinus();
+  assert.match(elements.playerBars.innerHTML, /自後衛/, "個人別に自チーム後衛を表示する");
+  assert.match(elements.playerBars.innerHTML, /自前衛/, "個人別に自チーム前衛を0件でも表示する");
+  assert.match(elements.playerBars.innerHTML, /相手後衛/, "個人別に相手後衛を0件でも表示する");
+  assert.match(elements.playerBars.innerHTML, /相手前衛/, "個人別に相手前衛を表示する");
+  assert.match(elements.playerBars.innerHTML, /\\+0/, "未記録選手は0で表示する");
+
+  setPoints([
     point({ winner: "B", scoreBefore: score({ A: 0, B: 0 }) }),
     point({ winner: "A", scoreBefore: score({ A: 0, B: 1 }) })
   ]);

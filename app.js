@@ -1200,8 +1200,14 @@ function playerSortOrder(label) {
   return index === -1 ? 99 : index;
 }
 
+function getPlayerPlusMinusRoster() {
+  return state.matchType === "singles"
+    ? [displayName("A"), displayName("B")]
+    : [playerLabel("A後衛"), playerLabel("A前衛"), playerLabel("B後衛"), playerLabel("B前衛")];
+}
+
 function getPlayerPlusMinus() {
-  const counts = {};
+  const counts = Object.fromEntries(getPlayerPlusMinusRoster().map((label) => [label, { plus: 0, minus: 0 }]));
   state.points.forEach((point) => {
     const label = playerLabel(point.player);
     if (!label || label === "不明" || label === "未設定" || label === "未記録") return;
@@ -1212,13 +1218,12 @@ function getPlayerPlusMinus() {
 
   return Object.entries(counts)
     .map(([label, value]) => ({ label, plus: value.plus, minus: value.minus, diff: value.plus - value.minus }))
-    .filter((item) => item.plus > 0 || item.minus > 0)
     .sort((a, b) => playerSortOrder(a.label) - playerSortOrder(b.label) || b.plus + b.minus - (a.plus + a.minus));
 }
 
 function getTopPlayerPlusMinusLabel() {
   const entries = getPlayerPlusMinus();
-  if (!entries.length) return "未記録";
+  if (!entries.length || entries.every((entry) => entry.plus === 0 && entry.minus === 0)) return "未記録";
   const top = [...entries].sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff) || b.plus + b.minus - (a.plus + a.minus))[0];
   return `${top.label} +${top.plus} / -${top.minus} / ${formatPointDiff(top.diff)}`;
 }
