@@ -1,4 +1,4 @@
-const APP_VERSION = "v124";
+const APP_VERSION = "v125";
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
 const MAX_ARCHIVED_MATCHES = 30;
@@ -158,6 +158,7 @@ const elements = {
   openNewMatchButton: $("#openNewMatchButton"),
   editMatchInfoButton: $("#editMatchInfoButton"),
   previewSummaryImageButton: $("#previewSummaryImageButton"),
+  saveCurrentMatchButton: $("#saveCurrentMatchButton"),
   openArchiveButton: $("#openArchiveButton"),
   shareSummaryImageButton: $("#shareSummaryImageButton"),
   downloadSummaryImageButton: $("#downloadSummaryImageButton"),
@@ -342,6 +343,27 @@ function archiveCurrentMatch(reason = "manual") {
   };
   saveArchivedMatches([entry, ...archived]);
   return entry;
+}
+
+function sanitizeFileNamePart(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, "-")
+    .slice(0, 28);
+}
+
+function getSummaryImageFileName(date = new Date()) {
+  const timestamp = [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+    String(date.getHours()).padStart(2, "0"),
+    String(date.getMinutes()).padStart(2, "0"),
+    String(date.getSeconds()).padStart(2, "0")
+  ].join("");
+  const teams = [sanitizeFileNamePart(displayName("A")), sanitizeFileNamePart(displayName("B"))].filter(Boolean).join("-vs-");
+  return `soft-tennis-summary-${timestamp}${teams ? `-${teams}` : ""}.png`;
 }
 
 function getLegacyServeStart(point) {
@@ -1835,7 +1857,7 @@ function downloadSummaryPreview() {
   const dataUrl = elements.summaryPreviewImage.src || createSummaryImageDataUrl();
   const link = document.createElement("a");
   link.href = dataUrl;
-  link.download = `soft-tennis-summary-${new Date().toISOString().slice(0, 10)}.png`;
+  link.download = getSummaryImageFileName();
   link.click();
 }
 
@@ -1856,7 +1878,7 @@ async function shareSummaryPreview() {
   const text = "試合サマリー画像を共有します。";
   try {
     const blob = dataUrlToBlob(dataUrl);
-    const file = new File([blob], `soft-tennis-summary-${new Date().toISOString().slice(0, 10)}.png`, { type: "image/png" });
+    const file = new File([blob], getSummaryImageFileName(), { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {
       await navigator.share({ title, text, files: [file] });
       return;
@@ -1958,6 +1980,13 @@ elements.editMatchInfoButton.addEventListener("click", () => {
 elements.previewSummaryImageButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
   previewSummaryImage();
+});
+elements.saveCurrentMatchButton.addEventListener("click", () => {
+  const saved = archiveCurrentMatch("manual");
+  elements.saveCurrentMatchButton.textContent = saved ? "保存しました" : "保存する記録がありません";
+  setTimeout(() => {
+    elements.saveCurrentMatchButton.textContent = "今の試合を保存";
+  }, 1400);
 });
 elements.openArchiveButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
