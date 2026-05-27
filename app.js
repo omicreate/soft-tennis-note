@@ -1551,147 +1551,70 @@ function drawSummaryImage(canvas, summary) {
   const inkColor = "#1f2937";
   const mutedColor = "#64748b";
   const lineColor = "#d9e1ea";
-  const panelColor = "#ffffff";
-  const bgColor = "#f7f8fb";
   canvas.width = width;
   canvas.height = height;
-  ctx.fillStyle = bgColor;
+  ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
 
-  ctx.fillStyle = inkColor;
-  ctx.font = '900 52px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  ctx.fillText(summary.title, 56, 82);
-  ctx.font = '800 30px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  ctx.fillStyle = mutedColor;
-  ctx.fillText(summary.subtitle, 56, 128);
-
-  fillRoundedRect(ctx, 56, 160, 968, 352, 18, panelColor);
-  strokeRoundedRect(ctx, 56, 160, 968, 352, 18, lineColor);
-  ctx.fillStyle = inkColor;
-  ctx.font = '900 40px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  drawClampedText(ctx, summary.teams, 88, 220, 904, 48, 1);
-
-  ctx.font = '900 24px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  ctx.fillStyle = mutedColor;
-  ctx.fillText("ゲーム", 88, 282);
-  ctx.fillText("ポイント", 430, 282);
-  ctx.font = '900 56px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  ctx.fillStyle = inkColor;
-  ctx.fillText(summary.gameScore, 88, 344);
-  ctx.fillText(summary.currentPointScore, 430, 344);
-
-  ctx.font = '900 24px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  ctx.fillStyle = mutedColor;
-  ctx.fillText("各ゲーム", 88, 402);
-
-  summary.gameScoreRows.slice(0, 9).forEach(([label, score], index) => {
-    const col = index % 3;
-    const row = Math.floor(index / 3);
-    const x = 88 + col * 300;
-    const y = 424 + row * 52;
-    fillRoundedRect(ctx, x, y, 274, 40, 8, "#f8fafc");
-    strokeRoundedRect(ctx, x, y, 274, 40, 8, lineColor, 1.5);
-    ctx.fillStyle = mutedColor;
-    ctx.font = '900 22px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-    ctx.fillText(label, x + 14, y + 27);
-    ctx.fillStyle = inkColor;
-    ctx.font = '900 28px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-    ctx.textAlign = "right";
-    ctx.fillText(score, x + 252, y + 29);
-    ctx.textAlign = "left";
-  });
-
-  fillRoundedRect(ctx, 56, 544, 968, 258, 18, panelColor);
-  strokeRoundedRect(ctx, 56, 544, 968, 258, 18, lineColor);
-  ctx.fillStyle = inkColor;
-  ctx.font = '900 32px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  ctx.fillText("試合条件", 88, 598);
-  ctx.font = '800 25px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  summary.conditionRows.slice(0, 7).forEach(([label, value], index) => {
-    const col = index % 2;
-    const row = Math.floor(index / 2);
-    const x = 88 + col * 462;
-    const y = 648 + row * 38;
-    ctx.fillStyle = mutedColor;
-    ctx.fillText(label, x, y);
-    ctx.fillStyle = inkColor;
-    drawClampedText(ctx, value, x + 118, y, 318, 30, 1);
-  });
-
-  const summaryStyles = {
-    neutral: { line: lineColor, text: inkColor },
-    own: { line: ownColor, text: ownColor },
-    opp: { line: oppColor, text: oppColor }
+  const textColor = (tone) => (tone === "own" ? ownColor : tone === "opp" ? oppColor : inkColor);
+  const drawMd = (text, x, y, options = {}) => {
+    const size = options.size || 28;
+    const weight = options.weight || 800;
+    const lineHeight = options.lineHeight || Math.round(size * 1.45);
+    const maxLines = options.maxLines || 1;
+    const maxWidth = options.maxWidth || 952;
+    ctx.fillStyle = options.color || inkColor;
+    ctx.font = `${weight} ${size}px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif`;
+    return drawClampedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) + (options.after || 0);
   };
-  fillRoundedRect(ctx, 56, 836, 968, 238, 18, panelColor);
-  strokeRoundedRect(ctx, 56, 836, 968, 238, 18, lineColor);
-  ctx.fillStyle = inkColor;
-  ctx.font = '900 32px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  ctx.fillText("試合の要点", 88, 890);
-  summary.summaryRows.forEach(([label, value, tone], index) => {
-    const col = index % 2;
-    const row = Math.floor(index / 2);
-    const x = 88 + col * 456;
-    const y = 932 + row * 42;
-    const style = summaryStyles[tone] || summaryStyles.neutral;
-    ctx.fillStyle = style.line;
-    ctx.fillRect(x, y - 24, 6, 30);
-    ctx.fillStyle = mutedColor;
-    ctx.font = '800 24px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-    ctx.fillText(label, x + 18, y);
-    ctx.fillStyle = style.text;
-    ctx.font = '900 28px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-    ctx.textAlign = "right";
-    ctx.fillText(fitText(ctx, value, 218), x + 404, y);
-    ctx.textAlign = "left";
-  });
+  const bullet = (text, y, tone = "neutral", maxLines = 1) =>
+    drawMd(`- ${text}`, 78, y, { size: 27, lineHeight: 36, maxLines, color: textColor(tone), after: 4 });
+  const heading = (text, y) => drawMd(`## ${text}`, 64, y, { size: 32, weight: 900, lineHeight: 42, after: 6 });
 
-  fillRoundedRect(ctx, 56, 1104, 968, 294, 18, panelColor);
-  strokeRoundedRect(ctx, 56, 1104, 968, 294, 18, lineColor);
-  ctx.fillStyle = "#0f766e";
-  ctx.font = '900 31px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  drawClampedText(ctx, summary.quickTitle, 88, 1154, 850, 34, 1);
-  ctx.font = '800 26px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  let y = 1198;
-  summary.quickItems.slice(0, 2).forEach((item, index) => {
-    ctx.fillStyle = "#0f766e";
-    ctx.fillText(`${index + 1}`, 104, y);
-    ctx.fillStyle = inkColor;
-    y = drawClampedText(ctx, item, 142, y, 820, 31, 1);
-    y += 6;
-  });
+  let y = 76;
+  y = drawMd(`# ${summary.title}`, 56, y, { size: 46, weight: 900, lineHeight: 58, after: 8 });
+  y = drawMd(`> ${summary.subtitle}`, 64, y, { size: 27, weight: 800, color: mutedColor, lineHeight: 36, after: 10 });
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(56, y + 4);
+  ctx.lineTo(1024, y + 4);
+  ctx.stroke();
+  y += 42;
 
-  ctx.fillStyle = mutedColor;
-  ctx.font = '900 27px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  drawClampedText(ctx, summary.reviewTitle, 88, 1290, 850, 30, 1);
-  ctx.font = '800 25px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  y = 1330;
-  summary.reviewItems.slice(0, 2).forEach((item, index) => {
-    ctx.fillStyle = mutedColor;
-    ctx.fillText(`${index + 1}`, 104, y);
-    ctx.fillStyle = inkColor;
-    y = drawClampedText(ctx, item, 142, y, 820, 30, 1);
-    y += 5;
-  });
+  y = heading("試合", y);
+  y = bullet(summary.teams, y, "neutral", 1);
+  y = bullet(`ゲーム ${summary.gameScore} / ポイント ${summary.currentPointScore}`, y, "neutral", 1);
+  y = bullet(`各ゲーム ${summary.gameScoreRows.slice(0, 9).map(([label, score]) => `${label} ${score}`).join(" / ")}`, y, "neutral", 2);
+  y += 10;
 
-  fillRoundedRect(ctx, 56, 1426, 968, 316, 18, panelColor);
-  strokeRoundedRect(ctx, 56, 1426, 968, 316, 18, lineColor);
-  ctx.fillStyle = inkColor;
-  ctx.font = '900 34px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  ctx.fillText("詳しい数字", 88, 1484);
-  ctx.font = '800 25px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  y = 1536;
-  [...summary.detailRows, ...summary.phaseRows].slice(0, 8).forEach(([label, value], index) => {
-    const col = index % 2;
-    const row = Math.floor(index / 2);
-    const x = 88 + col * 456;
-    const rowY = 1536 + row * 44;
-    ctx.fillStyle = mutedColor;
-    ctx.fillText(label, x, rowY);
-    ctx.fillStyle = inkColor;
-    ctx.textAlign = "right";
-    ctx.fillText(fitText(ctx, value, 210), x + 404, rowY);
-    ctx.textAlign = "left";
+  y = heading("条件", y);
+  summary.conditionRows.slice(0, 5).forEach(([label, value]) => {
+    y = bullet(`${label}: ${value}`, y, "neutral", 1);
+  });
+  y += 10;
+
+  y = heading("試合の要点", y);
+  summary.summaryRows.forEach(([label, value, tone]) => {
+    y = bullet(`${label}: ${value}`, y, tone, 1);
+  });
+  y += 10;
+
+  y = heading(summary.quickTitle, y);
+  summary.quickItems.slice(0, 2).forEach((item) => {
+    y = bullet(item, y, "neutral", 2);
+  });
+  y += 8;
+
+  y = heading(summary.reviewTitle, y);
+  summary.reviewItems.slice(0, 2).forEach((item) => {
+    y = bullet(item, y, "neutral", 2);
+  });
+  y += 8;
+
+  y = heading("詳しい数字", y);
+  [...summary.detailRows, ...summary.phaseRows].slice(0, 8).forEach(([label, value]) => {
+    y = bullet(`${label}: ${value}`, y, "neutral", 1);
   });
 
   ctx.fillStyle = mutedColor;
