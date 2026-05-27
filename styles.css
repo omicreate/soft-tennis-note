@@ -1732,6 +1732,26 @@ dialog::backdrop {
   color: white;
 }
 
+.admin-menu {
+  display: grid;
+  gap: 8px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: #f8fafc;
+}
+
+.admin-menu summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.admin-menu .action-button {
+  margin-top: 8px;
+}
+
 .menu-dialog .secondary {
   background: #edf0ec;
   color: var(--ink);
@@ -1959,6 +1979,10 @@ dialog::backdrop {
   .menu-dialog .action-export {
     background: #374151;
     color: white;
+  }
+
+  .admin-menu {
+    background: #111827;
   }
 
   .dialog-actions button {
