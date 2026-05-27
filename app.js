@@ -563,11 +563,17 @@ function renderScore() {
   renderMatchInfo();
 
   if (state.finished) {
-    const winner = state.games.A > state.games.B ? "A" : "B";
-    elements.matchStatus.textContent = `${displayName(winner)} 勝利`;
+    const winner = getWinnerTeam();
+    elements.matchStatus.innerHTML = winner
+      ? `<span class="winner-label">WINNER</span><span class="winner-side">${escapeHtml(shortSideName(winner))}</span>`
+      : `<span class="winner-label">END</span>`;
+    elements.serverLabel.textContent = "試合終了";
+    elements.serverLabel.title = winner ? `WINNER: ${displayName(winner)}` : "試合終了";
   } else if (state.matchFormat === "final") {
+    elements.matchStatus.innerHTML = "";
     elements.matchStatus.textContent = "FG";
   } else {
+    elements.matchStatus.innerHTML = "";
     elements.matchStatus.textContent = getCompactMatchStatus();
   }
 
@@ -599,8 +605,14 @@ function renderLiveScore() {
   elements.liveTeamBGames.textContent = state.games.B;
   elements.liveTeamAPoints.textContent = pointLabel("A");
   elements.liveTeamBPoints.textContent = pointLabel("B");
-  elements.liveServerLabel.textContent = `S ${shortSideName(state.server)}`;
-  elements.liveServerLabel.title = `サービス: ${displayName(state.server)}`;
+  if (state.finished) {
+    const winner = getWinnerTeam();
+    elements.liveServerLabel.textContent = winner ? `WIN ${shortSideName(winner)}` : "試合終了";
+    elements.liveServerLabel.title = winner ? `WINNER: ${displayName(winner)}` : "試合終了";
+  } else {
+    elements.liveServerLabel.textContent = `S ${shortSideName(state.server)}`;
+    elements.liveServerLabel.title = `サービス: ${displayName(state.server)}`;
+  }
 }
 
 function renderMatchPointAlert() {
@@ -633,6 +645,11 @@ function getCompactMatchStatus() {
   if (state.finished) return "END";
   if (state.matchFormat === "final") return "FG";
   return `${state.games.A + state.games.B + 1}G`;
+}
+
+function getWinnerTeam() {
+  if (!state.finished || state.games.A === state.games.B) return "";
+  return state.games.A > state.games.B ? "A" : "B";
 }
 
 function renderMatchInfo() {

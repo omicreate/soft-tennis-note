@@ -476,7 +476,22 @@ body:has(.tab[data-tab="history"].active) .team input {
   font-weight: 950;
   line-height: 1.1;
   word-break: keep-all;
-  white-space: nowrap;
+  white-space: normal;
+}
+
+.match-state .winner-label,
+.match-state .winner-side {
+  display: block;
+}
+
+.match-state .winner-label {
+  font-size: 0.62rem;
+  letter-spacing: 0;
+}
+
+.match-state .winner-side {
+  margin-top: 2px;
+  font-size: 1.08rem;
 }
 
 .match-state small {

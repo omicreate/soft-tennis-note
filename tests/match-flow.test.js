@@ -202,7 +202,11 @@ const scenarioCode = `
     assert.equal(JSON.stringify(state.gamePoints), JSON.stringify({ A: 0, B: 0 }), "finished point reset");
     assert.equal(state.finished, true, "match finished");
     assert.match(state.matchInfo.endTime, /^\\d{2}:\\d{2}$/, "終了時刻は試合終了時に自動入力");
-    assert.equal(testElements.get("#matchStatus").textContent, "検証 " + (matchType === "singles" ? "自分" : "自チーム") + " 勝利", "winner label");
+    assert.match(testElements.get("#matchStatus").innerHTML, /WINNER/, "finished winner label");
+    assert.match(testElements.get("#matchStatus").innerHTML, matchType === "singles" ? /自分|自/ : /自チーム|自/, "finished winner side");
+    assert.equal(testElements.get("#serverLabel").textContent, "試合終了", "finished sub label");
+    assert.equal(testElements.get("#liveMatchStatus").textContent, "END", "finished live status");
+    assert.match(testElements.get("#liveServerLabel").textContent, /WIN/, "finished live result label");
 
     const finishedSnapshot = structuredClone({ games: state.games, points: state.gamePoints, count: state.points.length, server: state.server });
     addPoint("B");
