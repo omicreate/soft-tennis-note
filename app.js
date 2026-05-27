@@ -1438,9 +1438,11 @@ function getSummaryImageData() {
     ].filter(Boolean),
     summaryRows: [
       ["ポイント差", formatPointDiff(data.pointDiff), pointDiffTone(data.pointDiff)],
+      ["記録ポイント", data.total, "neutral"],
       ["得点パターン", data.ownScoredByPattern, "own"],
       ["相手ミス得点", data.ownPointsByOpponentError, "own"],
-      ["ミス失点", data.ownLostByOwnError, "opp"]
+      ["ミス失点", data.ownLostByOwnError, "opp"],
+      ["個人別 + / -", getTopPlayerPlusMinusLabel(), "neutral"]
     ],
     analysisMemoTitle: latestMemo ? `保存した分析 ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "あとで確認すること",
     analysisMemoItems: latestMemo ? [...(latestMemo.quickItems || []), ...(latestMemo.reviewItems || latestMemo.items || [])].slice(0, 4) : buildPriorityItems(),
@@ -1449,8 +1451,10 @@ function getSummaryImageData() {
       ["主な得点パターン", `${data.topScore[0]} ${data.topScore[1]}`],
       ["相手の主なミス", `${opponentError[0]} ${opponentError[1]}`],
       ["主な失点ミス", `${data.topError[0]} ${data.topError[1]}`],
-      ["個人別 + / -", getTopPlayerPlusMinusLabel()],
-      ["第1サービス開始率", data.firstServeRate === null ? "-" : `${data.firstServeRate}%`]
+      ["第1サービス開始率", data.firstServeRate === null ? "-" : `${data.firstServeRate}%`],
+      ["ダブルフォールト", data.ownDoubleFaults],
+      ["レシーブミス", data.ownReceiveMisses],
+      ["最初の2本で失点", data.ownEarlyLost]
     ],
     phaseRows: Object.entries(phaseCounts).filter(([, value]) => value > 0)
   };
@@ -1611,32 +1615,40 @@ function drawSummaryImage(canvas, summary) {
   });
 
   const summaryStyles = {
-    neutral: { border: inkColor, fill: "#ffffff", text: inkColor },
-    own: { border: ownColor, fill: "#ffffff", text: ownColor },
-    opp: { border: oppColor, fill: "#ffffff", text: oppColor }
+    neutral: { line: lineColor, text: inkColor },
+    own: { line: ownColor, text: ownColor },
+    opp: { line: oppColor, text: oppColor }
   };
+  fillRoundedRect(ctx, 56, 836, 968, 238, 18, panelColor);
+  strokeRoundedRect(ctx, 56, 836, 968, 238, 18, lineColor);
+  ctx.fillStyle = inkColor;
+  ctx.font = '900 32px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
+  ctx.fillText("試合の要点", 88, 890);
   summary.summaryRows.forEach(([label, value, tone], index) => {
     const col = index % 2;
     const row = Math.floor(index / 2);
-    const x = 56 + col * 492;
-    const y = 836 + row * 126;
+    const x = 88 + col * 456;
+    const y = 932 + row * 42;
     const style = summaryStyles[tone] || summaryStyles.neutral;
-    fillRoundedRect(ctx, x, y, 476, 104, 14, style.fill);
-    strokeRoundedRect(ctx, x, y, 476, 104, 14, style.border, 4);
+    ctx.fillStyle = style.line;
+    ctx.fillRect(x, y - 24, 6, 30);
+    ctx.fillStyle = mutedColor;
+    ctx.font = '800 24px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
+    ctx.fillText(label, x + 18, y);
     ctx.fillStyle = style.text;
     ctx.font = '900 28px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-    ctx.fillText(label, x + 24, y + 39);
-    ctx.font = '900 48px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-    ctx.fillText(String(value), x + 24, y + 88);
+    ctx.textAlign = "right";
+    ctx.fillText(fitText(ctx, value, 218), x + 404, y);
+    ctx.textAlign = "left";
   });
 
-  fillRoundedRect(ctx, 56, 1118, 968, 318, 18, panelColor);
-  strokeRoundedRect(ctx, 56, 1118, 968, 318, 18, lineColor);
+  fillRoundedRect(ctx, 56, 1104, 968, 294, 18, panelColor);
+  strokeRoundedRect(ctx, 56, 1104, 968, 294, 18, lineColor);
   ctx.fillStyle = "#0f766e";
   ctx.font = '900 34px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  drawClampedText(ctx, summary.analysisMemoTitle, 88, 1176, 850, 38, 1);
+  drawClampedText(ctx, summary.analysisMemoTitle, 88, 1160, 850, 38, 1);
   ctx.font = '800 29px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  let y = 1226;
+  let y = 1210;
   summary.analysisMemoItems.slice(0, 4).forEach((item, index) => {
     ctx.fillStyle = "#0f766e";
     ctx.fillText(`${index + 1}`, 104, y);
@@ -1645,21 +1657,24 @@ function drawSummaryImage(canvas, summary) {
     y += 8;
   });
 
-  fillRoundedRect(ctx, 56, 1472, 968, 270, 18, panelColor);
-  strokeRoundedRect(ctx, 56, 1472, 968, 270, 18, lineColor);
+  fillRoundedRect(ctx, 56, 1426, 968, 316, 18, panelColor);
+  strokeRoundedRect(ctx, 56, 1426, 968, 316, 18, lineColor);
   ctx.fillStyle = inkColor;
   ctx.font = '900 34px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  ctx.fillText("試合後に見る数字", 88, 1530);
-  ctx.font = '800 28px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  y = 1584;
-  [...summary.detailRows, ...summary.phaseRows].slice(0, 5).forEach(([label, value]) => {
+  ctx.fillText("詳しい数字", 88, 1484);
+  ctx.font = '800 25px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
+  y = 1536;
+  [...summary.detailRows, ...summary.phaseRows].slice(0, 8).forEach(([label, value], index) => {
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    const x = 88 + col * 456;
+    const rowY = 1536 + row * 44;
     ctx.fillStyle = mutedColor;
-    ctx.fillText(label, 88, y);
+    ctx.fillText(label, x, rowY);
     ctx.fillStyle = inkColor;
     ctx.textAlign = "right";
-    ctx.fillText(fitText(ctx, value, 360), 984, y);
+    ctx.fillText(fitText(ctx, value, 210), x + 404, rowY);
     ctx.textAlign = "left";
-    y += 42;
   });
 
   ctx.fillStyle = mutedColor;
