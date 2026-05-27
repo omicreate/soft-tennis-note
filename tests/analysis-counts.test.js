@@ -161,6 +161,7 @@ const testCode = `
   assert.equal(summaryImage.summaryRows.some(([label]) => label === "ミス失点"), true, "画像サマリーに重要指標を含める");
   assert.equal(Array.isArray(summaryImage.priorityItems), true, "画像サマリーにあとで確認することを含める");
   assert.equal(summaryImage.conditionRows.some(([label]) => label === "日時"), true, "画像サマリーに試合条件を含める");
+  assert.deepEqual(summaryImage.playerRows.map(([label]) => label), ["自チーム後衛", "自チーム前衛", "相手後衛", "相手前衛"], "画像サマリーに全プレイヤー名を含める");
   assert.equal(summaryImage.gameScore, "0-0", "画像サマリーに全体ゲームスコアを含める");
   assert.equal(summaryImage.gameScoreRows[0][1], "1-1", "画像サマリーに各ゲームのポイントスコアを含める");
   state.finished = true;

@@ -1,4 +1,4 @@
-const APP_VERSION = "v123";
+const APP_VERSION = "v124";
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
 const MAX_ARCHIVED_MATCHES = 30;
@@ -1572,6 +1572,18 @@ function getSummaryImageData() {
   const tournament = info.tournament && info.tournament !== "未記録" ? info.tournament : "";
   const venueName = info.venueName && info.venueName !== "未記録" ? info.venueName : "";
   const timeRange = getMatchTimeRange(info);
+  const playerRows =
+    state.matchType === "singles"
+      ? [
+          ["自分", displayName("A")],
+          ["相手", displayName("B")]
+        ]
+      : [
+          ["自チーム後衛", playerLabel("A後衛")],
+          ["自チーム前衛", playerLabel("A前衛")],
+          ["相手後衛", playerLabel("B後衛")],
+          ["相手前衛", playerLabel("B前衛")]
+        ];
   const conditionRows = [
     ["日時", [info.date || "日付未記録", info.timeOfDay !== "未記録" ? info.timeOfDay : "", timeRange].filter(Boolean).join(" / ")],
     ["大会名", tournament || "未記録"],
@@ -1587,6 +1599,7 @@ function getSummaryImageData() {
     title: "ソフトテニス試合ノート",
     subtitle: `${typeLabel} / ${matchFormatLabel()}`,
     teams: `${displayName("A")}  vs  ${displayName("B")}`,
+    playerRows,
     gameScore: `${state.games.A}-${state.games.B}`,
     currentPointScore: state.finished ? "終了" : `${pointLabel("A")}-${pointLabel("B")}`,
     gameScoreRows: getGamePointScoreRows(),
@@ -1757,6 +1770,9 @@ function drawSummaryImage(canvas, summary) {
 
   y = heading("基本情報", y);
   y = bullet(summary.teams, y, "neutral", 1);
+  summary.playerRows.forEach(([label, value]) => {
+    y = bullet(`${label}: ${value}`, y, "neutral", 1);
+  });
   summary.conditionRows.slice(0, 2).forEach(([label, value]) => {
     y = bullet(`${label}: ${value}`, y, "neutral", 1);
   });
