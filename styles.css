@@ -1958,6 +1958,16 @@ dialog::backdrop {
   text-align: center;
 }
 
+.archive-storage {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
 .archive-list {
   display: grid;
   gap: 10px;

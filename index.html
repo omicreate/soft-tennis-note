@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=133" />
-    <link rel="stylesheet" href="styles.css?v=133" />
+    <link rel="manifest" href="manifest.webmanifest?v=134" />
+    <link rel="stylesheet" href="styles.css?v=134" />
   </head>
   <body>
     <main class="app-shell">
@@ -337,7 +337,7 @@
       </section>
 
       <footer class="app-footer">
-        <span class="app-version">v133・2026-05-28</span>
+        <span class="app-version">v134・2026-05-28</span>
         <span>© 2026 OmiCreate</span>
         <span>無断転載・再配布・改変利用を禁じます</span>
       </footer>
@@ -356,11 +356,11 @@
           <dl>
             <div>
               <dt>現在の版</dt>
-              <dd>v133・2026-05-28</dd>
+              <dd>v134・2026-05-28</dd>
             </div>
             <div>
               <dt>更新内容</dt>
-              <dd>試合データの保存・読込表記を改善。</dd>
+              <dd>保存済み試合の件数と容量目安を表示。</dd>
             </div>
           </dl>
         </details>
@@ -407,6 +407,7 @@
           </label>
           <span id="archiveCountLabel">0件</span>
         </div>
+        <p class="archive-storage" id="archiveStorageLabel">保存状況: 0件 / 約0KB</p>
         <div class="archive-list" id="archivedMatchList"></div>
         <button class="secondary action-button action-close" value="cancel" type="submit">閉じる</button>
       </form>
@@ -613,6 +614,6 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=133" defer></script>
+    <script src="app.js?v=134" defer></script>
   </body>
 </html>

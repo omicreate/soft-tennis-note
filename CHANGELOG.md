@@ -10,6 +10,17 @@
 - テスト環境で確認してから本番へ反映する
 - 仕様や運用に関わる変更は、必要に応じて `README.md`、`docs/00-document-map.md`、`docs/requirements.md`、`docs/basic-design.md`、`docs/detailed-design.md`、`docs/test-design.md`、`docs/deployment.md` も更新する
 
+## v134 - 2026-05-28
+
+### 追加
+
+- 保存済み試合画面に、保存件数と端末内で使っている容量の目安を表示
+- 保存容量の目安表示を単体テスト、静的チェック、スマホE2E確認に追加
+
+### 変更
+
+- キャッシュ更新用の表示バージョン、読み込みパラメータ、Service Workerキャッシュ名をv134へ更新
+
 ## v133 - 2026-05-28
 
 ### 変更

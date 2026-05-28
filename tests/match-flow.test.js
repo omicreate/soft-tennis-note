@@ -338,6 +338,9 @@ const scenarioCode = `
   testElements.get("#archiveSortSelect").value = "newest";
   renderArchivedMatches();
   assert.equal(testElements.get("#archiveCountLabel").textContent, "1/2件", "検索時に絞り込み件数を表示");
+  assert.match(testElements.get("#archiveStorageLabel").textContent, /保存状況: 2件 \\/ 約/, "保存件数と容量目安を表示");
+  assert.equal(formatStorageSize(512), "512B", "B単位で容量表示");
+  assert.equal(formatStorageSize(1536), "1.5KB", "KB単位で容量表示");
   assert.match(testElements.get("#archivedMatchList").innerHTML, /青チーム/, "検索結果に該当試合を表示");
   assert.doesNotMatch(testElements.get("#archivedMatchList").innerHTML, /黒チーム/, "検索結果から非該当試合を非表示");
   window.confirm = () => false;

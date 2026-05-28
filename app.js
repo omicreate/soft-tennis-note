@@ -1,4 +1,4 @@
-const APP_VERSION = "v133";
+const APP_VERSION = "v134";
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
 const MAX_ARCHIVED_MATCHES = 30;
@@ -157,6 +157,7 @@ const elements = {
   archiveSearchInput: $("#archiveSearchInput"),
   archiveSortSelect: $("#archiveSortSelect"),
   archiveCountLabel: $("#archiveCountLabel"),
+  archiveStorageLabel: $("#archiveStorageLabel"),
   menuButton: $("#menuButton"),
   openNewMatchButton: $("#openNewMatchButton"),
   editMatchInfoButton: $("#editMatchInfoButton"),
@@ -316,6 +317,35 @@ function loadArchivedMatches() {
 
 function saveArchivedMatches(matches) {
   localStorage.setItem(ARCHIVE_STORAGE_KEY, JSON.stringify(matches.slice(0, MAX_ARCHIVED_MATCHES)));
+}
+
+function estimateTextBytes(text) {
+  try {
+    return encodeURIComponent(String(text || "")).replace(/%[0-9A-F]{2}/g, "x").length;
+  } catch {
+    return String(text || "").length;
+  }
+}
+
+function formatStorageSize(bytes) {
+  const safeBytes = Math.max(0, Number(bytes) || 0);
+  if (safeBytes < 1024) return `${safeBytes}B`;
+  if (safeBytes < 1024 * 1024) return `${(safeBytes / 1024).toFixed(safeBytes < 10 * 1024 ? 1 : 0)}KB`;
+  return `${(safeBytes / 1024 / 1024).toFixed(1)}MB`;
+}
+
+function getAppStorageUsage() {
+  const currentText = localStorage.getItem(STORAGE_KEY) || "";
+  const archiveText = localStorage.getItem(ARCHIVE_STORAGE_KEY) || "";
+  const archivedMatches = loadArchivedMatches();
+  const currentBytes = estimateTextBytes(currentText);
+  const archiveBytes = estimateTextBytes(archiveText);
+  return {
+    archivedCount: archivedMatches.length,
+    currentBytes,
+    archiveBytes,
+    totalBytes: currentBytes + archiveBytes
+  };
 }
 
 function matchHasRecordableData(matchState = state) {
@@ -2012,6 +2042,10 @@ function renderArchivedMatches() {
   const filtered = sortArchivedMatches(filterArchivedMatches(archived, query), elements.archiveSortSelect?.value || "newest");
   if (elements.archiveCountLabel) {
     elements.archiveCountLabel.textContent = query ? `${filtered.length}/${archived.length}件` : `${archived.length}件`;
+  }
+  if (elements.archiveStorageLabel) {
+    const usage = getAppStorageUsage();
+    elements.archiveStorageLabel.textContent = `保存状況: ${usage.archivedCount}件 / 約${formatStorageSize(usage.totalBytes)}`;
   }
   elements.archivedMatchList.innerHTML = filtered.length
     ? filtered
