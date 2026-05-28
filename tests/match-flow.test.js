@@ -98,7 +98,7 @@ function createAppContext(savedStateText = null) {
 
   vm.createContext(context);
   vm.runInContext(
-    `${fs.readFileSync("app-config.js", "utf8")}\n${fs.readFileSync("app-analysis.js", "utf8")}\n${fs.readFileSync("app.js", "utf8")}`,
+    `${fs.readFileSync("app-config.js", "utf8")}\n${fs.readFileSync("app-analysis.js", "utf8")}\n${fs.readFileSync("app-storage.js", "utf8")}\n${fs.readFileSync("app.js", "utf8")}`,
     context,
     { filename: "app.js" }
   );
@@ -317,6 +317,7 @@ const scenarioCode = `
         matchType: "doubles",
         teams: { A: "青チーム", B: "赤チーム" },
         players: { ARear: "青 後衛", AFront: "青 前衛", BRear: "赤 後衛", BFront: "赤 前衛" },
+        games: { A: 4, B: 2 },
         matchInfo: { date: "2026-05-28", tournament: "春季大会", venueName: "中央公園" }
       }
     },
@@ -330,6 +331,7 @@ const scenarioCode = `
         matchType: "singles",
         teams: { A: "白チーム", B: "黒チーム" },
         players: { ARear: "白 後衛", AFront: "白 前衛", BRear: "黒 後衛", BFront: "黒 前衛" },
+        games: { A: 2, B: 4 },
         matchInfo: { date: "2026-05-27", tournament: "練習試合", venueName: "南コート" }
       }
     }
@@ -341,6 +343,9 @@ const scenarioCode = `
   assert.deepEqual(filterArchivedMatches(loadArchivedMatches(), { matchType: "singles" }).map((entry) => entry.id), ["archive-2"], "保存済み試合をシングルスで絞り込む");
   assert.deepEqual(filterArchivedMatches(loadArchivedMatches(), { status: "finished" }).map((entry) => entry.id), ["archive-1"], "保存済み試合を終了で絞り込む");
   assert.deepEqual(filterArchivedMatches(loadArchivedMatches(), { status: "unfinished" }).map((entry) => entry.id), ["archive-2"], "保存済み試合を途中で絞り込む");
+  assert.deepEqual(filterArchivedMatches(loadArchivedMatches(), { result: "own-win" }).map((entry) => entry.id), ["archive-1"], "保存済み試合を自チーム勝ちで絞り込む");
+  assert.deepEqual(filterArchivedMatches(loadArchivedMatches(), { result: "unfinished" }).map((entry) => entry.id), ["archive-2"], "保存済み試合を未終了で絞り込む");
+  assert.deepEqual(filterArchivedMatches(loadArchivedMatches(), { tournament: "春季大会" }).map((entry) => entry.id), ["archive-1"], "保存済み試合を大会名で絞り込む");
   assert.equal(filterArchivedMatches(loadArchivedMatches(), { date: "dated" }).length, 2, "日付ありの保存済み試合を絞り込む");
   assert.deepEqual(sortArchivedMatches(loadArchivedMatches(), "newest").map((entry) => entry.id), ["archive-1", "archive-2"], "保存済み試合を新しい順で並べる");
   assert.deepEqual(sortArchivedMatches(loadArchivedMatches(), "oldest").map((entry) => entry.id), ["archive-2", "archive-1"], "保存済み試合を古い順で並べる");
@@ -349,9 +354,12 @@ const scenarioCode = `
   testElements.get("#archiveDateFilterSelect").value = "all";
   testElements.get("#archiveTypeFilterSelect").value = "doubles";
   testElements.get("#archiveStatusFilterSelect").value = "finished";
+  testElements.get("#archiveResultFilterSelect").value = "own-win";
+  testElements.get("#archiveTournamentFilterSelect").value = "春季大会";
   testElements.get("#archiveSortSelect").value = "newest";
   renderArchivedMatches();
   assert.equal(testElements.get("#archiveCountLabel").textContent, "1/2件", "検索時に絞り込み件数を表示");
+  assert.match(testElements.get("#archiveTournamentFilterSelect").innerHTML, /春季大会/, "保存済み試合の大会候補を表示");
   assert.match(testElements.get("#archiveStorageLabel").textContent, /保存状況: 2件 \\/ 約/, "保存件数と容量目安を表示");
   assert.equal(formatStorageSize(512), "512B", "B単位で容量表示");
   assert.equal(formatStorageSize(1536), "1.5KB", "KB単位で容量表示");

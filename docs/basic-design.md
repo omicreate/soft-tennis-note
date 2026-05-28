@@ -1,7 +1,7 @@
 # 基本設計書・方式設計書
 
 最終更新: 2026-05-28  
-対象バージョン: v139
+対象バージョン: v140
 
 ## 1. 全体方式
 
@@ -12,6 +12,7 @@
   ├─ index.html
   ├─ app-config.js
   ├─ app-analysis.js
+  ├─ app-storage.js
   ├─ styles.css
   ├─ app.js
   ├─ sw.js
@@ -136,6 +137,7 @@ soft-tennis-logger-archive-v1
 - `index.html`
 - `app-config.js`
 - `app-analysis.js`
+- `app-storage.js`
 - `styles.css`
 - `app.js`
 - `manifest.webmanifest`
@@ -145,11 +147,11 @@ soft-tennis-logger-archive-v1
 例:
 
 ```text
-soft-tennis-logger-v139
+soft-tennis-logger-v140
 ```
 
 `index.html` の読み込みバージョン、`app-config.js` の `APP_VERSION`、`sw.js` のキャッシュ名はそろえる。
-JavaScriptは `app-config.js`、`app-analysis.js`、`app.js` の順に読み込む。
+JavaScriptは `app-config.js`、`app-analysis.js`、`app-storage.js`、`app.js` の順に読み込む。
 
 ## 6. セキュリティ方式
 

@@ -10,6 +10,20 @@
 - テスト環境で確認してから本番へ反映する
 - 仕様や運用に関わる変更は、必要に応じて `README.md`、`docs/00-document-map.md`、`docs/requirements.md`、`docs/basic-design.md`、`docs/detailed-design.md`、`docs/test-design.md`、`docs/deployment.md` も更新する
 
+## v140 - 2026-05-28
+
+### 追加
+
+- 保存済み試合に `勝敗` フィルターを追加
+- 保存済み試合に `大会` フィルターを追加し、保存済みデータの大会名から候補を自動生成
+- `app-storage.js` を追加し、保存済み試合の読み書きと容量表示処理を `app.js` から分離
+
+### 変更
+
+- `index.html` の読み込み順を `app-config.js`、`app-analysis.js`、`app-storage.js`、`app.js` に整理
+- Service Workerのキャッシュ対象に `app-storage.js` を追加
+- キャッシュ更新用の表示バージョン、読み込みパラメータ、Service Workerキャッシュ名をv140へ更新
+
 ## v139 - 2026-05-28
 
 ### 追加

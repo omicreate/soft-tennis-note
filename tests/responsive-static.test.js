@@ -14,14 +14,17 @@ assert.match(html, /id="archiveSearchInput"/, "保存済み試合の検索欄が
 assert.match(html, /id="archiveDateFilterSelect"/, "保存済み試合の日付絞り込みがある");
 assert.match(html, /id="archiveTypeFilterSelect"/, "保存済み試合の種目絞り込みがある");
 assert.match(html, /id="archiveStatusFilterSelect"/, "保存済み試合の状態絞り込みがある");
+assert.match(html, /id="archiveResultFilterSelect"/, "保存済み試合の勝敗絞り込みがある");
+assert.match(html, /id="archiveTournamentFilterSelect"/, "保存済み試合の大会絞り込みがある");
 assert.match(html, /id="archiveSortSelect"/, "保存済み試合の並び替えがある");
 assert.match(html, /id="archiveCountLabel"/, "保存済み試合の件数表示がある");
 assert.match(html, /id="archiveStorageLabel"/, "保存容量の目安表示がある");
 assert.match(html, /id="summaryModeControl"/, "サマリー画像の用途切替がある");
-assert.match(html, /app-config\.js\?v=139[\s\S]*app-analysis\.js\?v=139[\s\S]*app\.js\?v=139/, "設定、分析、本体の順に読み込む");
-assert.match(html, /styles\.css\?v=139/, "styles.cssのキャッシュ更新バージョンが最新");
-assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v139/, "Service Workerのキャッシュ名が最新");
+assert.match(html, /app-config\.js\?v=140[\s\S]*app-analysis\.js\?v=140[\s\S]*app-storage\.js\?v=140[\s\S]*app\.js\?v=140/, "設定、分析、保存、本体の順に読み込む");
+assert.match(html, /styles\.css\?v=140/, "styles.cssのキャッシュ更新バージョンが最新");
+assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v140/, "Service Workerのキャッシュ名が最新");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-config\.js/, "Service Workerのキャッシュ対象に設定ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-analysis\.js/, "Service Workerのキャッシュ対象に分析ファイルがある");
+assert.match(fs.readFileSync("sw.js", "utf8"), /app-storage\.js/, "Service Workerのキャッシュ対象に保存ファイルがある");
 
 console.log("responsive-static: ok");

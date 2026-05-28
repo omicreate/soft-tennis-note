@@ -4,6 +4,9 @@ if (!globalThis.SOFT_TENNIS_CONFIG) {
 if (!globalThis.SOFT_TENNIS_ANALYSIS) {
   throw new Error("app-analysis.js must be loaded before app.js");
 }
+if (!globalThis.SOFT_TENNIS_STORAGE) {
+  throw new Error("app-storage.js must be loaded before app.js");
+}
 
 const {
   APP_VERSION,
@@ -102,6 +105,8 @@ const elements = {
   archiveDateFilterSelect: $("#archiveDateFilterSelect"),
   archiveTypeFilterSelect: $("#archiveTypeFilterSelect"),
   archiveStatusFilterSelect: $("#archiveStatusFilterSelect"),
+  archiveResultFilterSelect: $("#archiveResultFilterSelect"),
+  archiveTournamentFilterSelect: $("#archiveTournamentFilterSelect"),
   archiveSortSelect: $("#archiveSortSelect"),
   archiveCountLabel: $("#archiveCountLabel"),
   archiveStorageLabel: $("#archiveStorageLabel"),
@@ -254,31 +259,19 @@ function saveState() {
 }
 
 function loadArchivedMatches() {
-  try {
-    const archived = JSON.parse(localStorage.getItem(ARCHIVE_STORAGE_KEY));
-    return Array.isArray(archived) ? archived : [];
-  } catch {
-    return [];
-  }
+  return SOFT_TENNIS_STORAGE.loadArchiveEntries();
 }
 
 function saveArchivedMatches(matches) {
-  localStorage.setItem(ARCHIVE_STORAGE_KEY, JSON.stringify(matches.slice(0, MAX_ARCHIVED_MATCHES)));
+  SOFT_TENNIS_STORAGE.saveArchiveEntries(matches);
 }
 
 function estimateTextBytes(text) {
-  try {
-    return encodeURIComponent(String(text || "")).replace(/%[0-9A-F]{2}/g, "x").length;
-  } catch {
-    return String(text || "").length;
-  }
+  return SOFT_TENNIS_STORAGE.estimateStoredTextBytes(text);
 }
 
 function formatStorageSize(bytes) {
-  const safeBytes = Math.max(0, Number(bytes) || 0);
-  if (safeBytes < 1024) return `${safeBytes}B`;
-  if (safeBytes < 1024 * 1024) return `${(safeBytes / 1024).toFixed(safeBytes < 10 * 1024 ? 1 : 0)}KB`;
-  return `${(safeBytes / 1024 / 1024).toFixed(1)}MB`;
+  return SOFT_TENNIS_STORAGE.formatStoredByteSize(bytes);
 }
 
 function getAppStorageUsage() {
@@ -1953,6 +1946,7 @@ async function shareSummaryPreview() {
 
 function renderArchivedMatches() {
   const archived = loadArchivedMatches();
+  populateArchiveTournamentFilter(archived);
   const filters = getArchiveFilters();
   const filtered = sortArchivedMatches(filterArchivedMatches(archived, filters), elements.archiveSortSelect?.value || "newest");
   if (elements.archiveCountLabel) {
@@ -1993,6 +1987,8 @@ function openArchivedMatches() {
   if (elements.archiveDateFilterSelect) elements.archiveDateFilterSelect.value = "all";
   if (elements.archiveTypeFilterSelect) elements.archiveTypeFilterSelect.value = "all";
   if (elements.archiveStatusFilterSelect) elements.archiveStatusFilterSelect.value = "all";
+  if (elements.archiveResultFilterSelect) elements.archiveResultFilterSelect.value = "all";
+  if (elements.archiveTournamentFilterSelect) elements.archiveTournamentFilterSelect.value = "all";
   renderArchivedMatches();
   elements.archivedMatchesDialog.showModal();
 }
@@ -2025,12 +2021,39 @@ function archiveSearchText(entry) {
     .toLowerCase();
 }
 
+function getArchiveTournamentName(entry) {
+  const tournament = String(entry?.state?.matchInfo?.tournament || "").trim();
+  return tournament && tournament !== "未記録" ? tournament : "";
+}
+
+function getArchiveResult(entry) {
+  if (!entry?.finished) return "unfinished";
+  const games = entry.state?.games || entry.games || {};
+  if ((games.A || 0) > (games.B || 0)) return "own-win";
+  if ((games.B || 0) > (games.A || 0)) return "opponent-win";
+  return "unfinished";
+}
+
+function populateArchiveTournamentFilter(archived) {
+  const select = elements.archiveTournamentFilterSelect;
+  if (!select) return;
+  const currentValue = select.value || "all";
+  const tournaments = [...new Set(archived.map(getArchiveTournamentName).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja"));
+  select.innerHTML = [
+    `<option value="all">すべて</option>`,
+    ...tournaments.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`)
+  ].join("");
+  select.value = currentValue === "all" || tournaments.includes(currentValue) ? currentValue : "all";
+}
+
 function getArchiveFilters() {
   return {
     query: elements.archiveSearchInput?.value || "",
     date: elements.archiveDateFilterSelect?.value || "all",
     matchType: elements.archiveTypeFilterSelect?.value || "all",
-    status: elements.archiveStatusFilterSelect?.value || "all"
+    status: elements.archiveStatusFilterSelect?.value || "all",
+    result: elements.archiveResultFilterSelect?.value || "all",
+    tournament: elements.archiveTournamentFilterSelect?.value || "all"
   };
 }
 
@@ -2039,7 +2062,9 @@ function hasActiveArchiveFilter(filters = {}) {
     String(filters.query || "").trim() ||
       (filters.date && filters.date !== "all") ||
       (filters.matchType && filters.matchType !== "all") ||
-      (filters.status && filters.status !== "all")
+      (filters.status && filters.status !== "all") ||
+      (filters.result && filters.result !== "all") ||
+      (filters.tournament && filters.tournament !== "all")
   );
 }
 
@@ -2077,6 +2102,8 @@ function filterArchivedMatches(archived, filters = "") {
     if (normalizedFilters.matchType && normalizedFilters.matchType !== "all" && matchState.matchType !== normalizedFilters.matchType) return false;
     if (normalizedFilters.status === "finished" && !entry.finished) return false;
     if (normalizedFilters.status === "unfinished" && entry.finished) return false;
+    if (normalizedFilters.result && normalizedFilters.result !== "all" && getArchiveResult(entry) !== normalizedFilters.result) return false;
+    if (normalizedFilters.tournament && normalizedFilters.tournament !== "all" && getArchiveTournamentName(entry) !== normalizedFilters.tournament) return false;
     return true;
   });
 }
@@ -2287,6 +2314,8 @@ elements.archiveSearchInput.addEventListener("input", renderArchivedMatches);
 elements.archiveDateFilterSelect.addEventListener("change", renderArchivedMatches);
 elements.archiveTypeFilterSelect.addEventListener("change", renderArchivedMatches);
 elements.archiveStatusFilterSelect.addEventListener("change", renderArchivedMatches);
+elements.archiveResultFilterSelect.addEventListener("change", renderArchivedMatches);
+elements.archiveTournamentFilterSelect.addEventListener("change", renderArchivedMatches);
 elements.archiveSortSelect.addEventListener("change", renderArchivedMatches);
 
 $$(".tab").forEach((button) => {

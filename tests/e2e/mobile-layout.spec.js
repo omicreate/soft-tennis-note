@@ -11,10 +11,10 @@ async function expectNoHorizontalOverflow(page, label) {
 
 test.describe("mobile layout", () => {
   test("record, analysis, history, archive and summary screens fit mobile widths", async ({ page }, testInfo) => {
-    await page.goto("/index.html?v=139");
+    await page.goto("/index.html?v=140");
 
     await expect(page.getByText("ソフトテニス試合ノート").first()).toBeVisible();
-    await expect(page.getByText("v139・2026-05-28").first()).toBeVisible();
+    await expect(page.getByText("v140・2026-05-28").first()).toBeVisible();
     await expectNoHorizontalOverflow(page, "record screen");
 
     await page.getByRole("button", { name: "分析" }).click();
@@ -33,6 +33,8 @@ test.describe("mobile layout", () => {
     await expect(page.locator("#archiveDateFilterSelect")).toBeVisible();
     await expect(page.locator("#archiveTypeFilterSelect")).toBeVisible();
     await expect(page.locator("#archiveStatusFilterSelect")).toBeVisible();
+    await expect(page.locator("#archiveResultFilterSelect")).toBeVisible();
+    await expect(page.locator("#archiveTournamentFilterSelect")).toBeVisible();
     await expect(page.locator("#archiveSortSelect")).toBeVisible();
     await expect(page.locator("#archiveCountLabel")).toHaveText(/件/);
     await expect(page.locator("#archiveStorageLabel")).toHaveText(/保存状況: \d+件 \/ 約/);
