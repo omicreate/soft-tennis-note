@@ -21,6 +21,7 @@
 soft-tennis-note/
 ├── index.html
 ├── app-config.js
+├── app-analysis.js
 ├── app.js
 ├── styles.css
 ├── sw.js
@@ -51,6 +52,7 @@ soft-tennis-note/
 | --- | --- |
 | `index.html` | 画面の土台。タブ、メニュー、入力欄、ダイアログなど |
 | `app-config.js` | バージョン、保存キー、初期状態、分析コメント設定。今後の分割時も先に読み込む |
+| `app-analysis.js` | 分析コメント生成、得点タイプ判定。`app-config.js` の後、`app.js` の前に読み込む |
 | `app.js` | アプリの中心。スコア、記録、分析、保存、サマリー、CSV |
 | `styles.css` | 見た目。スマホ対応、色、余白、ボタン、スコア表示 |
 | `sw.js` | オフライン対応。Service Workerとキャッシュ |

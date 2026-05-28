@@ -1,5 +1,5 @@
 const SOFT_TENNIS_CONFIG = {
-  APP_VERSION: "v138",
+  APP_VERSION: "v139",
   STORAGE_KEY: "soft-tennis-logger-state-v1",
   ARCHIVE_STORAGE_KEY: "soft-tennis-logger-archive-v1",
   MAX_ARCHIVED_MATCHES: 30,
@@ -17,6 +17,34 @@ const SOFT_TENNIS_CONFIG = {
     detailSummaryComments: 5,
     shareNextItems: 2,
     detailNextItems: 3
+  },
+  ANALYSIS_COMMENT_MESSAGES: {
+    scoreTypeBalancedLabel: "得点タイプ: バランス型",
+    scoreTypeBalancedText: "得点パターンと相手ミス得点が混ざった試合です。",
+    scoreTypePendingLabel: "得点タイプ: 未判定",
+    scoreTypePendingText: "{ownSide}の得点がまだありません。",
+    scoreTypeAttackLabel: "得点タイプ: 攻撃型",
+    scoreTypeAttackText: "{ownSide}の得点パターンが多い試合です。再現したい形を確認しましょう。",
+    scoreTypeOpponentErrorLabel: "得点タイプ: 相手ミス誘発型",
+    scoreTypeOpponentErrorText: "相手のミスによる得点が多い試合です。どの配球でミスを誘えたか確認しましょう。",
+    quickNoRecord: "まだ記録がありません。まずは1ポイント記録してください。",
+    quickDoubleFault: "第2サービスは安全優先。ダブルフォールトを止める。",
+    quickReceiveMiss: "レシーブはまず返す。強打より深く入れる。",
+    quickEarlyLost: "最初の2本は返球優先。入りで簡単に落とさない。",
+    quickFirstServeLow: "第1サービスは確率重視。入れてから展開する。",
+    quickOpponentErrorMore: "相手ミス得点が多め。自チームで取る形を1つ作る。",
+    quickTopScore: "良い形は「{topScore}」。次も同じ形を使う。",
+    quickBalanced: "大きな偏りは少なめ。今のリズムを崩さず、先にミスしない。",
+    summaryNoRecord: "まだ記録が少ないため、数ポイント記録して傾向を見る",
+    summaryPointDiffPositive: "合計ポイントは{pointDiff}。ゲーム結果だけでなく内容でも押せている",
+    summaryPointDiffNegative: "合計ポイントは{pointDiff}。ゲーム前半や簡単な失点を減らす余地がある",
+    summaryPointDiffEven: "合計ポイントは{pointDiff}。勝敗に関係なく内容は接戦",
+    summaryOwnErrorHigh: "ミス失点{ownLostByOwnError}本が得点パターン{ownScoredByPattern}本を上回る。まず失点を減らす",
+    summaryAttackHigh: "得点の{attackRate}%が自チームの得点パターン。良い形を次の試合でも再現したい",
+    summaryOpponentErrorHigh: "得点の{opponentErrorRate}%が相手ミス。相手が崩れた配球や狙い所を確認したい",
+    summaryServeReceive: "DF{ownDoubleFaults}本、レシーブミス{ownReceiveMisses}本。サービス・レシーブの入りを優先",
+    summaryEarlyLost: "最初の2本での失点が{ownEarlyLost}本。1本目、2本目は返球優先",
+    summaryTopScore: "主な得点は「{topScore}」{topScoreCount}本。練習でも同じ形を確認"
   },
   TRIAL_GUIDES: {
     record: {

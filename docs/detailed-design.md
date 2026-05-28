@@ -1,7 +1,7 @@
 # 詳細設計書
 
 最終更新: 2026-05-28  
-対象バージョン: v138
+対象バージョン: v139
 
 ## 1. 対象ファイル
 
@@ -9,6 +9,7 @@
 | --- | --- |
 | `index.html` | 画面構造 |
 | `app-config.js` | バージョン、保存キー、初期状態、分析コメント設定 |
+| `app-analysis.js` | 分析コメント生成、得点タイプ判定 |
 | `styles.css` | 見た目、レスポンシブ対応 |
 | `app.js` | 状態管理、スコア、記録、分析、保存、出力 |
 | `sw.js` | オフラインキャッシュ |
@@ -179,9 +180,9 @@
 
 ```text
 getAnalysisData()
-buildQuickCoachItems()
+SOFT_TENNIS_ANALYSIS.buildQuickCoachItemsFromData()
 buildPriorityItems()
-buildSummaryComments()
+SOFT_TENNIS_ANALYSIS.buildSummaryCommentsFromData()
 ```
 
 ### 8.1 getAnalysisData
@@ -234,6 +235,7 @@ AI生成ではなく、集計結果に対するルールベース。
 同じデータなら基本的に同じコメントになる。
 
 判定しきい値と表示件数は `ANALYSIS_COMMENT_RULES` に集約する。
+表示文言は `ANALYSIS_COMMENT_MESSAGES` に集約し、`app-analysis.js` で差し込み値を反映する。
 主な設定:
 
 - 攻撃型判定: 得点パターン率60%以上

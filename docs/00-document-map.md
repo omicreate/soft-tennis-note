@@ -25,14 +25,18 @@
    - 何をテストすべきか
    - 正常系、異常系、スマホ確認、リリース前確認
 
-5. `../TEST_REPORT.md`
+5. `device-test-checklist.md`
+   - iPhone、Androidの実機で何を確認するか
+   - 共有、保存、オフライン、画面見切れの確認観点
+
+6. `../TEST_REPORT.md`
    - 実際に何を確認したか
    - どのバージョンでOKだったか
 
-6. `deployment.md`
+7. `deployment.md`
    - 検証環境と本番環境への反映手順
 
-7. `expansion-roadmap.md`
+8. `expansion-roadmap.md`
    - ピックルボール、テニス、ほかのソフトテニスアプリへ広げる時の考え方
 
 ## ファイルの役割
@@ -43,6 +47,7 @@
 | `basic-design.md` | 基本設計、方式設計 |
 | `detailed-design.md` | 詳細設計 |
 | `test-design.md` | テスト設計 |
+| `device-test-checklist.md` | 実機確認チェックリスト |
 | `requirements-design.md` | 既存の統合版設計書。今後は上記ファイルへ分割して管理 |
 | `deployment.md` | 公開、検証、本番反映の運用手順 |
 | `project-structure.md` | ローカルフォルダ、GitHub、各ファイルの説明 |

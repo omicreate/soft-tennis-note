@@ -97,7 +97,7 @@ const context = {
   navigator: {}
 };
 
-const source = `${fs.readFileSync("app-config.js", "utf8")}\n${fs.readFileSync("app.js", "utf8")}`;
+const source = `${fs.readFileSync("app-config.js", "utf8")}\n${fs.readFileSync("app-analysis.js", "utf8")}\n${fs.readFileSync("app.js", "utf8")}`;
 const testCode = `
   const assert = globalThis.assert;
 
@@ -191,6 +191,8 @@ const testCode = `
   ]);
   assert.equal(ANALYSIS_COMMENT_RULES.attackRateHigh, 60, "分析コメントの攻撃型しきい値を設定で管理する");
   assert.equal(ANALYSIS_COMMENT_RULES.summaryLimit, 5, "分析コメントの表示件数を設定で管理する");
+  assert.equal(ANALYSIS_COMMENT_MESSAGES.quickDoubleFault.includes("ダブルフォールト"), true, "分析コメント文言を設定で管理する");
+  assert.equal(typeof SOFT_TENNIS_ANALYSIS.buildSummaryCommentsFromData, "function", "分析コメント生成を分離ファイルで管理する");
   const summaryImage = getSummaryImageData();
   assert.match(summaryImage.title, /ソフトテニス試合ノート/, "画像サマリー用のタイトルを作る");
   assert.equal(summaryImage.summaryRows.some(([label]) => label === "ミス失点"), true, "画像サマリーに重要指標を含める");

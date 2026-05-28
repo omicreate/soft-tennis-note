@@ -1,6 +1,9 @@
 if (!globalThis.SOFT_TENNIS_CONFIG) {
   throw new Error("app-config.js must be loaded before app.js");
 }
+if (!globalThis.SOFT_TENNIS_ANALYSIS) {
+  throw new Error("app-analysis.js must be loaded before app.js");
+}
 
 const {
   APP_VERSION,
@@ -984,26 +987,11 @@ function renderAnalysisSummary() {
 
 function renderScoreQuality() {
   const data = getAnalysisData();
-  const totalWon = data.ownPoints || 1;
-  const attackRate = Math.round((data.ownScoredByPattern / totalWon) * 100);
-  const errorRate = Math.round((data.ownPointsByOpponentError / totalWon) * 100);
-  let label = "得点タイプ: バランス型";
-  let text = "得点パターンと相手ミス得点が混ざった試合です。";
-
-  if (data.ownPoints === 0) {
-    label = "得点タイプ: 未判定";
-    text = `${ownSideLabel()}の得点がまだありません。`;
-  } else if (attackRate >= ANALYSIS_COMMENT_RULES.attackRateHigh) {
-    label = "得点タイプ: 攻撃型";
-    text = `${ownSideLabel()}の得点パターンが多い試合です。再現したい形を確認しましょう。`;
-  } else if (errorRate >= ANALYSIS_COMMENT_RULES.opponentErrorRateHigh) {
-    label = "得点タイプ: 相手ミス誘発型";
-    text = "相手のミスによる得点が多い試合です。どの配球でミスを誘えたか確認しましょう。";
-  }
+  const quality = SOFT_TENNIS_ANALYSIS.getScoreQualityMessage(data, ownSideLabel());
 
   elements.scoreQuality.innerHTML = `
-    <strong>${escapeHtml(label)}</strong>
-    <p>${escapeHtml(text)}</p>
+    <strong>${escapeHtml(quality.label)}</strong>
+    <p>${escapeHtml(quality.text)}</p>
     <div class="quality-grid">
       <span>${escapeHtml(ownSideLabel())}の得点 ${data.ownScoredByPattern}</span>
       <span>相手のミス ${data.ownPointsByOpponentError}</span>
@@ -1012,16 +1000,7 @@ function renderScoreQuality() {
 }
 
 function buildQuickCoachItems(data = getAnalysisData()) {
-  if (!data.total) return ["まだ記録がありません。まずは1ポイント記録してください。"];
-  const notes = [];
-  if (data.ownDoubleFaults > 0) notes.push(`第2サービスは安全優先。ダブルフォールトを止める。`);
-  if (data.ownReceiveMisses > 0) notes.push(`レシーブはまず返す。強打より深く入れる。`);
-  if (data.ownEarlyLost >= ANALYSIS_COMMENT_RULES.earlyLostAlert) notes.push(`最初の2本は返球優先。入りで簡単に落とさない。`);
-  if (data.firstServeRate !== null && data.firstServeRate < ANALYSIS_COMMENT_RULES.firstServeLow) notes.push(`第1サービスは確率重視。入れてから展開する。`);
-  if (data.ownScoredByPattern < data.ownPointsByOpponentError) notes.push(`相手ミス得点が多め。自チームで取る形を1つ作る。`);
-  if (data.topScore[1] > 0) notes.push(`良い形は「${data.topScore[0]}」。次も同じ形を使う。`);
-  if (!notes.length) notes.push("大きな偏りは少なめ。今のリズムを崩さず、先にミスしない。");
-  return notes.slice(0, ANALYSIS_COMMENT_RULES.quickLimit);
+  return SOFT_TENNIS_ANALYSIS.buildQuickCoachItemsFromData(data);
 }
 
 function renderCoachNotes() {
@@ -1087,43 +1066,11 @@ function buildPriorityItems() {
 }
 
 function cleanPriorityText(text) {
-  return String(text).replace(/[。．.]+$/u, "").replace(/。 +/g, "。").trim();
+  return SOFT_TENNIS_ANALYSIS.cleanAnalysisText(text);
 }
 
 function buildSummaryComments(data = getAnalysisData()) {
-  if (!data.total) return ["まだ記録が少ないため、数ポイント記録して傾向を見る"];
-  const comments = [];
-  const wonTotal = data.ownPoints || 1;
-  const attackRate = Math.round((data.ownScoredByPattern / wonTotal) * 100);
-  const opponentErrorRate = Math.round((data.ownPointsByOpponentError / wonTotal) * 100);
-
-  if (data.pointDiff > 0) {
-    comments.push(`合計ポイントは${formatPointDiff(data.pointDiff)}。ゲーム結果だけでなく内容でも押せている`);
-  } else if (data.pointDiff < 0) {
-    comments.push(`合計ポイントは${formatPointDiff(data.pointDiff)}。ゲーム前半や簡単な失点を減らす余地がある`);
-  } else {
-    comments.push(`合計ポイントは${formatPointDiff(data.pointDiff)}。勝敗に関係なく内容は接戦`);
-  }
-
-  if (data.ownLostByOwnError > data.ownScoredByPattern) {
-    comments.push(`ミス失点${data.ownLostByOwnError}本が得点パターン${data.ownScoredByPattern}本を上回る。まず失点を減らす`);
-  } else if (attackRate >= ANALYSIS_COMMENT_RULES.attackRateHigh) {
-    comments.push(`得点の${attackRate}%が自チームの得点パターン。良い形を次の試合でも再現したい`);
-  } else if (opponentErrorRate >= ANALYSIS_COMMENT_RULES.opponentErrorRateHigh) {
-    comments.push(`得点の${opponentErrorRate}%が相手ミス。相手が崩れた配球や狙い所を確認したい`);
-  }
-
-  if (data.ownDoubleFaults > 0 || data.ownReceiveMisses > 0) {
-    comments.push(`DF${data.ownDoubleFaults}本、レシーブミス${data.ownReceiveMisses}本。サービス・レシーブの入りを優先`);
-  }
-  if (data.ownEarlyLost >= ANALYSIS_COMMENT_RULES.earlyLostAlert) {
-    comments.push(`最初の2本での失点が${data.ownEarlyLost}本。1本目、2本目は返球優先`);
-  }
-  if (data.topScore[1] > 0) {
-    comments.push(`主な得点は「${data.topScore[0]}」${data.topScore[1]}本。練習でも同じ形を確認`);
-  }
-
-  return comments.map(cleanPriorityText).slice(0, ANALYSIS_COMMENT_RULES.summaryLimit);
+  return SOFT_TENNIS_ANALYSIS.buildSummaryCommentsFromData(data, formatPointDiff);
 }
 
 function rallyValue(rally) {

@@ -1,8 +1,8 @@
 # ソフトテニス試合ノート 要件・設計書
 
 最終更新: 2026-05-27  
-対象バージョン: v138  
-対象ファイル: `index.html`, `app-config.js`, `styles.css`, `app.js`, `sw.js`
+対象バージョン: v139  
+対象ファイル: `index.html`, `app-config.js`, `app-analysis.js`, `styles.css`, `app.js`, `sw.js`
 
 ## 0. この文書の位置づけ
 
@@ -598,6 +598,7 @@ CSV出力時は `escapeCsvCell()` を使い、CSV注入やカンマ・ダブル�
   "./",
   "index.html",
   "app-config.js",
+  "app-analysis.js",
   "styles.css",
   "app.js",
   "manifest.webmanifest"
@@ -605,12 +606,12 @@ CSV出力時は `escapeCsvCell()` を使い、CSV注入やカンマ・ダブル�
 ```
 
 キャッシュ名はバージョンごとに更新する。  
-`index.html` の `app-config.js?v=数字`、`app.js?v=数字`、`styles.css?v=数字`、`app-config.js` の `APP_VERSION`、`sw.js` の `CACHE_NAME` は同じ数字にそろえる。
+`index.html` の `app-config.js?v=数字`、`app-analysis.js?v=数字`、`app.js?v=数字`、`styles.css?v=数字`、`app-config.js` の `APP_VERSION`、`sw.js` の `CACHE_NAME` は同じ数字にそろえる。
 
 サービスワーカー登録も `sw.js?v数字` 相当で行い、新しいサービスワーカーは `skipWaiting()` と `clients.claim()` で早めに有効化する。
 
 ```js
-soft-tennis-logger-v138
+soft-tennis-logger-v139
 ```
 
 ## 14. テスト
@@ -639,6 +640,7 @@ soft-tennis-logger-v138
 
 ```bash
 node --check app-config.js
+node --check app-analysis.js
 node --check app.js
 node --check sw.js
 node tests/analysis-counts.test.js

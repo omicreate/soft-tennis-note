@@ -1,7 +1,7 @@
 # テスト設計書
 
 最終更新: 2026-05-28  
-対象バージョン: v138
+対象バージョン: v139
 
 ## 1. テスト方針
 
@@ -125,6 +125,7 @@
 
 ```sh
 node --check app-config.js
+node --check app-analysis.js
 node --check app.js
 node --check sw.js
 node tests/analysis-counts.test.js
