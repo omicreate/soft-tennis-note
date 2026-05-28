@@ -96,5 +96,18 @@ https://www.jsta.or.jp/about_softtennis/words
 - `manifest.webmanifest`: PWA用マニフェスト
 - `sw.js`: オフラインキャッシュ用サービスワーカー
 - `CHANGELOG.md`: 更新履歴
-- `docs/requirements-design.md`: 要件・設計書
+- `docs/00-document-map.md`: ドキュメント一覧と読む順番
+- `docs/requirements.md`: 要件定義
+- `docs/basic-design.md`: 基本設計・方式設計
+- `docs/detailed-design.md`: 詳細設計
+- `docs/test-design.md`: テスト設計
+- `docs/project-structure.md`: ローカル構成・管理ルール
+- `docs/expansion-roadmap.md`: 他スポーツや別アプリへの横展開メモ
+- `docs/requirements-design.md`: 既存の統合版要件・設計書
 - `docs/deployment.md`: 公開・テスト環境の運用メモ
+
+## 開発ドキュメント
+
+後から仕様を見返す場合は、まず `docs/00-document-map.md` を確認してください。
+
+今回のアプリを今後の個人開発や他スポーツへの横展開に使えるよう、要件定義、基本設計、詳細設計、テスト設計、テスト結果をMarkdownで分けて管理しています。

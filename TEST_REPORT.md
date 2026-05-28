@@ -45,3 +45,28 @@ node --check sw.js
 node tests/analysis-counts.test.js
 node tests/match-flow.test.js
 ```
+
+## 2026-05-28 ドキュメント整理時の確認
+
+対象:
+
+- 要件定義、基本設計、詳細設計、テスト設計の分割
+- ローカル構成、管理ルール、横展開メモの追加
+- README、更新履歴、公開運用メモからの参照更新
+
+確認結果:
+
+| 観点 | 結果 |
+| --- | --- |
+| `node --check app.js` | OK |
+| `node --check sw.js` | OK |
+| `node tests/analysis-counts.test.js` | OK |
+| `node tests/match-flow.test.js` | OK |
+| ドキュメント入口 `docs/00-document-map.md` の追加 | OK |
+| ローカル構成 `docs/project-structure.md` の追加 | OK |
+| 横展開メモ `docs/expansion-roadmap.md` の追加 | OK |
+
+補足:
+
+- アプリ本体のバージョンは変更していない
+- 今回はドキュメントと管理ルールの整理のみ

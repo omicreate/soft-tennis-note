@@ -20,6 +20,7 @@
 - PC内の `/Users/omi/Documents/Apps/soft-tennis-note-preview` をテスト公開用として扱う
 - 先にテスト用URLで確認し、問題がなければ本番用へ反映する
 - GitHub上で直接編集せず、PC側で編集してからGitHubへ反映する
+- 開発内容は `docs/00-document-map.md` を入口に、要件、設計、テスト、運用のMarkdownへ残す
 
 ## 通常の流れ
 
@@ -71,6 +72,18 @@
 - ただし通常は検索や案内をしない限り見つかりにくい
 - 個人情報や秘密情報はアプリ内に埋め込まない
 - 本番URLを案内する前に、SafariまたはChromeで一度確認する
+
+## ドキュメント更新の目安
+
+| 変更内容 | 更新するMarkdown |
+| --- | --- |
+| 利用者、目的、機能を変えた | `docs/requirements.md` |
+| 画面構成、保存方式、公開方式を変えた | `docs/basic-design.md` |
+| データ構造、スコア計算、分析ロジックを変えた | `docs/detailed-design.md` |
+| テスト観点を増やした | `docs/test-design.md` |
+| 実際に検証した | `TEST_REPORT.md` |
+| 公開手順や環境を変えた | `docs/deployment.md` |
+| 他スポーツや新アプリの構想を足した | `docs/expansion-roadmap.md` |
 
 ## テスト利用者への案内文
 

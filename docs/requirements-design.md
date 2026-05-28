@@ -4,6 +4,22 @@
 対象バージョン: v127  
 対象ファイル: `index.html`, `styles.css`, `app.js`, `sw.js`
 
+## 0. この文書の位置づけ
+
+この文書は、開発途中で作成した統合版の要件・設計書です。
+
+2026-05-28以降は、後から見返しやすいように以下へ分割して管理します。
+
+- `docs/requirements.md`: 要件定義
+- `docs/basic-design.md`: 基本設計・方式設計
+- `docs/detailed-design.md`: 詳細設計
+- `docs/test-design.md`: テスト設計
+- `TEST_REPORT.md`: テスト結果
+- `docs/project-structure.md`: ローカル構成・管理ルール
+- `docs/expansion-roadmap.md`: 横展開・今後の開発メモ
+
+まず読む場合は `docs/00-document-map.md` を入口にします。
+
 ## 1. アプリ概要
 
 ソフトテニスの試合をスマートフォンで記録し、試合中または試合後に次の行動へつなげるための記録・分析アプリ。

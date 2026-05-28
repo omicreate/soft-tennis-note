@@ -8,7 +8,16 @@
 - `index.html` の読み込みパラメータと `sw.js` のキャッシュ名も同じ数字に合わせる
 - 画面に見えるバージョンはフッターとメニューの `バージョン情報` に表示する
 - テスト環境で確認してから本番へ反映する
-- 仕様や運用に関わる変更は、必要に応じて `README.md`、`docs/requirements-design.md`、`docs/deployment.md` も更新する
+- 仕様や運用に関わる変更は、必要に応じて `README.md`、`docs/00-document-map.md`、`docs/requirements.md`、`docs/basic-design.md`、`docs/detailed-design.md`、`docs/test-design.md`、`docs/deployment.md` も更新する
+
+## 2026-05-28 - ドキュメント整理
+
+### 追加
+
+- 開発ドキュメントを要件定義、基本設計、詳細設計、テスト設計、テスト結果、運用手順へ分割
+- ローカルファイル構成と管理ルールを `docs/project-structure.md` に整理
+- ピックルボール、テニス、別ソフトテニスアプリへの横展開メモを `docs/expansion-roadmap.md` に追加
+- `.DS_Store` など不要なローカルファイルをGit管理しないよう `.gitignore` を追加
 
 ## v127 - 2026-05-27
 
