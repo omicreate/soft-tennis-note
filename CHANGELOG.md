@@ -10,6 +10,18 @@
 - テスト環境で確認してから本番へ反映する
 - 仕様や運用に関わる変更は、必要に応じて `README.md`、`docs/00-document-map.md`、`docs/requirements.md`、`docs/basic-design.md`、`docs/detailed-design.md`、`docs/test-design.md`、`docs/deployment.md` も更新する
 
+## v132 - 2026-05-28
+
+### 追加
+
+- 管理用メニューに `バックアップ保存` を追加
+- 管理用メニューに `バックアップ読込` を追加
+- 現在の試合と保存済み試合をまとめてJSONでバックアップ、復元できるように改善
+
+### 変更
+
+- キャッシュ更新用の表示バージョン、読み込みパラメータ、Service Workerキャッシュ名をv132へ更新
+
 ## v131 - 2026-05-28
 
 ### 追加

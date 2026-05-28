@@ -366,6 +366,21 @@ const scenarioCode = `
     true,
     "CSVファイル名に年月日時分秒を含める"
   );
+  state = structuredClone(defaultState);
+  state.teams.A = "バックアップ自チーム";
+  state.points = [{ winner: "A", scoreBefore: { games: { A: 0, B: 0 }, points: { A: 0, B: 0 } }, scoreAfter: { games: { A: 0, B: 0 }, points: { A: 1, B: 0 } } }];
+  saveArchivedMatches(archiveFixture);
+  const backup = createBackupPayload();
+  assert.equal(backup.app, "soft-tennis-note", "バックアップにアプリ識別子を含める");
+  assert.equal(backup.state.teams.A, "バックアップ自チーム", "バックアップに現在の試合を含める");
+  assert.equal(backup.archivedMatches.length, 2, "バックアップに保存済み試合を含める");
+  state = structuredClone(defaultState);
+  saveArchivedMatches([]);
+  const restored = restoreBackupPayload(backup);
+  assert.equal(state.teams.A, "バックアップ自チーム", "バックアップから現在の試合を復元する");
+  assert.equal(restored.archivedMatches.length, 2, "バックアップから保存済み試合を復元する");
+  assert.equal(loadArchivedMatches().length, 2, "復元後に保存済み試合をlocalStorageへ保存する");
+  assert.throws(() => restoreBackupPayload({ app: "other" }), /バックアップJSON/, "別形式のJSONは復元しない");
 `;
 
 createAppContext();

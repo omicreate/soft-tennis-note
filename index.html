@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=131" />
-    <link rel="stylesheet" href="styles.css?v=131" />
+    <link rel="manifest" href="manifest.webmanifest?v=132" />
+    <link rel="stylesheet" href="styles.css?v=132" />
   </head>
   <body>
     <main class="app-shell">
@@ -337,7 +337,7 @@
       </section>
 
       <footer class="app-footer">
-        <span class="app-version">v131・2026-05-28</span>
+        <span class="app-version">v132・2026-05-28</span>
         <span>© 2026 OmiCreate</span>
         <span>無断転載・再配布・改変利用を禁じます</span>
       </footer>
@@ -356,17 +356,20 @@
           <dl>
             <div>
               <dt>現在の版</dt>
-              <dd>v131・2026-05-28</dd>
+              <dd>v132・2026-05-28</dd>
             </div>
             <div>
               <dt>更新内容</dt>
-              <dd>スマホ画面のPlaywright自動確認を追加。</dd>
+              <dd>バックアップJSONの保存・読込に対応。</dd>
             </div>
           </dl>
         </details>
         <details class="admin-menu">
           <summary>管理用</summary>
           <button class="action-button action-export" id="exportCsvButton" type="button">CSVを出力</button>
+          <button class="action-button action-backup" id="exportBackupButton" type="button">バックアップ保存</button>
+          <button class="action-button action-restore" id="importBackupButton" type="button">バックアップ読込</button>
+          <input id="backupFileInput" type="file" accept="application/json,.json" hidden />
         </details>
         <button class="secondary action-button action-close" value="cancel" type="submit">閉じる</button>
       </form>
@@ -610,6 +613,6 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=131" defer></script>
+    <script src="app.js?v=132" defer></script>
   </body>
 </html>

@@ -1,4 +1,4 @@
-const APP_VERSION = "v131";
+const APP_VERSION = "v132";
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
 const MAX_ARCHIVED_MATCHES = 30;
@@ -166,6 +166,9 @@ const elements = {
   shareSummaryImageButton: $("#shareSummaryImageButton"),
   downloadSummaryImageButton: $("#downloadSummaryImageButton"),
   exportCsvButton: $("#exportCsvButton"),
+  exportBackupButton: $("#exportBackupButton"),
+  importBackupButton: $("#importBackupButton"),
+  backupFileInput: $("#backupFileInput"),
   matchTypeSelect: $("#matchTypeSelect"),
   resetMatchDialogButton: $("#resetMatchDialogButton"),
   dialogTeamA: $("#dialogTeamA"),
@@ -1550,6 +1553,77 @@ function exportCsv() {
   URL.revokeObjectURL(url);
 }
 
+function getBackupFileName(date = new Date()) {
+  const timestamp = [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+    String(date.getHours()).padStart(2, "0"),
+    String(date.getMinutes()).padStart(2, "0"),
+    String(date.getSeconds()).padStart(2, "0")
+  ].join("");
+  return `soft-tennis-backup-${timestamp}.json`;
+}
+
+function createBackupPayload() {
+  return {
+    app: "soft-tennis-note",
+    schemaVersion: 1,
+    appVersion: APP_VERSION,
+    exportedAt: new Date().toISOString(),
+    state: normalizeState(structuredClone(state)),
+    archivedMatches: loadArchivedMatches().map((entry) => ({
+      ...entry,
+      state: normalizeState(structuredClone(entry.state || defaultState))
+    }))
+  };
+}
+
+function restoreBackupPayload(payload) {
+  if (!isPlainObject(payload) || payload.app !== "soft-tennis-note") {
+    throw new Error("このアプリのバックアップJSONではありません。");
+  }
+  const restoredState = normalizeState(payload.state || defaultState);
+  const restoredArchived = Array.isArray(payload.archivedMatches)
+    ? payload.archivedMatches.map((entry) => ({
+        ...entry,
+        id: entry.id || crypto.randomUUID?.() || `${Date.now()}`,
+        savedAt: entry.savedAt || new Date().toISOString(),
+        title: entry.title || buildArchivedMatchTitle(normalizeState(entry.state || defaultState)),
+        pointCount: Number.isFinite(Number(entry.pointCount)) ? Number(entry.pointCount) : normalizeState(entry.state || defaultState).points.length,
+        finished: !!entry.finished,
+        state: normalizeState(entry.state || defaultState)
+      }))
+    : [];
+
+  state = restoredState;
+  saveArchivedMatches(restoredArchived);
+  saveState();
+  render();
+  return { state: restoredState, archivedMatches: restoredArchived };
+}
+
+function exportBackupJson() {
+  const json = JSON.stringify(createBackupPayload(), null, 2);
+  const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = getBackupFileName();
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+async function importBackupFile(file) {
+  if (!file) return false;
+  const confirmed = window.confirm?.("バックアップを読み込むと、今の試合と保存済み試合が置き換わります。読み込みますか？") ?? true;
+  if (!confirmed) return false;
+  const text = await file.text();
+  restoreBackupPayload(JSON.parse(text));
+  elements.actionMenuDialog.close();
+  return true;
+}
+
 function getGamePointScoreRows() {
   const rows = [];
   const byGame = state.points.reduce((acc, point) => {
@@ -2153,6 +2227,17 @@ elements.resetMatchDialogButton.addEventListener("click", resetMatchDialogFields
 elements.exportCsvButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
   exportCsv();
+});
+elements.exportBackupButton.addEventListener("click", exportBackupJson);
+elements.importBackupButton.addEventListener("click", () => elements.backupFileInput.click());
+elements.backupFileInput.addEventListener("change", async () => {
+  try {
+    await importBackupFile(elements.backupFileInput.files?.[0]);
+  } catch (error) {
+    window.alert?.(error?.message || "バックアップを読み込めませんでした。");
+  } finally {
+    elements.backupFileInput.value = "";
+  }
 });
 $("#startMatchButton").addEventListener("click", () => {
   if (matchDialogMode === "edit") {
