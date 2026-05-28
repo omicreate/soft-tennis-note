@@ -62,7 +62,8 @@ function createAppContext(savedStateText = null) {
     structuredClone,
     requestAnimationFrame: (callback) => callback(),
     window: {
-      matchMedia: () => ({ matches: true })
+      matchMedia: () => ({ matches: true }),
+      confirm: () => true
     },
     document: {
       body: createElement("body"),
@@ -301,6 +302,47 @@ const scenarioCode = `
   assert.equal(archivedMatches.length >= 1, true, "新規試合前に記録済み試合を自動保存");
   assert.equal(archivedMatches[0].state.teams.A, "修正 自チーム", "保存済み試合に直前の入力データを残す");
   assert.equal(archivedMatches[0].pointCount, 1, "保存済み試合にポイント数を残す");
+  const archiveFixture = [
+    {
+      id: "archive-1",
+      savedAt: "2026-05-28T10:00:00.000Z",
+      title: "2026-05-28 / 春季大会 / 青チーム vs 赤チーム / 4-2",
+      pointCount: 12,
+      finished: true,
+      state: {
+        teams: { A: "青チーム", B: "赤チーム" },
+        players: { ARear: "青 後衛", AFront: "青 前衛", BRear: "赤 後衛", BFront: "赤 前衛" },
+        matchInfo: { date: "2026-05-28", tournament: "春季大会", venueName: "中央公園" }
+      }
+    },
+    {
+      id: "archive-2",
+      savedAt: "2026-05-27T10:00:00.000Z",
+      title: "2026-05-27 / 練習試合 / 白チーム vs 黒チーム / 2-4",
+      pointCount: 8,
+      finished: false,
+      state: {
+        teams: { A: "白チーム", B: "黒チーム" },
+        players: { ARear: "白 後衛", AFront: "白 前衛", BRear: "黒 後衛", BFront: "黒 前衛" },
+        matchInfo: { date: "2026-05-27", tournament: "練習試合", venueName: "南コート" }
+      }
+    }
+  ];
+  saveArchivedMatches(archiveFixture);
+  assert.equal(filterArchivedMatches(loadArchivedMatches(), "春季").length, 1, "保存済み試合を大会名で検索");
+  assert.equal(filterArchivedMatches(loadArchivedMatches(), "黒チーム")[0].id, "archive-2", "保存済み試合を相手名で検索");
+  testElements.get("#archiveSearchInput").value = "春季";
+  renderArchivedMatches();
+  assert.equal(testElements.get("#archiveCountLabel").textContent, "1/2件", "検索時に絞り込み件数を表示");
+  assert.match(testElements.get("#archivedMatchList").innerHTML, /青チーム/, "検索結果に該当試合を表示");
+  assert.doesNotMatch(testElements.get("#archivedMatchList").innerHTML, /黒チーム/, "検索結果から非該当試合を非表示");
+  window.confirm = () => false;
+  assert.equal(deleteArchivedMatch("archive-1"), false, "削除キャンセル時は削除しない");
+  assert.equal(loadArchivedMatches().length, 2, "削除キャンセル時は件数を維持");
+  window.confirm = () => true;
+  assert.equal(deleteArchivedMatch("archive-1"), true, "保存済み試合を削除できる");
+  assert.equal(loadArchivedMatches().length, 1, "削除後に件数が減る");
+  assert.equal(loadArchivedMatches()[0].id, "archive-2", "対象試合だけ削除する");
   assert.equal(getCurrentTimeOfDay(new Date("2026-05-26T08:00:00")), "朝", "8時台は朝");
   assert.equal(getCurrentTimeOfDay(new Date("2026-05-26T10:00:00")), "午前", "10時台は午前");
   assert.equal(getCurrentTimeOfDay(new Date("2026-05-26T14:00:00")), "午後", "14時台は午後");

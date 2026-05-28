@@ -10,6 +10,19 @@
 - テスト環境で確認してから本番へ反映する
 - 仕様や運用に関わる変更は、必要に応じて `README.md`、`docs/00-document-map.md`、`docs/requirements.md`、`docs/basic-design.md`、`docs/detailed-design.md`、`docs/test-design.md`、`docs/deployment.md` も更新する
 
+## v129 - 2026-05-28
+
+### 追加
+
+- 保存済み試合に検索欄を追加
+- 保存済み試合の件数表示を追加
+- 保存済み試合を削除できるように改善
+
+### 変更
+
+- 保存済み試合の操作を `サマリー`、`開く`、`削除` の3つに整理
+- キャッシュ更新用の表示バージョン、読み込みパラメータ、Service Workerキャッシュ名をv129へ更新
+
 ## v128 - 2026-05-28
 
 ### 変更

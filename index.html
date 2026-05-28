@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=128" />
-    <link rel="stylesheet" href="styles.css?v=128" />
+    <link rel="manifest" href="manifest.webmanifest?v=129" />
+    <link rel="stylesheet" href="styles.css?v=129" />
   </head>
   <body>
     <main class="app-shell">
@@ -337,7 +337,7 @@
       </section>
 
       <footer class="app-footer">
-        <span class="app-version">v128・2026-05-28</span>
+        <span class="app-version">v129・2026-05-28</span>
         <span>© 2026 OmiCreate</span>
         <span>無断転載・再配布・改変利用を禁じます</span>
       </footer>
@@ -356,11 +356,11 @@
           <dl>
             <div>
               <dt>現在の版</dt>
-              <dd>v128・2026-05-28</dd>
+              <dd>v129・2026-05-28</dd>
             </div>
             <div>
               <dt>更新内容</dt>
-              <dd>新規試合の操作ボタンを常に押しやすい位置へ調整。</dd>
+              <dd>保存済み試合の検索・件数表示・削除に対応。</dd>
             </div>
           </dl>
         </details>
@@ -389,6 +389,13 @@
       <form method="dialog" class="dialog-content archive-dialog">
         <h2>保存済み試合</h2>
         <p>「今の試合を保存」を押した時、または新規試合を作る前に、記録済みの試合データをこの端末内へ保存します。必要な時に開き直したり、サマリー画像を作れます。</p>
+        <div class="archive-toolbar">
+          <label>
+            試合を探す
+            <input id="archiveSearchInput" type="search" placeholder="日付・相手名・大会名" />
+          </label>
+          <span id="archiveCountLabel">0件</span>
+        </div>
         <div class="archive-list" id="archivedMatchList"></div>
         <button class="secondary action-button action-close" value="cancel" type="submit">閉じる</button>
       </form>
@@ -595,6 +602,6 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=128" defer></script>
+    <script src="app.js?v=129" defer></script>
   </body>
 </html>

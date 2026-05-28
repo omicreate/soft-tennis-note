@@ -1047,6 +1047,10 @@ body:has(.tab[data-tab="history"].active) .team input {
   content: "↩";
 }
 
+.action-delete::before {
+  content: "−";
+}
+
 .action-close::before {
   content: "×";
 }
@@ -1910,6 +1914,36 @@ dialog::backdrop {
   line-height: 1.5;
 }
 
+.archive-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.archive-toolbar label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.archive-toolbar input {
+  min-width: 0;
+}
+
+.archive-toolbar span {
+  min-width: 48px;
+  border-radius: 8px;
+  padding: 10px 8px;
+  background: var(--soft);
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 950;
+  text-align: center;
+}
+
 .archive-list {
   display: grid;
   gap: 10px;
@@ -1949,7 +1983,7 @@ dialog::backdrop {
 
 .archive-item div {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 

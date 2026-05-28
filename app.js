@@ -1,4 +1,4 @@
-const APP_VERSION = "v128";
+const APP_VERSION = "v129";
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
 const MAX_ARCHIVED_MATCHES = 30;
@@ -154,6 +154,8 @@ const elements = {
   summaryPreviewImage: $("#summaryPreviewImage"),
   archivedMatchesDialog: $("#archivedMatchesDialog"),
   archivedMatchList: $("#archivedMatchList"),
+  archiveSearchInput: $("#archiveSearchInput"),
+  archiveCountLabel: $("#archiveCountLabel"),
   menuButton: $("#menuButton"),
   openNewMatchButton: $("#openNewMatchButton"),
   editMatchInfoButton: $("#editMatchInfoButton"),
@@ -1931,8 +1933,13 @@ async function shareSummaryPreview() {
 
 function renderArchivedMatches() {
   const archived = loadArchivedMatches();
-  elements.archivedMatchList.innerHTML = archived.length
-    ? archived
+  const query = elements.archiveSearchInput?.value || "";
+  const filtered = filterArchivedMatches(archived, query);
+  if (elements.archiveCountLabel) {
+    elements.archiveCountLabel.textContent = query ? `${filtered.length}/${archived.length}件` : `${archived.length}件`;
+  }
+  elements.archivedMatchList.innerHTML = filtered.length
+    ? filtered
         .map((entry) => {
           const date = new Date(entry.savedAt);
           const savedAt = Number.isNaN(date.getTime())
@@ -1946,21 +1953,66 @@ function renderArchivedMatches() {
               <div>
                 <button class="action-button action-preview" data-archive-action="summary" data-archive-id="${escapeHtml(entry.id)}" type="button">サマリー</button>
                 <button class="secondary action-button action-edit" data-archive-action="restore" data-archive-id="${escapeHtml(entry.id)}" type="button">開く</button>
+                <button class="secondary action-button action-delete" data-archive-action="delete" data-archive-id="${escapeHtml(entry.id)}" type="button">削除</button>
               </div>
             </article>
           `;
         })
         .join("")
-    : `<p>保存済み試合はまだありません。新規試合を作る時、記録済みの試合が自動でここに残ります。</p>`;
+    : archived.length
+      ? `<p>検索条件に当てはまる保存済み試合はありません。</p>`
+      : `<p>保存済み試合はまだありません。新規試合を作る時、記録済みの試合が自動でここに残ります。</p>`;
 }
 
 function openArchivedMatches() {
+  if (elements.archiveSearchInput) elements.archiveSearchInput.value = "";
   renderArchivedMatches();
   elements.archivedMatchesDialog.showModal();
 }
 
 function findArchivedMatch(id) {
   return loadArchivedMatches().find((entry) => entry.id === id);
+}
+
+function archiveSearchText(entry) {
+  const matchState = entry.state || {};
+  const info = matchState.matchInfo || {};
+  const players = matchState.players || {};
+  return [
+    entry.title,
+    entry.savedAt,
+    info.date,
+    info.tournament,
+    info.event,
+    info.venueName,
+    info.venue,
+    matchState.teams?.A,
+    matchState.teams?.B,
+    players.ARear,
+    players.AFront,
+    players.BRear,
+    players.BFront
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function filterArchivedMatches(archived, query = "") {
+  const normalizedQuery = String(query || "").trim().toLowerCase();
+  if (!normalizedQuery) return archived;
+  return archived.filter((entry) => archiveSearchText(entry).includes(normalizedQuery));
+}
+
+function deleteArchivedMatch(id) {
+  const archived = loadArchivedMatches();
+  const target = archived.find((entry) => entry.id === id);
+  if (!target) return false;
+  const confirmed = window.confirm?.(`保存済み試合を削除しますか？\n${target.title || "保存済み試合"}`) ?? true;
+  if (!confirmed) return false;
+  saveArchivedMatches(archived.filter((entry) => entry.id !== id));
+  renderArchivedMatches();
+  return true;
 }
 
 function openMatchDialog(mode = "new") {
@@ -2067,6 +2119,10 @@ elements.openArchiveButton.addEventListener("click", () => {
 elements.archivedMatchList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-archive-action]");
   if (!button) return;
+  if (button.dataset.archiveAction === "delete") {
+    deleteArchivedMatch(button.dataset.archiveId);
+    return;
+  }
   const archived = findArchivedMatch(button.dataset.archiveId);
   if (!archived?.state) return;
   if (button.dataset.archiveAction === "summary") {
@@ -2123,6 +2179,7 @@ elements.teamBName.addEventListener("input", () => {
 
 elements.historyFilterSelect.addEventListener("change", renderHistory);
 elements.historySortSelect.addEventListener("change", renderHistory);
+elements.archiveSearchInput.addEventListener("input", renderArchivedMatches);
 
 $$(".tab").forEach((button) => {
   button.addEventListener("click", () => {
