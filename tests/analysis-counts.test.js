@@ -217,6 +217,16 @@ const testCode = `
   assert.ok(shareLayout.contentBottom < shareLayout.footerTop, "共有用サマリー画像の本文がフッターに重ならない");
   assert.ok(detailLayout.contentBottom < detailLayout.footerTop, "詳細保存用サマリー画像の本文がフッターに重ならない");
   assert.equal(shareLayout.height < detailLayout.height, true, "共有用は詳細保存用より短い画像にする");
+  assert.deepEqual(
+    shareLayout.sections.slice(0, 4),
+    ["試合結果", "分析コメント", "次に活かすこと", "主な数字"],
+    "共有用サマリーは結果と次に活かす内容を先に表示する"
+  );
+  assert.deepEqual(
+    detailLayout.sections.slice(0, 5),
+    ["試合結果", "分析コメント", "次に活かすこと", "根拠データ", "基本情報"],
+    "詳細保存用サマリーは振り返りやすい順番で表示する"
+  );
   saveAnalysisMemo();
   const summaryImageWithMemo = getSummaryImageData();
   assert.match(summaryImageWithMemo.analysisMemoTitle, /保存した分析/, "画像サマリーに保存した分析の見出しを含める");

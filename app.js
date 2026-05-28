@@ -1805,7 +1805,23 @@ function drawSummaryImage(canvas, summary, mode = "detail") {
   };
   const bullet = (text, y, tone = "neutral", maxLines = 1) =>
     drawMd(`- ${text}`, 78, y, { size: 27, lineHeight: 36, maxLines, color: textColor(tone), after: 4 });
-  const heading = (text, y) => drawMd(`## ${text}`, 64, y, { size: 32, weight: 900, lineHeight: 42, after: 6 });
+  const sections = [];
+  const heading = (text, y) => {
+    sections.push(text);
+    return drawMd(`## ${text}`, 64, y, { size: 32, weight: 900, lineHeight: 42, after: 6 });
+  };
+  const drawRows = (rows, y, options = {}) => {
+    rows.forEach(([label, value, tone]) => {
+      y = bullet(`${label}: ${value}`, y, tone || "neutral", options.maxLinesByLabel?.[label] || 1);
+    });
+    return y;
+  };
+  const drawItems = (items, y, limit, maxLines = 2) => {
+    items.slice(0, limit).forEach((item) => {
+      y = bullet(item, y, "neutral", maxLines);
+    });
+    return y;
+  };
 
   let y = 76;
   y = drawMd(`# ${summary.title}`, 56, y, { size: 46, weight: 900, lineHeight: 58, after: 8 });
@@ -1818,58 +1834,55 @@ function drawSummaryImage(canvas, summary, mode = "detail") {
   ctx.stroke();
   y += 42;
 
-  y = heading("基本情報", y);
-  y = bullet(summary.teams, y, "neutral", 1);
-  summary.playerRows.forEach(([label, value]) => {
-    y = bullet(`${label}: ${value}`, y, "neutral", 1);
-  });
-  summary.conditionRows.slice(0, isShareMode ? 1 : 2).forEach(([label, value]) => {
-    y = bullet(`${label}: ${value}`, y, "neutral", 1);
-  });
-  y += 10;
-
   y = heading("試合結果", y);
-  summary.resultRows.forEach(([label, value]) => {
-    y = bullet(`${label}: ${value}`, y, "neutral", label === "各ゲーム" ? 2 : 1);
-  });
+  y = drawRows(summary.resultRows, y, { maxLinesByLabel: { 各ゲーム: isShareMode ? 1 : 2 } });
   y += 10;
 
   y = heading("分析コメント", y);
-  summary.analysisComments.slice(0, isShareMode ? ANALYSIS_COMMENT_RULES.shareSummaryComments : ANALYSIS_COMMENT_RULES.detailSummaryComments).forEach((item) => {
-    y = bullet(item, y, "neutral", 2);
-  });
+  y = drawItems(summary.analysisComments, y, isShareMode ? ANALYSIS_COMMENT_RULES.shareSummaryComments : ANALYSIS_COMMENT_RULES.detailSummaryComments);
   y += 10;
 
   y = heading("次に活かすこと", y);
-  [...summary.quickItems, ...summary.reviewItems].slice(0, isShareMode ? ANALYSIS_COMMENT_RULES.shareNextItems : ANALYSIS_COMMENT_RULES.detailNextItems).forEach((item) => {
-    y = bullet(item, y, "neutral", 2);
-  });
+  y = drawItems([...summary.quickItems, ...summary.reviewItems], y, isShareMode ? ANALYSIS_COMMENT_RULES.shareNextItems : ANALYSIS_COMMENT_RULES.detailNextItems);
   y += 8;
 
   if (isShareMode) {
     y = heading("主な数字", y);
-    summary.summaryRows.filter(([label]) => label !== "記録ポイント").slice(0, 4).forEach(([label, value, tone]) => {
-      y = bullet(`${label}: ${value}`, y, tone || "neutral", 1);
+    y = drawRows(summary.summaryRows.filter(([label]) => label !== "記録ポイント").slice(0, 4), y);
+    y += 8;
+
+    y = heading("基本情報", y);
+    y = bullet(summary.teams, y, "neutral", 1);
+    summary.playerRows.forEach(([label, value]) => {
+      y = bullet(`${label}: ${value}`, y, "neutral", 1);
+    });
+    summary.conditionRows.slice(0, 1).forEach(([label, value]) => {
+      y = bullet(`${label}: ${value}`, y, "neutral", 1);
     });
   } else {
     y = heading("根拠データ", y);
-    [...summary.summaryRows, ...summary.detailRows, ...summary.phaseRows].slice(0, 9).forEach(([label, value, tone]) => {
-      if (label === "記録ポイント") return;
-      y = bullet(`${label}: ${value}`, y, tone || "neutral", 1);
+    y = drawRows(
+      [...summary.summaryRows, ...summary.detailRows, ...summary.phaseRows].filter(([label]) => label !== "記録ポイント").slice(0, 9),
+      y
+    );
+    y += 8;
+
+    y = heading("基本情報", y);
+    y = bullet(summary.teams, y, "neutral", 1);
+    summary.playerRows.forEach(([label, value]) => {
+      y = bullet(`${label}: ${value}`, y, "neutral", 1);
     });
     y += 8;
 
     y = heading("試合条件", y);
-    summary.conditionRows.slice(2, 6).forEach(([label, value]) => {
-      y = bullet(`${label}: ${value}`, y, "neutral", 1);
-    });
+    y = drawRows(summary.conditionRows.slice(0, 6), y);
   }
 
   ctx.fillStyle = mutedColor;
   ctx.font = '700 24px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
   const footer = ["端末内で画像生成。開発者や管理者へ送られません。", ...summary.meta].join(" / ");
   drawClampedText(ctx, footer, 56, height - 86, 968, 32, 2);
-  return { contentBottom: y, footerTop: height - 112, height, mode };
+  return { contentBottom: y, footerTop: height - 112, height, mode, sections };
 }
 
 function createSummaryImageDataUrl(matchState = state, mode = summaryPreviewMode) {

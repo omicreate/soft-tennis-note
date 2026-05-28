@@ -1,7 +1,7 @@
 # 基本設計書・方式設計書
 
 最終更新: 2026-05-28  
-対象バージョン: v142
+対象バージョン: v143
 
 ## 1. 全体方式
 
@@ -147,7 +147,7 @@ soft-tennis-logger-archive-v1
 例:
 
 ```text
-soft-tennis-logger-v142
+soft-tennis-logger-v143
 ```
 
 `index.html` の読み込みバージョン、`app-config.js` の `APP_VERSION`、`sw.js` のキャッシュ名はそろえる。
