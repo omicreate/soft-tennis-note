@@ -98,7 +98,7 @@ function createAppContext(savedStateText = null) {
 
   vm.createContext(context);
   vm.runInContext(
-    `${fs.readFileSync("app-config.js", "utf8")}\n${fs.readFileSync("app-analysis.js", "utf8")}\n${fs.readFileSync("app-storage.js", "utf8")}\n${fs.readFileSync("app.js", "utf8")}`,
+    `${fs.readFileSync("app-config.js", "utf8")}\n${fs.readFileSync("app-analysis.js", "utf8")}\n${fs.readFileSync("app-storage.js", "utf8")}\n${fs.readFileSync("app-rules.js", "utf8")}\n${fs.readFileSync("app.js", "utf8")}`,
     context,
     { filename: "app.js" }
   );

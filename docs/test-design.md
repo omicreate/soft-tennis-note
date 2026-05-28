@@ -1,7 +1,7 @@
 # テスト設計書
 
 最終更新: 2026-05-28  
-対象バージョン: v143
+対象バージョン: v144
 
 ## 1. テスト方針
 
@@ -127,6 +127,7 @@
 node --check app-config.js
 node --check app-analysis.js
 node --check app-storage.js
+node --check app-rules.js
 node --check app.js
 node --check sw.js
 node tests/analysis-counts.test.js

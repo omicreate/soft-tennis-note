@@ -9,7 +9,7 @@
   },
   "scripts": {
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "node --check app-config.js && node --check app-analysis.js && node --check app-storage.js && node --check app.js && node --check sw.js && node tests/analysis-counts.test.js && node tests/match-flow.test.js && node tests/responsive-static.test.js",
+    "test:unit": "node --check app-config.js && node --check app-analysis.js && node --check app-storage.js && node --check app-rules.js && node --check app.js && node --check sw.js && node tests/analysis-counts.test.js && node tests/match-flow.test.js && node tests/responsive-static.test.js",
     "test:e2e": "playwright test"
   },
   "repository": {

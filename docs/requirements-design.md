@@ -1,8 +1,8 @@
 # ソフトテニス試合ノート 要件・設計書
 
 最終更新: 2026-05-27  
-対象バージョン: v143  
-対象ファイル: `index.html`, `app-config.js`, `app-analysis.js`, `app-storage.js`, `styles.css`, `app.js`, `sw.js`
+対象バージョン: v144  
+対象ファイル: `index.html`, `app-config.js`, `app-analysis.js`, `app-storage.js`, `app-rules.js`, `styles.css`, `app.js`, `sw.js`
 
 ## 0. この文書の位置づけ
 
@@ -600,6 +600,7 @@ CSV出力時は `escapeCsvCell()` を使い、CSV注入やカンマ・ダブル�
   "app-config.js",
   "app-analysis.js",
   "app-storage.js",
+  "app-rules.js",
   "styles.css",
   "app.js",
   "manifest.webmanifest"
@@ -607,12 +608,12 @@ CSV出力時は `escapeCsvCell()` を使い、CSV注入やカンマ・ダブル�
 ```
 
 キャッシュ名はバージョンごとに更新する。  
-`index.html` の `app-config.js?v=数字`、`app-analysis.js?v=数字`、`app-storage.js?v=数字`、`app.js?v=数字`、`styles.css?v=数字`、`app-config.js` の `APP_VERSION`、`sw.js` の `CACHE_NAME` は同じ数字にそろえる。
+`index.html` の `app-config.js?v=数字`、`app-analysis.js?v=数字`、`app-storage.js?v=数字`、`app-rules.js?v=数字`、`app.js?v=数字`、`styles.css?v=数字`、`app-config.js` の `APP_VERSION`、`sw.js` の `CACHE_NAME` は同じ数字にそろえる。
 
 サービスワーカー登録も `sw.js?v数字` 相当で行い、新しいサービスワーカーは `skipWaiting()` と `clients.claim()` で早めに有効化する。
 
 ```js
-soft-tennis-logger-v143
+soft-tennis-logger-v144
 ```
 
 ## 14. テスト
@@ -643,6 +644,7 @@ soft-tennis-logger-v143
 node --check app-config.js
 node --check app-analysis.js
 node --check app-storage.js
+node --check app-rules.js
 node --check app.js
 node --check sw.js
 node tests/analysis-counts.test.js

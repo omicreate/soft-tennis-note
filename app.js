@@ -7,6 +7,9 @@ if (!globalThis.SOFT_TENNIS_ANALYSIS) {
 if (!globalThis.SOFT_TENNIS_STORAGE) {
   throw new Error("app-storage.js must be loaded before app.js");
 }
+if (!globalThis.SOFT_TENNIS_RULES) {
+  throw new Error("app-rules.js must be loaded before app.js");
+}
 
 const {
   APP_VERSION,
@@ -19,6 +22,7 @@ const {
   TRIAL_GUIDES,
   defaultState
 } = globalThis.SOFT_TENNIS_CONFIG;
+const RULES = globalThis.SOFT_TENNIS_RULES;
 
 let state = loadState();
 let matchDialogMode = "new";
@@ -384,60 +388,43 @@ function getLegacyServeStart(point) {
 }
 
 function gamesToWinFromFormat(format) {
-  if (format === "5") return 3;
-  if (format === "9") return 5;
-  if (format === "final") return 1;
-  return 4;
+  return RULES.gamesToWinFromFormat(format);
 }
 
 function matchFormatFromGamesToWin(gamesToWin) {
-  if (gamesToWin === 3) return "5";
-  if (gamesToWin === 5) return "9";
-  if (gamesToWin === 1) return "final";
-  return "7";
+  return RULES.matchFormatFromGamesToWin(gamesToWin);
 }
 
 function matchFormatLabel() {
-  if (state.matchFormat === "final") return "ファイナルゲームのみ";
-  return `${state.matchFormat}ゲームマッチ`;
+  return RULES.matchFormatLabel(state.matchFormat);
 }
 
 function isFinalGame() {
-  if (state.matchFormat === "final") return true;
-  return state.games.A === state.gamesToWin - 1 && state.games.B === state.gamesToWin - 1;
+  return RULES.isFinalGame(state);
 }
 
 function getPointTarget() {
-  return isFinalGame() ? 7 : 4;
+  return RULES.getPointTarget(state);
 }
 
 function getPointTargetForRecordedPoint(point) {
-  if (state.matchFormat === "final") return 7;
-  const games = point.scoreBefore?.games || { A: 0, B: 0 };
-  return games.A === state.gamesToWin - 1 && games.B === state.gamesToWin - 1 ? 7 : 4;
+  return RULES.getPointTargetForRecordedPoint(point, state);
 }
 
 function hasWonUnit(a, b, target) {
-  return a >= target && a - b >= 2;
+  return RULES.hasWonUnit(a, b, target);
 }
 
 function winsCurrentGameOnNextPoint(team) {
-  const opponent = team === "A" ? "B" : "A";
-  return hasWonUnit(state.gamePoints[team] + 1, state.gamePoints[opponent], getPointTarget());
+  return RULES.winsCurrentGameOnNextPoint(state, team);
 }
 
 function getMatchPointTeams() {
-  if (state.finished) return [];
-  return ["A", "B"].filter((team) => winsCurrentGameOnNextPoint(team) && state.games[team] + 1 >= state.gamesToWin);
+  return RULES.getMatchPointTeams(state);
 }
 
 function pointLabel(team) {
-  const target = getPointTarget();
-  const own = state.gamePoints[team];
-  const other = state.gamePoints[team === "A" ? "B" : "A"];
-  if (own >= target - 1 && other >= target - 1 && own === other) return `${own} D`;
-  if (own >= target && own === other + 1) return `${own} A`;
-  return String(own);
+  return RULES.pointLabel(state, team);
 }
 
 function displayName(team) {
@@ -482,44 +469,33 @@ function playerLabel(player) {
 }
 
 function getPhaseLabel(points) {
-  const total = (points.A || 0) + (points.B || 0);
-  if (total <= 1) return "ゲーム序盤";
-  if (total <= 3) return "ゲーム中盤";
-  return "ゲーム終盤";
+  return RULES.getPhaseLabel(points);
 }
 
 function isOpeningPointLoss(point) {
-  const points = point.scoreBefore?.points || { A: 0, B: 0 };
-  return (points.A || 0) + (points.B || 0) <= 1;
+  return RULES.isOpeningPoint(point);
 }
 
 function isDeuceOrLaterLoss(point) {
-  const target = getPointTargetForRecordedPoint(point);
-  const points = point.scoreBefore?.points || { A: 0, B: 0 };
-  return points.A >= target - 1 && points.B >= target - 1;
+  return RULES.isDeuceOrLater(point, state);
 }
 
 function isGamePointAreaLoss(point) {
-  if (isDeuceOrLaterLoss(point)) return false;
-  const target = getPointTargetForRecordedPoint(point);
-  const points = point.scoreBefore?.points || { A: 0, B: 0 };
-  return points.A >= target - 1 || points.B >= target - 1;
+  return RULES.isGamePointArea(point, state);
 }
 
 function getGameNumber(games) {
-  return (games.A || 0) + (games.B || 0) + 1;
+  return RULES.getGameNumber(games);
 }
 
 function switchServer() {
-  state.server = state.server === "A" ? "B" : "A";
+  state.server = RULES.switchSide(state.server);
 }
 
 function addPoint(winner) {
-  if (!["A", "B"].includes(winner)) return;
-  if (state.finished) return;
+  const scoreResult = RULES.applyPointToScore(state, winner);
+  if (scoreResult.ignored) return;
 
-  const loser = winner === "A" ? "B" : "A";
-  const finalGameBeforePoint = isFinalGame();
   const entry = {
     id: crypto.randomUUID(),
     at: new Date().toISOString(),
@@ -544,20 +520,13 @@ function addPoint(winner) {
     }
   };
 
-  state.gamePoints[winner] += 1;
-  const target = getPointTarget();
+  state.games = scoreResult.games;
+  state.gamePoints = scoreResult.gamePoints;
+  state.server = scoreResult.server;
+  state.finished = scoreResult.finished;
+  if (scoreResult.gameWonBy) entry.gameWonBy = scoreResult.gameWonBy;
 
-  if (hasWonUnit(state.gamePoints[winner], state.gamePoints[loser], target)) {
-    state.games[winner] += 1;
-    state.gamePoints = { A: 0, B: 0 };
-    entry.gameWonBy = winner;
-    switchServer();
-  } else if (finalGameBeforePoint && (state.gamePoints.A + state.gamePoints.B) % 2 === 0) {
-    switchServer();
-  }
-
-  if (state.games[winner] >= state.gamesToWin) {
-    state.finished = true;
+  if (state.finished) {
     if (!state.matchInfo.endTime) {
       state.matchInfo.endTime = getCurrentClockTime();
     }

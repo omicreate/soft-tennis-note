@@ -1,5 +1,5 @@
-const CACHE_NAME = "soft-tennis-logger-v143";
-const ASSETS = ["./", "index.html", "styles.css", "app-config.js", "app-analysis.js", "app-storage.js", "app.js", "manifest.webmanifest"];
+const CACHE_NAME = "soft-tennis-logger-v144";
+const ASSETS = ["./", "index.html", "styles.css", "app-config.js", "app-analysis.js", "app-storage.js", "app-rules.js", "app.js", "manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

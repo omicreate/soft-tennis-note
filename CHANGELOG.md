@@ -10,6 +10,19 @@
 - テスト環境で確認してから本番へ反映する
 - 仕様や運用に関わる変更は、必要に応じて `README.md`、`docs/00-document-map.md`、`docs/requirements.md`、`docs/basic-design.md`、`docs/detailed-design.md`、`docs/test-design.md`、`docs/deployment.md` も更新する
 
+## v144 - 2026-05-28
+
+### 追加
+
+- `app-rules.js` を追加し、スコア進行、ゲーム取得判定、ファイナルゲーム判定、デュース/アドバンテージ表示、サーバー交替判定を `app.js` から分離
+
+### 変更
+
+- `addPoint` はUI入力と履歴作成を担当し、ゲーム/ポイント更新は `SOFT_TENNIS_RULES.applyPointToScore` に委譲する構成へ変更
+- `index.html` の読み込み順を `app-config.js`、`app-analysis.js`、`app-storage.js`、`app-rules.js`、`app.js` に整理
+- Service Workerのキャッシュ対象に `app-rules.js` を追加
+- キャッシュ更新用の表示バージョン、読み込みパラメータ、Service Workerキャッシュ名をv144へ更新
+
 ## v143 - 2026-05-28
 
 ### 変更

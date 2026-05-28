@@ -1,7 +1,7 @@
 # 技術レビュー・改善バックログ
 
 最終更新: 2026-05-28  
-対象バージョン: v143
+対象バージョン: v144
 
 個人開発者として、現状を忖度なしで見た改善メモ。  
 今すぐ全部やるものではなく、テスト運用の反応を見ながら優先度を調整する。
@@ -15,8 +15,9 @@
 - `app-config.js` を追加し、バージョン、保存キー、分析コメント設定、初期状態を分離
 - `app-analysis.js` を追加し、分析コメント生成と得点タイプ判定を分離
 - `app-storage.js` を追加し、保存済み試合の読み書きと容量表示を分離
+- `app-rules.js` を追加し、スコア進行、ゲーム取得、ファイナルゲーム、サーバー交替判定を分離
 - `app.js` は `SOFT_TENNIS_CONFIG` を読み込んで動く構成に変更
-- Service Workerと静的チェックも `app-config.js`、`app-analysis.js`、`app-storage.js` の読み込みを確認するよう更新
+- Service Workerと静的チェックも `app-config.js`、`app-analysis.js`、`app-storage.js`、`app-rules.js` の読み込みを確認するよう更新
 
 理由:
 
@@ -106,7 +107,8 @@
 - 設定系は `app-config.js` に分離済み
 - 分析コメント生成と得点タイプ判定は `app-analysis.js` に分離済み
 - 保存済み試合の読み書きと容量表示は `app-storage.js` に分離済み
-- スコア、サマリー、UI処理はまだ `app.js` に集まっている
+- スコア進行とファイナルゲーム判定は `app-rules.js` に分離済み
+- サマリーとUI処理はまだ `app.js` に集まっている
 
 リスク:
 

@@ -2,7 +2,7 @@
 
 スマホで使うことを前提にした、ソフトテニス専用の試合記録・分析アプリです。
 
-現在の表示バージョン: `v143`
+現在の表示バージョン: `v144`
 
 更新内容は `CHANGELOG.md` に残します。
 
@@ -97,8 +97,9 @@ https://www.jsta.or.jp/about_softtennis/words
 - `app-config.js`: バージョン、保存キー、初期値、分析コメント設定
 - `app-analysis.js`: 分析コメント生成、得点タイプ判定
 - `app-storage.js`: 保存済み試合の読み書き、容量表示
+- `app-rules.js`: スコア進行、ゲーム取得、ファイナルゲーム、サーバー交替判定
 - `styles.css`: スマホ向けUI
-- `app.js`: スコア進行、記録、分析、保存、CSV出力
+- `app.js`: 画面操作、記録、分析、保存、CSV出力
 - `manifest.webmanifest`: PWA用マニフェスト
 - `sw.js`: オフラインキャッシュ用サービスワーカー
 - `CHANGELOG.md`: 更新履歴
@@ -119,6 +120,7 @@ https://www.jsta.or.jp/about_softtennis/words
 node --check app-config.js
 node --check app-analysis.js
 node --check app-storage.js
+node --check app-rules.js
 node --check app.js
 node --check sw.js
 node tests/analysis-counts.test.js

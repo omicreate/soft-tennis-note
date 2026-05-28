@@ -23,6 +23,7 @@ soft-tennis-note/
 ├── app-config.js
 ├── app-analysis.js
 ├── app-storage.js
+├── app-rules.js
 ├── app.js
 ├── styles.css
 ├── sw.js
@@ -55,7 +56,8 @@ soft-tennis-note/
 | `app-config.js` | バージョン、保存キー、初期状態、分析コメント設定。今後の分割時も先に読み込む |
 | `app-analysis.js` | 分析コメント生成、得点タイプ判定。`app-config.js` の後、`app.js` の前に読み込む |
 | `app-storage.js` | 保存済み試合の読み書き、容量表示。`app.js` の前に読み込む |
-| `app.js` | アプリの中心。スコア、記録、分析、保存、サマリー、CSV |
+| `app-rules.js` | スコア進行、ゲーム取得、ファイナルゲーム、サーバー交替判定。`app.js` の前に読み込む |
+| `app.js` | アプリの中心。画面操作、記録、分析、保存、サマリー、CSV |
 | `styles.css` | 見た目。スマホ対応、色、余白、ボタン、スコア表示 |
 | `sw.js` | オフライン対応。Service Workerとキャッシュ |
 | `manifest.webmanifest` | ホーム画面追加などPWA向け設定 |

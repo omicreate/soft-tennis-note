@@ -22,11 +22,12 @@ assert.match(html, /id="archiveStorageLabel"/, "保存容量の目安表示が�
 assert.match(html, /id="summaryModeControl"/, "サマリー画像の用途切替がある");
 assert.match(css, /\.summary-dialog \.dialog-actions\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/, "サマリー画像画面の主要ボタンはスマホで2列表示になる");
 assert.match(css, /\.summary-dialog \.dialog-actions \.action-close\s*\{[\s\S]*grid-column:\s*1 \/ -1/, "サマリー画像画面の閉じるボタンは下段全幅になる");
-assert.match(html, /app-config\.js\?v=143[\s\S]*app-analysis\.js\?v=143[\s\S]*app-storage\.js\?v=143[\s\S]*app\.js\?v=143/, "設定、分析、保存、本体の順に読み込む");
-assert.match(html, /styles\.css\?v=143/, "styles.cssのキャッシュ更新バージョンが最新");
-assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v143/, "Service Workerのキャッシュ名が最新");
+assert.match(html, /app-config\.js\?v=144[\s\S]*app-analysis\.js\?v=144[\s\S]*app-storage\.js\?v=144[\s\S]*app-rules\.js\?v=144[\s\S]*app\.js\?v=144/, "設定、分析、保存、ルール、本体の順に読み込む");
+assert.match(html, /styles\.css\?v=144/, "styles.cssのキャッシュ更新バージョンが最新");
+assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v144/, "Service Workerのキャッシュ名が最新");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-config\.js/, "Service Workerのキャッシュ対象に設定ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-analysis\.js/, "Service Workerのキャッシュ対象に分析ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-storage\.js/, "Service Workerのキャッシュ対象に保存ファイルがある");
+assert.match(fs.readFileSync("sw.js", "utf8"), /app-rules\.js/, "Service Workerのキャッシュ対象にルールファイルがある");
 
 console.log("responsive-static: ok");
