@@ -1,4 +1,4 @@
-const APP_VERSION = "v134";
+const APP_VERSION = "v135";
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
 const MAX_ARCHIVED_MATCHES = 30;
@@ -78,6 +78,8 @@ const defaultState = {
 
 let state = loadState();
 let matchDialogMode = "new";
+let summaryPreviewState = null;
+let summaryPreviewMode = "share";
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -152,6 +154,7 @@ const elements = {
   actionMenuDialog: $("#actionMenuDialog"),
   summaryImageDialog: $("#summaryImageDialog"),
   summaryPreviewImage: $("#summaryPreviewImage"),
+  summaryModeControl: $("#summaryModeControl"),
   archivedMatchesDialog: $("#archivedMatchesDialog"),
   archivedMatchList: $("#archivedMatchList"),
   archiveSearchInput: $("#archiveSearchInput"),
@@ -411,7 +414,7 @@ function sanitizeFileNamePart(value) {
     .slice(0, 28);
 }
 
-function getSummaryImageFileName(date = new Date()) {
+function getSummaryImageFileName(date = new Date(), mode = summaryPreviewMode) {
   const timestamp = [
     date.getFullYear(),
     String(date.getMonth() + 1).padStart(2, "0"),
@@ -421,7 +424,8 @@ function getSummaryImageFileName(date = new Date()) {
     String(date.getSeconds()).padStart(2, "0")
   ].join("");
   const teams = [sanitizeFileNamePart(displayName("A")), sanitizeFileNamePart(displayName("B"))].filter(Boolean).join("-vs-");
-  return `soft-tennis-summary-${timestamp}${teams ? `-${teams}` : ""}.png`;
+  const modeLabel = mode === "detail" ? "detail" : "share";
+  return `soft-tennis-summary-${modeLabel}-${timestamp}${teams ? `-${teams}` : ""}.png`;
 }
 
 function getCsvFileName(date = new Date()) {
@@ -1892,10 +1896,11 @@ function strokeRoundedRect(ctx, x, y, width, height, radius, strokeStyle, lineWi
   ctx.stroke();
 }
 
-function drawSummaryImage(canvas, summary) {
+function drawSummaryImage(canvas, summary, mode = "detail") {
   const ctx = canvas.getContext("2d");
   const width = 1080;
-  const height = 1880;
+  const isShareMode = mode === "share";
+  const height = isShareMode ? 1350 : 1880;
   const ownColor = "#2563eb";
   const oppColor = "#dc2626";
   const inkColor = "#1f2937";
@@ -1923,7 +1928,7 @@ function drawSummaryImage(canvas, summary) {
 
   let y = 76;
   y = drawMd(`# ${summary.title}`, 56, y, { size: 46, weight: 900, lineHeight: 58, after: 8 });
-  y = drawMd(`> ${summary.subtitle}`, 64, y, { size: 27, weight: 800, color: mutedColor, lineHeight: 36, after: 10 });
+  y = drawMd(`> ${isShareMode ? "共有用サマリー" : "詳細保存用サマリー"} / ${summary.subtitle}`, 64, y, { size: 27, weight: 800, color: mutedColor, lineHeight: 36, after: 10 });
   ctx.strokeStyle = lineColor;
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -1937,7 +1942,7 @@ function drawSummaryImage(canvas, summary) {
   summary.playerRows.forEach(([label, value]) => {
     y = bullet(`${label}: ${value}`, y, "neutral", 1);
   });
-  summary.conditionRows.slice(0, 2).forEach(([label, value]) => {
+  summary.conditionRows.slice(0, isShareMode ? 1 : 2).forEach(([label, value]) => {
     y = bullet(`${label}: ${value}`, y, "neutral", 1);
   });
   y += 10;
@@ -1949,57 +1954,78 @@ function drawSummaryImage(canvas, summary) {
   y += 10;
 
   y = heading("分析コメント", y);
-  summary.analysisComments.slice(0, 5).forEach((item) => {
+  summary.analysisComments.slice(0, isShareMode ? 3 : 5).forEach((item) => {
     y = bullet(item, y, "neutral", 2);
   });
   y += 10;
 
   y = heading("次に活かすこと", y);
-  [...summary.quickItems, ...summary.reviewItems].slice(0, 3).forEach((item) => {
+  [...summary.quickItems, ...summary.reviewItems].slice(0, isShareMode ? 2 : 3).forEach((item) => {
     y = bullet(item, y, "neutral", 2);
   });
   y += 8;
 
-  y = heading("根拠データ", y);
-  [...summary.summaryRows, ...summary.detailRows, ...summary.phaseRows].slice(0, 9).forEach(([label, value, tone]) => {
-    if (label === "記録ポイント") return;
-    y = bullet(`${label}: ${value}`, y, "neutral", 1);
-  });
-  y += 8;
+  if (isShareMode) {
+    y = heading("主な数字", y);
+    summary.summaryRows.filter(([label]) => label !== "記録ポイント").slice(0, 4).forEach(([label, value, tone]) => {
+      y = bullet(`${label}: ${value}`, y, tone || "neutral", 1);
+    });
+  } else {
+    y = heading("根拠データ", y);
+    [...summary.summaryRows, ...summary.detailRows, ...summary.phaseRows].slice(0, 9).forEach(([label, value, tone]) => {
+      if (label === "記録ポイント") return;
+      y = bullet(`${label}: ${value}`, y, tone || "neutral", 1);
+    });
+    y += 8;
 
-  y = heading("試合条件", y);
-  summary.conditionRows.slice(2, 6).forEach(([label, value]) => {
-    y = bullet(`${label}: ${value}`, y, "neutral", 1);
-  });
+    y = heading("試合条件", y);
+    summary.conditionRows.slice(2, 6).forEach(([label, value]) => {
+      y = bullet(`${label}: ${value}`, y, "neutral", 1);
+    });
+  }
 
   ctx.fillStyle = mutedColor;
   ctx.font = '700 24px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
   const footer = ["端末内で画像生成。開発者や管理者へ送られません。", ...summary.meta].join(" / ");
-  drawClampedText(ctx, footer, 56, 1794, 968, 32, 2);
+  drawClampedText(ctx, footer, 56, height - 86, 968, 32, 2);
 }
 
-function createSummaryImageDataUrl(matchState = state) {
+function createSummaryImageDataUrl(matchState = state, mode = summaryPreviewMode) {
   const canvas = document.createElement("canvas");
   const originalState = state;
   state = normalizeState(structuredClone(matchState));
   try {
-    drawSummaryImage(canvas, getSummaryImageData());
+    drawSummaryImage(canvas, getSummaryImageData(), mode);
   } finally {
     state = originalState;
   }
   return canvas.toDataURL("image/png");
 }
 
+function updateSummaryPreviewImage() {
+  elements.summaryPreviewImage.src = createSummaryImageDataUrl(summaryPreviewState || state, summaryPreviewMode);
+}
+
+function setSummaryPreviewMode(mode) {
+  summaryPreviewMode = mode === "detail" ? "detail" : "share";
+  elements.summaryModeControl?.querySelectorAll?.("[data-summary-mode]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.summaryMode === summaryPreviewMode);
+  });
+  updateSummaryPreviewImage();
+}
+
 function previewSummaryImage(matchState = state) {
-  elements.summaryPreviewImage.src = createSummaryImageDataUrl(matchState);
+  summaryPreviewState = normalizeState(structuredClone(matchState));
+  summaryPreviewMode = "share";
+  setSummaryPreviewMode(summaryPreviewMode);
   elements.summaryImageDialog.showModal();
 }
 
 function downloadSummaryPreview() {
-  const dataUrl = elements.summaryPreviewImage.src || createSummaryImageDataUrl();
+  const dataUrl = elements.summaryPreviewImage.src || createSummaryImageDataUrl(summaryPreviewState || state, summaryPreviewMode);
   const link = document.createElement("a");
   link.href = dataUrl;
-  link.download = getSummaryImageFileName();
+  link.download = getSummaryImageFileName(new Date(), summaryPreviewMode);
   link.click();
 }
 
@@ -2015,12 +2041,12 @@ function dataUrlToBlob(dataUrl) {
 }
 
 async function shareSummaryPreview() {
-  const dataUrl = elements.summaryPreviewImage.src || createSummaryImageDataUrl();
+  const dataUrl = elements.summaryPreviewImage.src || createSummaryImageDataUrl(summaryPreviewState || state, summaryPreviewMode);
   const title = "ソフトテニス試合ノート";
   const text = "試合サマリー画像を共有します。";
   try {
     const blob = dataUrlToBlob(dataUrl);
-    const file = new File([blob], getSummaryImageFileName(), { type: "image/png" });
+    const file = new File([blob], getSummaryImageFileName(new Date(), summaryPreviewMode), { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {
       await navigator.share({ title, text, files: [file] });
       return;
@@ -2257,6 +2283,11 @@ elements.archivedMatchList.addEventListener("click", (event) => {
 });
 elements.shareSummaryImageButton.addEventListener("click", shareSummaryPreview);
 elements.downloadSummaryImageButton.addEventListener("click", downloadSummaryPreview);
+elements.summaryModeControl.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-summary-mode]");
+  if (!button) return;
+  setSummaryPreviewMode(button.dataset.summaryMode);
+});
 elements.resetMatchDialogButton.addEventListener("click", resetMatchDialogFields);
 elements.exportCsvButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();

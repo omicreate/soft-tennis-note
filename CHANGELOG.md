@@ -10,6 +10,18 @@
 - テスト環境で確認してから本番へ反映する
 - 仕様や運用に関わる変更は、必要に応じて `README.md`、`docs/00-document-map.md`、`docs/requirements.md`、`docs/basic-design.md`、`docs/detailed-design.md`、`docs/test-design.md`、`docs/deployment.md` も更新する
 
+## v135 - 2026-05-28
+
+### 追加
+
+- サマリー画像に `共有用` と `詳細保存用` の切り替えを追加
+- 共有用サマリーは短め、詳細保存用サマリーは情報多めの画像として生成
+- サマリー画像ファイル名に `share` / `detail` を含め、用途を判別しやすく改善
+
+### 変更
+
+- キャッシュ更新用の表示バージョン、読み込みパラメータ、Service Workerキャッシュ名をv135へ更新
+
 ## v134 - 2026-05-28
 
 ### 追加

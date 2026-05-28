@@ -1911,6 +1911,10 @@ dialog::backdrop {
   line-height: 1.5;
 }
 
+.summary-mode {
+  grid-template-columns: 1fr 1fr;
+}
+
 .summary-dialog img {
   width: 100%;
   max-height: min(50svh, 520px);

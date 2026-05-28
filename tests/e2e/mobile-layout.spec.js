@@ -11,10 +11,10 @@ async function expectNoHorizontalOverflow(page, label) {
 
 test.describe("mobile layout", () => {
   test("record, analysis, history, archive and summary screens fit mobile widths", async ({ page }, testInfo) => {
-    await page.goto("/index.html?v=134");
+    await page.goto("/index.html?v=135");
 
     await expect(page.getByText("ソフトテニス試合ノート").first()).toBeVisible();
-    await expect(page.getByText("v134・2026-05-28").first()).toBeVisible();
+    await expect(page.getByText("v135・2026-05-28").first()).toBeVisible();
     await expectNoHorizontalOverflow(page, "record screen");
 
     await page.getByRole("button", { name: "分析" }).click();
@@ -46,7 +46,11 @@ test.describe("mobile layout", () => {
     await page.getByRole("button", { name: "メニュー" }).click();
     await page.getByRole("button", { name: "サマリー画像を表示" }).click();
     await expect(page.locator("#summaryPreviewImage")).toBeVisible();
-    await expect(page.getByRole("button", { name: "共有" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "共有用" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "詳細保存用" })).toBeVisible();
+    await page.getByRole("button", { name: "詳細保存用" }).click();
+    await expect(page.getByRole("button", { name: "詳細保存用" })).toHaveClass(/active/);
+    await expect(page.locator("#shareSummaryImageButton")).toBeVisible();
     await expect(page.getByRole("button", { name: "画像を保存" })).toBeVisible();
     await expectNoHorizontalOverflow(page, "summary dialog");
 

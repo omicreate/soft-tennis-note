@@ -1,7 +1,7 @@
 # 詳細設計書
 
 最終更新: 2026-05-28  
-対象バージョン: v134
+対象バージョン: v135
 
 ## 1. 対象ファイル
 
@@ -261,12 +261,18 @@ CanvasでPNG画像を生成する。
 - 根拠データ
 - 試合条件
 
-保存ファイル名は重複しにくいよう、日時とチーム名を含める。
+画像は2種類に分ける。
+
+- 共有用: SNSやLINEで送りやすい短めの画像
+- 詳細保存用: 後で見返すため、根拠データと試合条件を多めに含める画像
+
+保存ファイル名は重複しにくいよう、用途、日時、チーム名を含める。
 
 例:
 
 ```text
-soft-tennis-summary-20260528153010-team-vs-opponent.png
+soft-tennis-summary-share-20260528153010-team-vs-opponent.png
+soft-tennis-summary-detail-20260528153010-team-vs-opponent.png
 ```
 
 ## 11. CSV出力

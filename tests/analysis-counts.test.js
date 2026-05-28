@@ -170,10 +170,11 @@ const testCode = `
   assert.deepEqual(finishedSummaryImage.resultRows[0], ["試合結果", "自チームの勝ち"], "画像サマリーに勝った側を表示する");
   assert.deepEqual(finishedSummaryImage.resultRows[1], ["ゲームスコア", "4-2"], "画像サマリーに最終ゲームスコアを表示する");
   assert.equal(
-    getSummaryImageFileName(new Date("2026-05-27T13:45:06")).startsWith("soft-tennis-summary-20260527134506-"),
+    getSummaryImageFileName(new Date("2026-05-27T13:45:06"), "share").startsWith("soft-tennis-summary-share-20260527134506-"),
     true,
-    "画像ファイル名に年月日時分秒を含める"
+    "画像ファイル名に用途と年月日時分秒を含める"
   );
+  assert.match(getSummaryImageFileName(new Date("2026-05-27T13:45:06"), "detail"), /soft-tennis-summary-detail-20260527134506-/, "詳細保存用のファイル名を作る");
   saveAnalysisMemo();
   const summaryImageWithMemo = getSummaryImageData();
   assert.match(summaryImageWithMemo.analysisMemoTitle, /保存した分析/, "画像サマリーに保存した分析の見出しを含める");
