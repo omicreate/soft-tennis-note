@@ -10,6 +10,17 @@
 - テスト環境で確認してから本番へ反映する
 - 仕様や運用に関わる変更は、必要に応じて `README.md`、`docs/00-document-map.md`、`docs/requirements.md`、`docs/basic-design.md`、`docs/detailed-design.md`、`docs/test-design.md`、`docs/deployment.md` も更新する
 
+## v130 - 2026-05-28
+
+### 追加
+
+- 保存済み試合に `新しい順`、`古い順`、`名前順` の並び替えを追加
+- 依存追加なしで実行できるレスポンシブ静的チェック `tests/responsive-static.test.js` を追加
+
+### 変更
+
+- キャッシュ更新用の表示バージョン、読み込みパラメータ、Service Workerキャッシュ名をv130へ更新
+
 ## v129 - 2026-05-28
 
 ### 追加

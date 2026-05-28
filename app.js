@@ -1,4 +1,4 @@
-const APP_VERSION = "v129";
+const APP_VERSION = "v130";
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
 const MAX_ARCHIVED_MATCHES = 30;
@@ -155,6 +155,7 @@ const elements = {
   archivedMatchesDialog: $("#archivedMatchesDialog"),
   archivedMatchList: $("#archivedMatchList"),
   archiveSearchInput: $("#archiveSearchInput"),
+  archiveSortSelect: $("#archiveSortSelect"),
   archiveCountLabel: $("#archiveCountLabel"),
   menuButton: $("#menuButton"),
   openNewMatchButton: $("#openNewMatchButton"),
@@ -1934,7 +1935,7 @@ async function shareSummaryPreview() {
 function renderArchivedMatches() {
   const archived = loadArchivedMatches();
   const query = elements.archiveSearchInput?.value || "";
-  const filtered = filterArchivedMatches(archived, query);
+  const filtered = sortArchivedMatches(filterArchivedMatches(archived, query), elements.archiveSortSelect?.value || "newest");
   if (elements.archiveCountLabel) {
     elements.archiveCountLabel.textContent = query ? `${filtered.length}/${archived.length}件` : `${archived.length}件`;
   }
@@ -2002,6 +2003,17 @@ function filterArchivedMatches(archived, query = "") {
   const normalizedQuery = String(query || "").trim().toLowerCase();
   if (!normalizedQuery) return archived;
   return archived.filter((entry) => archiveSearchText(entry).includes(normalizedQuery));
+}
+
+function sortArchivedMatches(archived, sortType = "newest") {
+  const sorted = archived.slice();
+  if (sortType === "oldest") {
+    return sorted.sort((a, b) => new Date(a.savedAt || 0) - new Date(b.savedAt || 0));
+  }
+  if (sortType === "title") {
+    return sorted.sort((a, b) => String(a.title || "").localeCompare(String(b.title || ""), "ja"));
+  }
+  return sorted.sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
 }
 
 function deleteArchivedMatch(id) {
@@ -2180,6 +2192,7 @@ elements.teamBName.addEventListener("input", () => {
 elements.historyFilterSelect.addEventListener("change", renderHistory);
 elements.historySortSelect.addEventListener("change", renderHistory);
 elements.archiveSearchInput.addEventListener("input", renderArchivedMatches);
+elements.archiveSortSelect.addEventListener("change", renderArchivedMatches);
 
 $$(".tab").forEach((button) => {
   button.addEventListener("click", () => {

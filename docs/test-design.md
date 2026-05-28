@@ -1,7 +1,7 @@
 # テスト設計書
 
 最終更新: 2026-05-28  
-対象バージョン: v129
+対象バージョン: v130
 
 ## 1. テスト方針
 
@@ -127,6 +127,7 @@ node --check app.js
 node --check sw.js
 node tests/analysis-counts.test.js
 node tests/match-flow.test.js
+node tests/responsive-static.test.js
 ```
 
 確認項目:

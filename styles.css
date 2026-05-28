@@ -1916,7 +1916,7 @@ dialog::backdrop {
 
 .archive-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(104px, 0.45fr) auto;
   gap: 8px;
   align-items: end;
 }

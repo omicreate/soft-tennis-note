@@ -331,7 +331,11 @@ const scenarioCode = `
   saveArchivedMatches(archiveFixture);
   assert.equal(filterArchivedMatches(loadArchivedMatches(), "春季").length, 1, "保存済み試合を大会名で検索");
   assert.equal(filterArchivedMatches(loadArchivedMatches(), "黒チーム")[0].id, "archive-2", "保存済み試合を相手名で検索");
+  assert.deepEqual(sortArchivedMatches(loadArchivedMatches(), "newest").map((entry) => entry.id), ["archive-1", "archive-2"], "保存済み試合を新しい順で並べる");
+  assert.deepEqual(sortArchivedMatches(loadArchivedMatches(), "oldest").map((entry) => entry.id), ["archive-2", "archive-1"], "保存済み試合を古い順で並べる");
+  assert.deepEqual(sortArchivedMatches(loadArchivedMatches(), "title").map((entry) => entry.id), ["archive-2", "archive-1"], "保存済み試合を名前順で並べる");
   testElements.get("#archiveSearchInput").value = "春季";
+  testElements.get("#archiveSortSelect").value = "newest";
   renderArchivedMatches();
   assert.equal(testElements.get("#archiveCountLabel").textContent, "1/2件", "検索時に絞り込み件数を表示");
   assert.match(testElements.get("#archivedMatchList").innerHTML, /青チーム/, "検索結果に該当試合を表示");
