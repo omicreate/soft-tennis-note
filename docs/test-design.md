@@ -1,7 +1,7 @@
 # テスト設計書
 
 最終更新: 2026-05-28  
-対象バージョン: v130
+対象バージョン: v131
 
 ## 1. テスト方針
 
@@ -128,6 +128,7 @@ node --check sw.js
 node tests/analysis-counts.test.js
 node tests/match-flow.test.js
 node tests/responsive-static.test.js
+npm run test:e2e
 ```
 
 確認項目:
@@ -140,9 +141,27 @@ node tests/responsive-static.test.js
 - Service Workerのキャッシュ名が最新
 - スマホで古い表示が出る場合はキャッシュ再読み込みを案内する
 
-## 6. 今後追加したいテスト
+## 6. Playwright E2Eテスト
 
-- Playwrightなどによるスマホ画面の自動スクリーンショット確認
+`tests/e2e/mobile-layout.spec.js` で、スマホ相当の画面幅を確認する。
+
+確認する主な画面:
+
+- 記録画面
+- 分析画面
+- 履歴画面
+- 保存済み試合ダイアログ
+- サマリー画像ダイアログ
+
+確認する主な内容:
+
+- 主要UIが表示される
+- 横方向にはみ出さない
+- 保存済み試合の検索、並び替え、件数表示が存在する
+- サマリー画像の共有、保存ボタンが見える
+
+## 7. 今後追加したいテスト
+
 - Safari、Chrome、Android Chromeでの実機確認記録
 - サマリー画像の文字被り確認
 - 保存済み試合が増えた場合の容量確認

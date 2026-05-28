@@ -1,4 +1,4 @@
-const APP_VERSION = "v130";
+const APP_VERSION = "v131";
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
 const MAX_ARCHIVED_MATCHES = 30;

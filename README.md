@@ -2,7 +2,7 @@
 
 スマホで使うことを前提にした、ソフトテニス専用の試合記録・分析アプリです。
 
-現在の表示バージョン: `v130`
+現在の表示バージョン: `v131`
 
 更新内容は `CHANGELOG.md` に残します。
 
@@ -115,6 +115,14 @@ node --check sw.js
 node tests/analysis-counts.test.js
 node tests/match-flow.test.js
 node tests/responsive-static.test.js
+npm run test:e2e
+```
+
+Playwrightを使う場合は、初回のみ以下を実行します。
+
+```sh
+npm install
+npx playwright install chromium
 ```
 
 ## 開発ドキュメント
