@@ -2,7 +2,7 @@
 
 スマホで使うことを前提にした、ソフトテニス専用の試合記録・分析アプリです。
 
-現在の表示バージョン: `v127`
+現在の表示バージョン: `v128`
 
 更新内容は `CHANGELOG.md` に残します。
 
@@ -103,6 +103,7 @@ https://www.jsta.or.jp/about_softtennis/words
 - `docs/test-design.md`: テスト設計
 - `docs/project-structure.md`: ローカル構成・管理ルール
 - `docs/expansion-roadmap.md`: 他スポーツや別アプリへの横展開メモ
+- `docs/technical-review.md`: 技術レビュー・改善バックログ
 - `docs/requirements-design.md`: 既存の統合版要件・設計書
 - `docs/deployment.md`: 公開・テスト環境の運用メモ
 

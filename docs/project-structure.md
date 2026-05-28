@@ -36,6 +36,7 @@ soft-tennis-note/
 │   ├── test-design.md
 │   ├── project-structure.md
 │   ├── expansion-roadmap.md
+│   ├── technical-review.md
 │   ├── deployment.md
 │   └── requirements-design.md
 └── tests/
@@ -69,6 +70,7 @@ soft-tennis-note/
 | `docs/deployment.md` | 公開、検証、本番反映手順 |
 | `docs/project-structure.md` | このファイル。ローカル構造と管理ルール |
 | `docs/expansion-roadmap.md` | 他スポーツ、別アプリへの横展開メモ |
+| `docs/technical-review.md` | 技術レビュー、改善バックログ |
 | `docs/requirements-design.md` | 既存の統合版設計書 |
 
 ## 5. テスト

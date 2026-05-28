@@ -1,4 +1,4 @@
-const APP_VERSION = "v127";
+const APP_VERSION = "v128";
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
 const MAX_ARCHIVED_MATCHES = 30;
@@ -193,14 +193,37 @@ const elements = {
 
 function loadState() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return normalizeState({ ...structuredClone(defaultState), ...saved });
+    return normalizeState(JSON.parse(localStorage.getItem(STORAGE_KEY)));
   } catch {
     return structuredClone(defaultState);
   }
 }
 
-function normalizeState(saved) {
+function isPlainObject(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeSideScores(value) {
+  const source = isPlainObject(value) ? value : {};
+  return {
+    A: Number.isFinite(Number(source.A)) ? Number(source.A) : 0,
+    B: Number.isFinite(Number(source.B)) ? Number(source.B) : 0
+  };
+}
+
+function normalizeState(raw) {
+  const source = isPlainObject(raw) ? raw : {};
+  const saved = {
+    ...structuredClone(defaultState),
+    ...source,
+    teams: { ...defaultState.teams, ...(isPlainObject(source.teams) ? source.teams : {}) },
+    players: { ...defaultState.players, ...(isPlainObject(source.players) ? source.players : {}) },
+    matchInfo: { ...defaultState.matchInfo, ...(isPlainObject(source.matchInfo) ? source.matchInfo : {}) },
+    games: normalizeSideScores(source.games),
+    gamePoints: normalizeSideScores(source.gamePoints),
+    points: Array.isArray(source.points) ? source.points : [],
+    analysisMemos: Array.isArray(source.analysisMemos) ? source.analysisMemos : []
+  };
   const outcomeAliases = {
     "相手ミス": "相手の失ポイント",
     "自チームミス": "自チームの失ポイント",
@@ -248,8 +271,6 @@ function normalizeState(saved) {
   saved.matchInfo = { ...defaultState.matchInfo, ...(saved.matchInfo || {}) };
   saved.selectedHand = saved.selectedHand || defaultState.selectedHand;
   saved.selectedPlayer = saved.selectedPlayer || saved.selectedRole || defaultState.selectedPlayer;
-  saved.analysisMemos = Array.isArray(saved.analysisMemos) ? saved.analysisMemos : [];
-  saved.players = { ...defaultState.players, ...(saved.players || {}) };
   saved.points = (saved.points || []).map((point) => ({
     ...point,
     outcome: outcomeAliases[point.outcome] || point.outcome,
@@ -365,6 +386,19 @@ function getSummaryImageFileName(date = new Date()) {
   ].join("");
   const teams = [sanitizeFileNamePart(displayName("A")), sanitizeFileNamePart(displayName("B"))].filter(Boolean).join("-vs-");
   return `soft-tennis-summary-${timestamp}${teams ? `-${teams}` : ""}.png`;
+}
+
+function getCsvFileName(date = new Date()) {
+  const timestamp = [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+    String(date.getHours()).padStart(2, "0"),
+    String(date.getMinutes()).padStart(2, "0"),
+    String(date.getSeconds()).padStart(2, "0")
+  ].join("");
+  const teams = [sanitizeFileNamePart(displayName("A")), sanitizeFileNamePart(displayName("B"))].filter(Boolean).join("-vs-");
+  return `soft-tennis-points-${timestamp}${teams ? `-${teams}` : ""}.csv`;
 }
 
 function getLegacyServeStart(point) {
@@ -1508,7 +1542,7 @@ function exportCsv() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `soft-tennis-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.download = getCsvFileName();
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -1888,8 +1922,9 @@ async function shareSummaryPreview() {
       await navigator.share({ title, text });
       return;
     }
-  } catch {
-    // 共有がキャンセルされた場合やブラウザ非対応時は保存操作に切り替える。
+  } catch (error) {
+    if (error?.name === "AbortError") return;
+    // ブラウザ非対応や共有失敗時は保存操作に切り替える。
   }
   downloadSummaryPreview();
 }

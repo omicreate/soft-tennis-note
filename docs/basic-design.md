@@ -1,7 +1,7 @@
 # 基本設計書・方式設計書
 
 最終更新: 2026-05-28  
-対象バージョン: v127
+対象バージョン: v128
 
 ## 1. 全体方式
 
@@ -141,7 +141,7 @@ soft-tennis-logger-archive-v1
 例:
 
 ```text
-soft-tennis-logger-v127
+soft-tennis-logger-v128
 ```
 
 `index.html` の読み込みバージョン、`app.js` の `APP_VERSION`、`sw.js` のキャッシュ名はそろえる。
@@ -202,6 +202,8 @@ https://omicreate.github.io/soft-tennis-note-preview/
 - `sw.js` の `CACHE_NAME`
 - `CHANGELOG.md`
 - `TEST_REPORT.md`
+
+保存データ形式を変える場合は、古いデータや一部項目が欠けたデータを読めるように正規化処理を残す。
 
 ## 9. 横展開を見据えた考え方
 

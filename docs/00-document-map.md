@@ -47,6 +47,7 @@
 | `deployment.md` | 公開、検証、本番反映の運用手順 |
 | `project-structure.md` | ローカルフォルダ、GitHub、各ファイルの説明 |
 | `expansion-roadmap.md` | 横展開、今後作りたいアプリの方向性 |
+| `technical-review.md` | 技術レビュー、改善バックログ |
 
 ## 更新ルール
 

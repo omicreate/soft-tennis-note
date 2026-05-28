@@ -35,6 +35,7 @@ function createAppContext(savedStateText = null) {
   const elements = new Map();
   const savedWrites = [];
   const savedStorage = new Map();
+  const createdAnchors = [];
 
   function element(selector) {
     if (!elements.has(selector)) elements.set(selector, createElement(selector));
@@ -44,6 +45,12 @@ function createAppContext(savedStateText = null) {
   const context = {
     console,
     Blob: function Blob() {},
+    File: function File(parts, name, options) {
+      this.parts = parts;
+      this.name = name;
+      this.type = options?.type || "";
+    },
+    atob: (value) => Buffer.from(value, "base64").toString("binary"),
     URL: {
       createObjectURL: () => "blob:test",
       revokeObjectURL() {}
@@ -61,7 +68,16 @@ function createAppContext(savedStateText = null) {
       body: createElement("body"),
       querySelector: element,
       querySelectorAll: () => [],
-      createElement
+      createElement: (selector) => {
+        const created = createElement(selector);
+        if (selector === "a") {
+          created.click = () => {
+            created.clicked = true;
+          };
+          createdAnchors.push(created);
+        }
+        return created;
+      }
     },
     localStorage: {
       getItem: (key) => savedStorage.has(key) ? savedStorage.get(key) : savedStateText,
@@ -74,6 +90,7 @@ function createAppContext(savedStateText = null) {
     navigator: {},
     assert,
     __elements: elements,
+    __createdAnchors: createdAnchors,
     savedStorage,
     savedWrites
   };
@@ -298,6 +315,11 @@ const scenarioCode = `
   assert.equal(inferResultFromCourse("ネット"), "ネット", "ネット到達はネット");
   assert.equal(inferResultFromCourse("左サイドアウト"), "サイドアウト", "サイドアウト到達はサイドアウト");
   assert.equal(inferResultFromCourse("バックアウト"), "バックアウト", "バックアウト到達はバックアウト");
+  assert.equal(
+    getCsvFileName(new Date("2026-05-28T10:11:12")).startsWith("soft-tennis-points-20260528101112-"),
+    true,
+    "CSVファイル名に年月日時分秒を含める"
+  );
 `;
 
 createAppContext();
@@ -313,4 +335,50 @@ vm.runInContext(
   { filename: "broken-storage.scenario.js" }
 );
 
-console.log("match-flow: ok");
+const partialStorageContext = createAppContext(JSON.stringify({
+  teams: { A: "保存済み自チーム" },
+  games: { A: "2" },
+  gamePoints: { B: 3 },
+  points: "invalid",
+  matchInfo: null
+}));
+vm.runInContext(
+  `
+    assert.equal(state.teams.A, "保存済み自チーム", "部分的な保存データのチーム名を残す");
+    assert.equal(state.teams.B, "相手ペア", "欠けた相手名は既定値へフォールバック");
+    assert.deepEqual(state.games, { A: 2, B: 0 }, "欠けたゲーム数は0へフォールバック");
+    assert.deepEqual(state.gamePoints, { A: 0, B: 3 }, "欠けたポイント数は0へフォールバック");
+    assert.deepEqual(state.points, [], "配列でない履歴は空配列へフォールバック");
+    assert.equal(state.matchInfo.weather, "未記録", "不正な試合情報は既定値へフォールバック");
+  `,
+  partialStorageContext,
+  { filename: "partial-storage.scenario.js" }
+);
+
+const shareAbortContext = createAppContext();
+const shareAbortPromise = vm.runInContext(
+  `
+    (async () => {
+      document.querySelector("#summaryPreviewImage").src = "data:image/png;base64,AAAA";
+      navigator.canShare = () => true;
+      navigator.share = async () => {
+        const error = new Error("cancel");
+        error.name = "AbortError";
+        throw error;
+      };
+      await shareSummaryPreview();
+      assert.equal(globalThis.__createdAnchors.length, 0, "共有キャンセルだけでは画像保存へ切り替えない");
+    })()
+  `,
+  shareAbortContext,
+  { filename: "share-abort.scenario.js" }
+);
+
+shareAbortPromise
+  .then(() => {
+    console.log("match-flow: ok");
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
