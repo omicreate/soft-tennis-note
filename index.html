@@ -7,7 +7,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
     <link rel="manifest" href="manifest.webmanifest?v=136" />
-    <link rel="stylesheet" href="styles.css?v=137" />
+    <link rel="stylesheet" href="styles.css?v=138" />
   </head>
   <body>
     <main class="app-shell">
@@ -337,7 +337,7 @@
       </section>
 
       <footer class="app-footer">
-        <span class="app-version">v137・2026-05-28</span>
+        <span class="app-version">v138・2026-05-28</span>
         <span>© 2026 OmiCreate</span>
         <span>無断転載・再配布・改変利用を禁じます</span>
       </footer>
@@ -356,11 +356,11 @@
           <dl>
             <div>
               <dt>現在の版</dt>
-              <dd>v137・2026-05-28</dd>
+              <dd>v138・2026-05-28</dd>
             </div>
             <div>
               <dt>更新内容</dt>
-              <dd>設定ファイルを分離し、今後の分割準備を追加。</dd>
+              <dd>保存済み試合の絞り込みを追加。</dd>
             </div>
           </dl>
         </details>
@@ -400,6 +400,32 @@
           <label>
             試合を探す
             <input id="archiveSearchInput" type="search" placeholder="日付・相手名・大会名" />
+          </label>
+          <label>
+            日付
+            <select id="archiveDateFilterSelect">
+              <option value="all" selected>すべて</option>
+              <option value="today">今日</option>
+              <option value="week">7日以内</option>
+              <option value="month">30日以内</option>
+              <option value="dated">日付あり</option>
+            </select>
+          </label>
+          <label>
+            種目
+            <select id="archiveTypeFilterSelect">
+              <option value="all" selected>すべて</option>
+              <option value="doubles">ダブルス</option>
+              <option value="singles">シングルス</option>
+            </select>
+          </label>
+          <label>
+            状態
+            <select id="archiveStatusFilterSelect">
+              <option value="all" selected>すべて</option>
+              <option value="finished">終了</option>
+              <option value="unfinished">途中</option>
+            </select>
           </label>
           <label>
             並び
@@ -618,7 +644,7 @@
       </form>
     </dialog>
 
-    <script src="app-config.js?v=137" defer></script>
-    <script src="app.js?v=137" defer></script>
+    <script src="app-config.js?v=138" defer></script>
+    <script src="app.js?v=138" defer></script>
   </body>
 </html>

@@ -310,6 +310,7 @@ const scenarioCode = `
       pointCount: 12,
       finished: true,
       state: {
+        matchType: "doubles",
         teams: { A: "青チーム", B: "赤チーム" },
         players: { ARear: "青 後衛", AFront: "青 前衛", BRear: "赤 後衛", BFront: "赤 前衛" },
         matchInfo: { date: "2026-05-28", tournament: "春季大会", venueName: "中央公園" }
@@ -322,6 +323,7 @@ const scenarioCode = `
       pointCount: 8,
       finished: false,
       state: {
+        matchType: "singles",
         teams: { A: "白チーム", B: "黒チーム" },
         players: { ARear: "白 後衛", AFront: "白 前衛", BRear: "黒 後衛", BFront: "黒 前衛" },
         matchInfo: { date: "2026-05-27", tournament: "練習試合", venueName: "南コート" }
@@ -331,10 +333,18 @@ const scenarioCode = `
   saveArchivedMatches(archiveFixture);
   assert.equal(filterArchivedMatches(loadArchivedMatches(), "春季").length, 1, "保存済み試合を大会名で検索");
   assert.equal(filterArchivedMatches(loadArchivedMatches(), "黒チーム")[0].id, "archive-2", "保存済み試合を相手名で検索");
+  assert.deepEqual(filterArchivedMatches(loadArchivedMatches(), { matchType: "doubles" }).map((entry) => entry.id), ["archive-1"], "保存済み試合をダブルスで絞り込む");
+  assert.deepEqual(filterArchivedMatches(loadArchivedMatches(), { matchType: "singles" }).map((entry) => entry.id), ["archive-2"], "保存済み試合をシングルスで絞り込む");
+  assert.deepEqual(filterArchivedMatches(loadArchivedMatches(), { status: "finished" }).map((entry) => entry.id), ["archive-1"], "保存済み試合を終了で絞り込む");
+  assert.deepEqual(filterArchivedMatches(loadArchivedMatches(), { status: "unfinished" }).map((entry) => entry.id), ["archive-2"], "保存済み試合を途中で絞り込む");
+  assert.equal(filterArchivedMatches(loadArchivedMatches(), { date: "dated" }).length, 2, "日付ありの保存済み試合を絞り込む");
   assert.deepEqual(sortArchivedMatches(loadArchivedMatches(), "newest").map((entry) => entry.id), ["archive-1", "archive-2"], "保存済み試合を新しい順で並べる");
   assert.deepEqual(sortArchivedMatches(loadArchivedMatches(), "oldest").map((entry) => entry.id), ["archive-2", "archive-1"], "保存済み試合を古い順で並べる");
   assert.deepEqual(sortArchivedMatches(loadArchivedMatches(), "title").map((entry) => entry.id), ["archive-2", "archive-1"], "保存済み試合を名前順で並べる");
   testElements.get("#archiveSearchInput").value = "春季";
+  testElements.get("#archiveDateFilterSelect").value = "all";
+  testElements.get("#archiveTypeFilterSelect").value = "doubles";
+  testElements.get("#archiveStatusFilterSelect").value = "finished";
   testElements.get("#archiveSortSelect").value = "newest";
   renderArchivedMatches();
   assert.equal(testElements.get("#archiveCountLabel").textContent, "1/2件", "検索時に絞り込み件数を表示");

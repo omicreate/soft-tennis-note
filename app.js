@@ -96,6 +96,9 @@ const elements = {
   archivedMatchesDialog: $("#archivedMatchesDialog"),
   archivedMatchList: $("#archivedMatchList"),
   archiveSearchInput: $("#archiveSearchInput"),
+  archiveDateFilterSelect: $("#archiveDateFilterSelect"),
+  archiveTypeFilterSelect: $("#archiveTypeFilterSelect"),
+  archiveStatusFilterSelect: $("#archiveStatusFilterSelect"),
   archiveSortSelect: $("#archiveSortSelect"),
   archiveCountLabel: $("#archiveCountLabel"),
   archiveStorageLabel: $("#archiveStorageLabel"),
@@ -2003,10 +2006,10 @@ async function shareSummaryPreview() {
 
 function renderArchivedMatches() {
   const archived = loadArchivedMatches();
-  const query = elements.archiveSearchInput?.value || "";
-  const filtered = sortArchivedMatches(filterArchivedMatches(archived, query), elements.archiveSortSelect?.value || "newest");
+  const filters = getArchiveFilters();
+  const filtered = sortArchivedMatches(filterArchivedMatches(archived, filters), elements.archiveSortSelect?.value || "newest");
   if (elements.archiveCountLabel) {
-    elements.archiveCountLabel.textContent = query ? `${filtered.length}/${archived.length}件` : `${archived.length}件`;
+    elements.archiveCountLabel.textContent = hasActiveArchiveFilter(filters) ? `${filtered.length}/${archived.length}件` : `${archived.length}件`;
   }
   if (elements.archiveStorageLabel) {
     const usage = getAppStorageUsage();
@@ -2040,6 +2043,9 @@ function renderArchivedMatches() {
 
 function openArchivedMatches() {
   if (elements.archiveSearchInput) elements.archiveSearchInput.value = "";
+  if (elements.archiveDateFilterSelect) elements.archiveDateFilterSelect.value = "all";
+  if (elements.archiveTypeFilterSelect) elements.archiveTypeFilterSelect.value = "all";
+  if (elements.archiveStatusFilterSelect) elements.archiveStatusFilterSelect.value = "all";
   renderArchivedMatches();
   elements.archivedMatchesDialog.showModal();
 }
@@ -2072,10 +2078,60 @@ function archiveSearchText(entry) {
     .toLowerCase();
 }
 
-function filterArchivedMatches(archived, query = "") {
-  const normalizedQuery = String(query || "").trim().toLowerCase();
-  if (!normalizedQuery) return archived;
-  return archived.filter((entry) => archiveSearchText(entry).includes(normalizedQuery));
+function getArchiveFilters() {
+  return {
+    query: elements.archiveSearchInput?.value || "",
+    date: elements.archiveDateFilterSelect?.value || "all",
+    matchType: elements.archiveTypeFilterSelect?.value || "all",
+    status: elements.archiveStatusFilterSelect?.value || "all"
+  };
+}
+
+function hasActiveArchiveFilter(filters = {}) {
+  return Boolean(
+    String(filters.query || "").trim() ||
+      (filters.date && filters.date !== "all") ||
+      (filters.matchType && filters.matchType !== "all") ||
+      (filters.status && filters.status !== "all")
+  );
+}
+
+function getArchiveEntryDate(entry) {
+  const matchDate = entry?.state?.matchInfo?.date;
+  const dateText = matchDate || entry?.savedAt || "";
+  if (!dateText) return null;
+  const date = new Date(dateText);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function isArchiveDateInRange(entry, dateFilter) {
+  if (!dateFilter || dateFilter === "all") return true;
+  const date = getArchiveEntryDate(entry);
+  if (!date) return false;
+  if (dateFilter === "dated") return true;
+
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const entryStart = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const diffDays = Math.floor((todayStart - entryStart) / 86400000);
+  if (dateFilter === "today") return diffDays === 0;
+  if (dateFilter === "week") return diffDays >= 0 && diffDays <= 7;
+  if (dateFilter === "month") return diffDays >= 0 && diffDays <= 30;
+  return true;
+}
+
+function filterArchivedMatches(archived, filters = "") {
+  const normalizedFilters = typeof filters === "string" ? { query: filters } : filters || {};
+  const normalizedQuery = String(normalizedFilters.query || "").trim().toLowerCase();
+  return archived.filter((entry) => {
+    const matchState = entry.state || {};
+    if (normalizedQuery && !archiveSearchText(entry).includes(normalizedQuery)) return false;
+    if (!isArchiveDateInRange(entry, normalizedFilters.date || "all")) return false;
+    if (normalizedFilters.matchType && normalizedFilters.matchType !== "all" && matchState.matchType !== normalizedFilters.matchType) return false;
+    if (normalizedFilters.status === "finished" && !entry.finished) return false;
+    if (normalizedFilters.status === "unfinished" && entry.finished) return false;
+    return true;
+  });
 }
 
 function sortArchivedMatches(archived, sortType = "newest") {
@@ -2281,6 +2337,9 @@ elements.teamBName.addEventListener("input", () => {
 elements.historyFilterSelect.addEventListener("change", renderHistory);
 elements.historySortSelect.addEventListener("change", renderHistory);
 elements.archiveSearchInput.addEventListener("input", renderArchivedMatches);
+elements.archiveDateFilterSelect.addEventListener("change", renderArchivedMatches);
+elements.archiveTypeFilterSelect.addEventListener("change", renderArchivedMatches);
+elements.archiveStatusFilterSelect.addEventListener("change", renderArchivedMatches);
 elements.archiveSortSelect.addEventListener("change", renderArchivedMatches);
 
 $$(".tab").forEach((button) => {

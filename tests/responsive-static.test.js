@@ -11,13 +11,16 @@ assert.match(css, /word-break:\s*keep-all/, "日本語ラベルの不自然な�
 assert.match(css, /line-break:\s*strict/, "日本語改行ルールの指定がある");
 assert.match(css, /@media\s*\(max-width:\s*380px\)/, "小さめスマホ向けの調整がある");
 assert.match(html, /id="archiveSearchInput"/, "保存済み試合の検索欄がある");
+assert.match(html, /id="archiveDateFilterSelect"/, "保存済み試合の日付絞り込みがある");
+assert.match(html, /id="archiveTypeFilterSelect"/, "保存済み試合の種目絞り込みがある");
+assert.match(html, /id="archiveStatusFilterSelect"/, "保存済み試合の状態絞り込みがある");
 assert.match(html, /id="archiveSortSelect"/, "保存済み試合の並び替えがある");
 assert.match(html, /id="archiveCountLabel"/, "保存済み試合の件数表示がある");
 assert.match(html, /id="archiveStorageLabel"/, "保存容量の目安表示がある");
 assert.match(html, /id="summaryModeControl"/, "サマリー画像の用途切替がある");
-assert.match(html, /app-config\.js\?v=137[\s\S]*app\.js\?v=137/, "設定ファイルをapp.jsより先に読み込む");
-assert.match(html, /styles\.css\?v=137/, "styles.cssのキャッシュ更新バージョンが最新");
-assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v137/, "Service Workerのキャッシュ名が最新");
+assert.match(html, /app-config\.js\?v=138[\s\S]*app\.js\?v=138/, "設定ファイルをapp.jsより先に読み込む");
+assert.match(html, /styles\.css\?v=138/, "styles.cssのキャッシュ更新バージョンが最新");
+assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v138/, "Service Workerのキャッシュ名が最新");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-config\.js/, "Service Workerのキャッシュ対象に設定ファイルがある");
 
 console.log("responsive-static: ok");

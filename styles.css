@@ -1934,7 +1934,7 @@ dialog::backdrop {
 
 .archive-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(104px, 0.45fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(88px, 0.42fr) minmax(88px, 0.42fr);
   gap: 8px;
   align-items: end;
 }
@@ -1947,11 +1947,13 @@ dialog::backdrop {
   font-weight: 900;
 }
 
-.archive-toolbar input {
+.archive-toolbar input,
+.archive-toolbar select {
   min-width: 0;
 }
 
 .archive-toolbar span {
+  grid-column: 1 / -1;
   min-width: 48px;
   border-radius: 8px;
   padding: 10px 8px;
@@ -2519,6 +2521,15 @@ dialog::backdrop {
 
   .bar-row {
     grid-template-columns: minmax(92px, 1fr) 1fr 28px;
+  }
+
+  .archive-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .archive-toolbar label:first-child,
+  .archive-toolbar span {
+    grid-column: 1 / -1;
   }
 }
 
