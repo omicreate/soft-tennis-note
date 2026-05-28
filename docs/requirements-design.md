@@ -1,7 +1,7 @@
 # ソフトテニス試合ノート 要件・設計書
 
 最終更新: 2026-05-27  
-対象バージョン: v132  
+対象バージョン: v133  
 対象ファイル: `index.html`, `styles.css`, `app.js`, `sw.js`
 
 ## 0. この文書の位置づけ
@@ -595,7 +595,7 @@ CSV出力時は `escapeCsvCell()` を使い、CSV注入やカンマ・ダブル�
 サービスワーカー登録も `sw.js?v数字` 相当で行い、新しいサービスワーカーは `skipWaiting()` と `clients.claim()` で早めに有効化する。
 
 ```js
-soft-tennis-logger-v132
+soft-tennis-logger-v133
 ```
 
 ## 14. テスト

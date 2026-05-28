@@ -380,7 +380,7 @@ const scenarioCode = `
   assert.equal(state.teams.A, "バックアップ自チーム", "バックアップから現在の試合を復元する");
   assert.equal(restored.archivedMatches.length, 2, "バックアップから保存済み試合を復元する");
   assert.equal(loadArchivedMatches().length, 2, "復元後に保存済み試合をlocalStorageへ保存する");
-  assert.throws(() => restoreBackupPayload({ app: "other" }), /バックアップJSON/, "別形式のJSONは復元しない");
+  assert.throws(() => restoreBackupPayload({ app: "other" }), /試合データ/, "別形式のファイルは復元しない");
 `;
 
 createAppContext();

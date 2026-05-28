@@ -1,4 +1,4 @@
-const APP_VERSION = "v132";
+const APP_VERSION = "v133";
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
 const MAX_ARCHIVED_MATCHES = 30;
@@ -1581,7 +1581,7 @@ function createBackupPayload() {
 
 function restoreBackupPayload(payload) {
   if (!isPlainObject(payload) || payload.app !== "soft-tennis-note") {
-    throw new Error("このアプリのバックアップJSONではありません。");
+    throw new Error("このアプリの試合データではありません。");
   }
   const restoredState = normalizeState(payload.state || defaultState);
   const restoredArchived = Array.isArray(payload.archivedMatches)
@@ -1616,7 +1616,7 @@ function exportBackupJson() {
 
 async function importBackupFile(file) {
   if (!file) return false;
-  const confirmed = window.confirm?.("バックアップを読み込むと、今の試合と保存済み試合が置き換わります。読み込みますか？") ?? true;
+  const confirmed = window.confirm?.("試合データを読み込むと、今の試合と保存済み試合が置き換わります。読み込みますか？") ?? true;
   if (!confirmed) return false;
   const text = await file.text();
   restoreBackupPayload(JSON.parse(text));
@@ -2234,7 +2234,7 @@ elements.backupFileInput.addEventListener("change", async () => {
   try {
     await importBackupFile(elements.backupFileInput.files?.[0]);
   } catch (error) {
-    window.alert?.(error?.message || "バックアップを読み込めませんでした。");
+    window.alert?.(error?.message || "試合データを読み込めませんでした。");
   } finally {
     elements.backupFileInput.value = "";
   }
