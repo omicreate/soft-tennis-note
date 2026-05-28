@@ -1,5 +1,5 @@
 const SOFT_TENNIS_CONFIG = {
-  APP_VERSION: "v140",
+  APP_VERSION: "v141",
   STORAGE_KEY: "soft-tennis-logger-state-v1",
   ARCHIVE_STORAGE_KEY: "soft-tennis-logger-archive-v1",
   MAX_ARCHIVED_MATCHES: 30,
