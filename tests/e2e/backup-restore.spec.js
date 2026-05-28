@@ -8,12 +8,12 @@ test.describe("match data backup restore", () => {
   });
 
   test("restores match data through the file picker", async ({ page }) => {
-    await page.goto("/index.html?v=136");
+    await page.goto("/index.html?v=137");
 
     const backup = {
       app: "soft-tennis-note",
       schemaVersion: 1,
-      appVersion: "v136",
+      appVersion: "v137",
       exportedAt: "2026-05-28T04:30:00.000Z",
       state: {
         matchType: "doubles",

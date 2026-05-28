@@ -20,6 +20,7 @@
 ```text
 soft-tennis-note/
 ├── index.html
+├── app-config.js
 ├── app.js
 ├── styles.css
 ├── sw.js
@@ -49,6 +50,7 @@ soft-tennis-note/
 | ファイル | 内容 |
 | --- | --- |
 | `index.html` | 画面の土台。タブ、メニュー、入力欄、ダイアログなど |
+| `app-config.js` | バージョン、保存キー、初期状態、分析コメント設定。今後の分割時も先に読み込む |
 | `app.js` | アプリの中心。スコア、記録、分析、保存、サマリー、CSV |
 | `styles.css` | 見た目。スマホ対応、色、余白、ボタン、スコア表示 |
 | `sw.js` | オフライン対応。Service Workerとキャッシュ |

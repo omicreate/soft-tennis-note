@@ -1,7 +1,7 @@
 # 基本設計書・方式設計書
 
 最終更新: 2026-05-28  
-対象バージョン: v136
+対象バージョン: v137
 
 ## 1. 全体方式
 
@@ -10,6 +10,7 @@
 ```text
 スマホブラウザ
   ├─ index.html
+  ├─ app-config.js
   ├─ styles.css
   ├─ app.js
   ├─ sw.js
@@ -132,6 +133,7 @@ soft-tennis-logger-archive-v1
 対象:
 
 - `index.html`
+- `app-config.js`
 - `styles.css`
 - `app.js`
 - `manifest.webmanifest`
@@ -141,10 +143,10 @@ soft-tennis-logger-archive-v1
 例:
 
 ```text
-soft-tennis-logger-v136
+soft-tennis-logger-v137
 ```
 
-`index.html` の読み込みバージョン、`app.js` の `APP_VERSION`、`sw.js` のキャッシュ名はそろえる。
+`index.html` の読み込みバージョン、`app-config.js` の `APP_VERSION`、`sw.js` のキャッシュ名はそろえる。
 
 ## 6. セキュリティ方式
 
@@ -198,7 +200,8 @@ https://omicreate.github.io/soft-tennis-note-preview/
 
 - `index.html` の `styles.css?v=数字`
 - `index.html` の `app.js?v=数字`
-- `app.js` の `APP_VERSION`
+- `index.html` の `app-config.js?v=数字`
+- `app-config.js` の `APP_VERSION`
 - `sw.js` の `CACHE_NAME`
 - `CHANGELOG.md`
 - `TEST_REPORT.md`

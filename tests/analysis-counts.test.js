@@ -97,7 +97,7 @@ const context = {
   navigator: {}
 };
 
-const source = fs.readFileSync("app.js", "utf8");
+const source = `${fs.readFileSync("app-config.js", "utf8")}\n${fs.readFileSync("app.js", "utf8")}`;
 const testCode = `
   const assert = globalThis.assert;
 
