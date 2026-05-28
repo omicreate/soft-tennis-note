@@ -29,14 +29,18 @@
    - iPhone、Androidの実機で何を確認するか
    - 共有、保存、オフライン、画面見切れの確認観点
 
-6. `../TEST_REPORT.md`
+6. `device-test-results.md`
+   - 実機確認の結果を端末・ブラウザ別に残す
+   - NG内容と対応方針を記録する
+
+7. `../TEST_REPORT.md`
    - 実際に何を確認したか
    - どのバージョンでOKだったか
 
-7. `deployment.md`
+8. `deployment.md`
    - 検証環境と本番環境への反映手順
 
-8. `expansion-roadmap.md`
+9. `expansion-roadmap.md`
    - ピックルボール、テニス、ほかのソフトテニスアプリへ広げる時の考え方
 
 ## ファイルの役割
@@ -48,6 +52,7 @@
 | `detailed-design.md` | 詳細設計 |
 | `test-design.md` | テスト設計 |
 | `device-test-checklist.md` | 実機確認チェックリスト |
+| `device-test-results.md` | 実機確認結果 |
 | `requirements-design.md` | 既存の統合版設計書。今後は上記ファイルへ分割して管理 |
 | `deployment.md` | 公開、検証、本番反映の運用手順 |
 | `project-structure.md` | ローカルフォルダ、GitHub、各ファイルの説明 |
