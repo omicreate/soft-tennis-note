@@ -29,6 +29,39 @@ function createElement(selector = "") {
   };
 }
 
+function createCanvasElement() {
+  const calls = [];
+  const context2d = {
+    calls,
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+    font: "800 28px sans-serif",
+    fillRect(x, y, width, height) {
+      calls.push({ type: "fillRect", x, y, width, height });
+    },
+    fillText(text, x, y) {
+      calls.push({ type: "fillText", text: String(text), x, y, font: this.font });
+    },
+    measureText(text) {
+      const size = Number(this.font.match(/(\\d+)px/)?.[1] || 28);
+      return { width: String(text).length * size * 0.58 };
+    },
+    beginPath() {},
+    moveTo() {},
+    lineTo() {},
+    arcTo() {},
+    closePath() {},
+    stroke() {}
+  };
+  return {
+    width: 0,
+    height: 0,
+    getContext: () => context2d,
+    toDataURL: () => "data:image/png;base64,TEST"
+  };
+}
+
 const elements = new Map();
 function element(selector) {
   if (!elements.has(selector)) elements.set(selector, createElement(selector));
@@ -54,7 +87,7 @@ const context = {
     body: createElement("body"),
     querySelector: element,
     querySelectorAll: () => [],
-    createElement
+    createElement: (selector) => selector === "canvas" ? createCanvasElement() : createElement(selector)
   },
   localStorage: {
     getItem: () => null,
@@ -156,6 +189,8 @@ const testCode = `
     point({ winner: "B", scoreBefore: score({ A: 0, B: 0 }) }),
     point({ winner: "A", scoreBefore: score({ A: 0, B: 1 }) })
   ]);
+  assert.equal(ANALYSIS_COMMENT_RULES.attackRateHigh, 60, "分析コメントの攻撃型しきい値を設定で管理する");
+  assert.equal(ANALYSIS_COMMENT_RULES.summaryLimit, 5, "分析コメントの表示件数を設定で管理する");
   const summaryImage = getSummaryImageData();
   assert.match(summaryImage.title, /ソフトテニス試合ノート/, "画像サマリー用のタイトルを作る");
   assert.equal(summaryImage.summaryRows.some(([label]) => label === "ミス失点"), true, "画像サマリーに重要指標を含める");
@@ -175,6 +210,11 @@ const testCode = `
     "画像ファイル名に用途と年月日時分秒を含める"
   );
   assert.match(getSummaryImageFileName(new Date("2026-05-27T13:45:06"), "detail"), /soft-tennis-summary-detail-20260527134506-/, "詳細保存用のファイル名を作る");
+  const shareLayout = drawSummaryImage(document.createElement("canvas"), summaryImage, "share");
+  const detailLayout = drawSummaryImage(document.createElement("canvas"), summaryImage, "detail");
+  assert.ok(shareLayout.contentBottom < shareLayout.footerTop, "共有用サマリー画像の本文がフッターに重ならない");
+  assert.ok(detailLayout.contentBottom < detailLayout.footerTop, "詳細保存用サマリー画像の本文がフッターに重ならない");
+  assert.equal(shareLayout.height < detailLayout.height, true, "共有用は詳細保存用より短い画像にする");
   saveAnalysisMemo();
   const summaryImageWithMemo = getSummaryImageData();
   assert.match(summaryImageWithMemo.analysisMemoTitle, /保存した分析/, "画像サマリーに保存した分析の見出しを含める");

@@ -10,6 +10,17 @@
 - テスト環境で確認してから本番へ反映する
 - 仕様や運用に関わる変更は、必要に応じて `README.md`、`docs/00-document-map.md`、`docs/requirements.md`、`docs/basic-design.md`、`docs/detailed-design.md`、`docs/test-design.md`、`docs/deployment.md` も更新する
 
+## v136 - 2026-05-28
+
+### 追加
+
+- 分析コメントの判定しきい値と表示件数を `ANALYSIS_COMMENT_RULES` に集約
+- サマリー画像の本文がフッター領域に重ならないことを確認する単体テストを追加
+
+### 変更
+
+- キャッシュ更新用の表示バージョン、読み込みパラメータ、Service Workerキャッシュ名をv136へ更新
+
 ## v135 - 2026-05-28
 
 ### 追加

@@ -1,9 +1,22 @@
-const APP_VERSION = "v135";
+const APP_VERSION = "v136";
 const STORAGE_KEY = "soft-tennis-logger-state-v1";
 const ARCHIVE_STORAGE_KEY = "soft-tennis-logger-archive-v1";
 const MAX_ARCHIVED_MATCHES = 30;
 const SCORING_OUTCOMES = ["ストローク得点", "ボレー得点", "スマッシュ得点", "サービス得点", "レシーブ得点", "ロビング得点"];
 const ERROR_OUTCOMES = ["ダブルフォールト", "レシーブミス", "ストロークミス", "ボレーミス", "スマッシュミス", "その他"];
+const ANALYSIS_COMMENT_RULES = {
+  attackRateHigh: 60,
+  opponentErrorRateHigh: 60,
+  firstServeLow: 60,
+  earlyLostAlert: 3,
+  quickLimit: 2,
+  priorityLimit: 4,
+  summaryLimit: 5,
+  shareSummaryComments: 3,
+  detailSummaryComments: 5,
+  shareNextItems: 2,
+  detailNextItems: 3
+};
 const TRIAL_GUIDES = {
   record: {
     summary: "テスト利用の説明（記録）",
@@ -1052,10 +1065,10 @@ function renderScoreQuality() {
   if (data.ownPoints === 0) {
     label = "得点タイプ: 未判定";
     text = `${ownSideLabel()}の得点がまだありません。`;
-  } else if (attackRate >= 60) {
+  } else if (attackRate >= ANALYSIS_COMMENT_RULES.attackRateHigh) {
     label = "得点タイプ: 攻撃型";
     text = `${ownSideLabel()}の得点パターンが多い試合です。再現したい形を確認しましょう。`;
-  } else if (errorRate >= 60) {
+  } else if (errorRate >= ANALYSIS_COMMENT_RULES.opponentErrorRateHigh) {
     label = "得点タイプ: 相手ミス誘発型";
     text = "相手のミスによる得点が多い試合です。どの配球でミスを誘えたか確認しましょう。";
   }
@@ -1075,12 +1088,12 @@ function buildQuickCoachItems(data = getAnalysisData()) {
   const notes = [];
   if (data.ownDoubleFaults > 0) notes.push(`第2サービスは安全優先。ダブルフォールトを止める。`);
   if (data.ownReceiveMisses > 0) notes.push(`レシーブはまず返す。強打より深く入れる。`);
-  if (data.ownEarlyLost >= 3) notes.push(`最初の2本は返球優先。入りで簡単に落とさない。`);
-  if (data.firstServeRate !== null && data.firstServeRate < 60) notes.push(`第1サービスは確率重視。入れてから展開する。`);
+  if (data.ownEarlyLost >= ANALYSIS_COMMENT_RULES.earlyLostAlert) notes.push(`最初の2本は返球優先。入りで簡単に落とさない。`);
+  if (data.firstServeRate !== null && data.firstServeRate < ANALYSIS_COMMENT_RULES.firstServeLow) notes.push(`第1サービスは確率重視。入れてから展開する。`);
   if (data.ownScoredByPattern < data.ownPointsByOpponentError) notes.push(`相手ミス得点が多め。自チームで取る形を1つ作る。`);
   if (data.topScore[1] > 0) notes.push(`良い形は「${data.topScore[0]}」。次も同じ形を使う。`);
   if (!notes.length) notes.push("大きな偏りは少なめ。今のリズムを崩さず、先にミスしない。");
-  return notes.slice(0, 2);
+  return notes.slice(0, ANALYSIS_COMMENT_RULES.quickLimit);
 }
 
 function renderCoachNotes() {
@@ -1134,7 +1147,7 @@ function buildPriorityItems() {
   }
   if (opponentReceiveMissGain > 0) {
     items.push(`相手サービス時のレシーブミス献上 ${opponentReceiveMissGain}本`);
-  } else if (firstServeRate !== null && firstServeRate < 60) {
+  } else if (firstServeRate !== null && firstServeRate < ANALYSIS_COMMENT_RULES.firstServeLow) {
     items.push(`相手の第1サービス開始率 ${firstServeRate}%`);
   }
   if (opponentByPattern > 0) {
@@ -1142,7 +1155,7 @@ function buildPriorityItems() {
   }
   if (!items.length) items.push("大きな偏りはまだ見えていません。記録を続けて傾向確認");
 
-  return items.map(cleanPriorityText).slice(0, 4);
+  return items.map(cleanPriorityText).slice(0, ANALYSIS_COMMENT_RULES.priorityLimit);
 }
 
 function cleanPriorityText(text) {
@@ -1166,23 +1179,23 @@ function buildSummaryComments(data = getAnalysisData()) {
 
   if (data.ownLostByOwnError > data.ownScoredByPattern) {
     comments.push(`ミス失点${data.ownLostByOwnError}本が得点パターン${data.ownScoredByPattern}本を上回る。まず失点を減らす`);
-  } else if (attackRate >= 60) {
+  } else if (attackRate >= ANALYSIS_COMMENT_RULES.attackRateHigh) {
     comments.push(`得点の${attackRate}%が自チームの得点パターン。良い形を次の試合でも再現したい`);
-  } else if (opponentErrorRate >= 60) {
+  } else if (opponentErrorRate >= ANALYSIS_COMMENT_RULES.opponentErrorRateHigh) {
     comments.push(`得点の${opponentErrorRate}%が相手ミス。相手が崩れた配球や狙い所を確認したい`);
   }
 
   if (data.ownDoubleFaults > 0 || data.ownReceiveMisses > 0) {
     comments.push(`DF${data.ownDoubleFaults}本、レシーブミス${data.ownReceiveMisses}本。サービス・レシーブの入りを優先`);
   }
-  if (data.ownEarlyLost >= 3) {
+  if (data.ownEarlyLost >= ANALYSIS_COMMENT_RULES.earlyLostAlert) {
     comments.push(`最初の2本での失点が${data.ownEarlyLost}本。1本目、2本目は返球優先`);
   }
   if (data.topScore[1] > 0) {
     comments.push(`主な得点は「${data.topScore[0]}」${data.topScore[1]}本。練習でも同じ形を確認`);
   }
 
-  return comments.map(cleanPriorityText).slice(0, 5);
+  return comments.map(cleanPriorityText).slice(0, ANALYSIS_COMMENT_RULES.summaryLimit);
 }
 
 function rallyValue(rally) {
@@ -1900,7 +1913,7 @@ function drawSummaryImage(canvas, summary, mode = "detail") {
   const ctx = canvas.getContext("2d");
   const width = 1080;
   const isShareMode = mode === "share";
-  const height = isShareMode ? 1350 : 1880;
+  const height = isShareMode ? 1500 : 1880;
   const ownColor = "#2563eb";
   const oppColor = "#dc2626";
   const inkColor = "#1f2937";
@@ -1954,13 +1967,13 @@ function drawSummaryImage(canvas, summary, mode = "detail") {
   y += 10;
 
   y = heading("分析コメント", y);
-  summary.analysisComments.slice(0, isShareMode ? 3 : 5).forEach((item) => {
+  summary.analysisComments.slice(0, isShareMode ? ANALYSIS_COMMENT_RULES.shareSummaryComments : ANALYSIS_COMMENT_RULES.detailSummaryComments).forEach((item) => {
     y = bullet(item, y, "neutral", 2);
   });
   y += 10;
 
   y = heading("次に活かすこと", y);
-  [...summary.quickItems, ...summary.reviewItems].slice(0, isShareMode ? 2 : 3).forEach((item) => {
+  [...summary.quickItems, ...summary.reviewItems].slice(0, isShareMode ? ANALYSIS_COMMENT_RULES.shareNextItems : ANALYSIS_COMMENT_RULES.detailNextItems).forEach((item) => {
     y = bullet(item, y, "neutral", 2);
   });
   y += 8;
@@ -1988,6 +2001,7 @@ function drawSummaryImage(canvas, summary, mode = "detail") {
   ctx.font = '700 24px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
   const footer = ["端末内で画像生成。開発者や管理者へ送られません。", ...summary.meta].join(" / ");
   drawClampedText(ctx, footer, 56, height - 86, 968, 32, 2);
+  return { contentBottom: y, footerTop: height - 112, height, mode };
 }
 
 function createSummaryImageDataUrl(matchState = state, mode = summaryPreviewMode) {

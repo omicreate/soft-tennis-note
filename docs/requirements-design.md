@@ -1,7 +1,7 @@
 # ソフトテニス試合ノート 要件・設計書
 
 最終更新: 2026-05-27  
-対象バージョン: v135  
+対象バージョン: v136  
 対象ファイル: `index.html`, `styles.css`, `app.js`, `sw.js`
 
 ## 0. この文書の位置づけ
@@ -60,6 +60,7 @@
 
 分析コメントはAI生成ではない。  
 決められた集計結果に対して、決められた条件でコメントを出す。
+判定しきい値と表示件数は `ANALYSIS_COMMENT_RULES` で管理する。
 
 メリット:
 
@@ -426,6 +427,7 @@ soft-tennis-logger-archive-v1
 サマリー画像用に `buildSummaryComments()` で生成する。
 
 AIが毎回考えるのではなく、ルールベースでコメントを出す。
+判定しきい値と表示件数は `ANALYSIS_COMMENT_RULES` で管理する。
 
 主な条件:
 
@@ -606,7 +608,7 @@ CSV出力時は `escapeCsvCell()` を使い、CSV注入やカンマ・ダブル�
 サービスワーカー登録も `sw.js?v数字` 相当で行い、新しいサービスワーカーは `skipWaiting()` と `clients.claim()` で早めに有効化する。
 
 ```js
-soft-tennis-logger-v135
+soft-tennis-logger-v136
 ```
 
 ## 14. テスト
