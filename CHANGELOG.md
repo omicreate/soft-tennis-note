@@ -10,6 +10,14 @@
 - テスト環境で確認してから本番へ反映する
 - 仕様や運用に関わる変更は、必要に応じて `README.md`、`docs/00-document-map.md`、`docs/requirements.md`、`docs/basic-design.md`、`docs/detailed-design.md`、`docs/test-design.md`、`docs/deployment.md` も更新する
 
+## v145 - 2026-05-29
+
+### Changed
+- サマリー画像の見出しや箇条書きから `#`、`>`、`-` などのMarkdown記号を外し、一般ユーザ向けに自然な表示へ変更
+- 箇条書きは文字のハイフンではなく、Canvas上の小さな点で表現するように調整
+- サマリー画像にMarkdown記号が表示されないことを単体テストで確認するように追加
+- キャッシュ更新用の表示バージョン、読み込みパラメータ、Service Workerキャッシュ名をv145へ更新
+
 ## v144 - 2026-05-28
 
 ### 追加

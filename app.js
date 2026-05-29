@@ -1762,7 +1762,7 @@ function drawSummaryImage(canvas, summary, mode = "detail") {
   ctx.fillRect(0, 0, width, height);
 
   const textColor = (tone) => (tone === "own" ? ownColor : tone === "opp" ? oppColor : inkColor);
-  const drawMd = (text, x, y, options = {}) => {
+  const drawText = (text, x, y, options = {}) => {
     const size = options.size || 28;
     const weight = options.weight || 800;
     const lineHeight = options.lineHeight || Math.round(size * 1.45);
@@ -1772,12 +1772,14 @@ function drawSummaryImage(canvas, summary, mode = "detail") {
     ctx.font = `${weight} ${size}px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif`;
     return drawClampedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) + (options.after || 0);
   };
-  const bullet = (text, y, tone = "neutral", maxLines = 1) =>
-    drawMd(`- ${text}`, 78, y, { size: 27, lineHeight: 36, maxLines, color: textColor(tone), after: 4 });
+  const bullet = (text, y, tone = "neutral", maxLines = 1) => {
+    fillRoundedRect(ctx, 70, y - 22, 10, 10, 5, textColor(tone));
+    return drawText(text, 96, y, { size: 27, lineHeight: 36, maxLines, color: textColor(tone), after: 4 });
+  };
   const sections = [];
   const heading = (text, y) => {
     sections.push(text);
-    return drawMd(`## ${text}`, 64, y, { size: 32, weight: 900, lineHeight: 42, after: 6 });
+    return drawText(text, 64, y, { size: 32, weight: 900, lineHeight: 42, after: 6 });
   };
   const drawRows = (rows, y, options = {}) => {
     rows.forEach(([label, value, tone]) => {
@@ -1793,8 +1795,8 @@ function drawSummaryImage(canvas, summary, mode = "detail") {
   };
 
   let y = 76;
-  y = drawMd(`# ${summary.title}`, 56, y, { size: 46, weight: 900, lineHeight: 58, after: 8 });
-  y = drawMd(`> ${isShareMode ? "共有用サマリー" : "詳細保存用サマリー"} / ${summary.subtitle}`, 64, y, { size: 27, weight: 800, color: mutedColor, lineHeight: 36, after: 10 });
+  y = drawText(summary.title, 56, y, { size: 46, weight: 900, lineHeight: 58, after: 8 });
+  y = drawText(`${isShareMode ? "共有用サマリー" : "詳細保存用サマリー"} / ${summary.subtitle}`, 64, y, { size: 27, weight: 800, color: mutedColor, lineHeight: 36, after: 10 });
   ctx.strokeStyle = lineColor;
   ctx.lineWidth = 2;
   ctx.beginPath();

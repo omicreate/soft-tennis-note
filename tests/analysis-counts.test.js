@@ -52,6 +52,9 @@ function createCanvasElement() {
     lineTo() {},
     arcTo() {},
     closePath() {},
+    fill() {
+      calls.push({ type: "fill", fillStyle: this.fillStyle });
+    },
     stroke() {}
   };
   return {
@@ -214,8 +217,11 @@ const testCode = `
     "画像ファイル名に用途と年月日時分秒を含める"
   );
   assert.match(getSummaryImageFileName(new Date("2026-05-27T13:45:06"), "detail"), /soft-tennis-summary-detail-20260527134506-/, "詳細保存用のファイル名を作る");
-  const shareLayout = drawSummaryImage(document.createElement("canvas"), summaryImage, "share");
+  const shareCanvas = document.createElement("canvas");
+  const shareLayout = drawSummaryImage(shareCanvas, summaryImage, "share");
   const detailLayout = drawSummaryImage(document.createElement("canvas"), summaryImage, "detail");
+  const summaryImageTexts = shareCanvas.getContext("2d").calls.filter((call) => call.type === "fillText").map((call) => call.text);
+  assert.equal(summaryImageTexts.some((text) => /^(#|>|- )/.test(text)), false, "一般ユーザ向け画像にMarkdown記号を表示しない");
   assert.ok(shareLayout.contentBottom < shareLayout.footerTop, "共有用サマリー画像の本文がフッターに重ならない");
   assert.ok(detailLayout.contentBottom < detailLayout.footerTop, "詳細保存用サマリー画像の本文がフッターに重ならない");
   assert.equal(shareLayout.height < detailLayout.height, true, "共有用は詳細保存用より短い画像にする");
