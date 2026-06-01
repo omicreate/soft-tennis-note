@@ -196,6 +196,17 @@ const testCode = `
   assert.match(elements.playerBars.innerHTML, /ボレーミス/, "プレイヤー別に記録したミス内容を表示する");
 
   setPoints([
+    point({ winner: "A", outcome: "ストローク得点", player: "A後衛" }),
+    point({ winner: "A", outcome: "ボレー得点", player: "A後衛" }),
+    point({ winner: "A", outcome: "スマッシュ得点", player: "A後衛" }),
+    point({ winner: "B", outcome: "ストロークミス", player: "A後衛" }),
+    point({ winner: "B", outcome: "ボレーミス", player: "A後衛" })
+  ]);
+  renderPlayerPlusMinus();
+  assert.match(elements.playerBars.innerHTML, /ボレーミス/, "5件目のプレー内容もほかに隠さず表示する");
+  assert.doesNotMatch(elements.playerBars.innerHTML, /ほか/, "5件以内ならほか表示にまとめない");
+
+  setPoints([
     point({ winner: "B", outcome: "ストロークミス", player: "A後衛", scoreBefore: score({ A: 0, B: 0 }) }),
     point({ winner: "A", outcome: "ストローク得点", player: "A後衛", scoreBefore: score({ A: 0, B: 1 }) })
   ]);

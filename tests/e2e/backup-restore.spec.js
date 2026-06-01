@@ -8,7 +8,7 @@ test.describe("match data backup restore", () => {
   });
 
   test("restores match data through the file picker", async ({ page }) => {
-    await page.goto("/index.html?v=165");
+    await page.goto("/index.html?v=166");
 
     const backup = {
       app: "soft-tennis-note",

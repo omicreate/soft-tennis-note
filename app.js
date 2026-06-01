@@ -1389,7 +1389,7 @@ function getPlayerPlusMinusRows() {
   return getPlayerPlusMinus().map((entry) => [entry.label, `+${entry.plus} / -${entry.minus} / ${formatPointDiff(entry.diff)}`, entry.diff > 0 ? "own" : entry.diff < 0 ? "opp" : "neutral"]);
 }
 
-function getPlayerPlayRows(limit = 3) {
+function getPlayerPlayRows(limit = 5) {
   return getPlayerPlusMinus().map((entry) => {
     const total = entry.outcomes.reduce((sum, [, value]) => sum + value, 0);
     if (!total) return [entry.label, "記録なし", "neutral"];
@@ -1638,8 +1638,8 @@ function renderPlayerPlusMinus() {
   elements.playerBars.innerHTML = entries.length
     ? entries.map((item) => {
         const tone = item.diff > 0 ? "own" : item.diff < 0 ? "opp" : "neutral";
-        const visibleOutcomes = item.outcomes.slice(0, 3);
-        const restCount = item.outcomes.slice(3).reduce((sum, [, value]) => sum + value, 0);
+        const visibleOutcomes = item.outcomes.slice(0, 5);
+        const restCount = item.outcomes.slice(5).reduce((sum, [, value]) => sum + value, 0);
         const outcomeChips = item.outcomes.length
           ? `${visibleOutcomes.map(([label, value]) => `<span>${escapeHtml(label)} <b>${escapeHtml(value)}本</b></span>`).join("")}${restCount ? `<span class="muted-chip">ほか <b>${escapeHtml(restCount)}本</b></span>` : ""}`
           : `<span class="muted-chip">記録なし</span>`;
@@ -2165,7 +2165,7 @@ function getSummaryImageData() {
   const streakStats = getStreakDetails();
   const clutchStats = getClutchStats();
   const playerPlusMinusRows = getPlayerPlusMinusRows();
-  const playerPlayRows = getPlayerPlayRows(3);
+  const playerPlayRows = getPlayerPlayRows(5);
   const playerServeReceiveStats = getPlayerServeReceiveStats().map((item) => ({
     label: item.label,
     tone: item.tone,
@@ -2497,8 +2497,8 @@ function drawSummaryImage(canvas, summary, mode = "detail") {
       const labelW = 220;
       const barX = pageMargin + labelW + 28;
       const barW = contentWidth - labelW - 300;
-      fillRoundedRect(ctx, pageMargin, y, contentWidth, 124, 12, "#ffffff");
-      strokeRoundedRect(ctx, pageMargin, y, contentWidth, 124, 12, lineColor, 2);
+      fillRoundedRect(ctx, pageMargin, y, contentWidth, 148, 12, "#ffffff");
+      strokeRoundedRect(ctx, pageMargin, y, contentWidth, 148, 12, lineColor, 2);
       drawText(label, pageMargin + 22, y + 38, { size: 24, weight: 900, maxWidth: labelW });
       fillRoundedRect(ctx, barX, y + 22, barW, 18, 9, "#e5e7eb");
       fillRoundedRect(ctx, barX, y + 22, Math.max(plus > 0 ? 8 : 0, barW * (plus / max)), 18, 9, ownColor);
@@ -2507,8 +2507,8 @@ function drawSummaryImage(canvas, summary, mode = "detail") {
       fillRoundedRect(ctx, barX, y + 56, Math.max(minus > 0 ? 8 : 0, barW * (minus / max)), 18, 9, oppColor);
       drawText(`-${minus}`, barX + barW + 14, y + 73, { size: 22, weight: 900, color: oppColor, maxWidth: 72 });
       drawText(value, pageMargin + contentWidth - 180, y + 52, { size: 23, weight: 900, color: textColor(tone), maxWidth: 158 });
-      drawText(playByPlayer[label] || "記録なし", pageMargin + 22, y + 104, { size: 19, weight: 800, color: mutedColor, maxWidth: contentWidth - 44, maxLines: 1 });
-      y += 138;
+      drawText(playByPlayer[label] || "記録なし", pageMargin + 22, y + 104, { size: 19, weight: 800, color: mutedColor, maxWidth: contentWidth - 44, maxLines: 2, lineHeight: 25 });
+      y += 162;
     });
     return y;
   };
