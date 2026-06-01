@@ -35,7 +35,7 @@ function buildDenseMatchState() {
       scoreAfter: { games: { A: Math.floor(index / 12), B: Math.floor(index / 14) }, points: { A: scoreAfterA, B: scoreAfterB } },
       gameNumber: Math.floor(index / 12) + 1,
       memo: `長文テスト ${index + 1}: サマリー画像の文字量が多い試合でも表示が崩れないか確認する`,
-      at: `2026-05-29T05:${String(index).padStart(2, "0")}:00.000Z`
+      at: `2026-05-30T05:${String(index).padStart(2, "0")}:00.000Z`
     };
   });
 
@@ -49,7 +49,7 @@ function buildDenseMatchState() {
       BFront: "西町 四郎"
     },
     matchInfo: {
-      date: "2026-05-29",
+      date: "2026-05-30",
       startTime: "14:43",
       timeOfDay: "午後",
       tournament: "県高校総体地区予選",
@@ -77,7 +77,7 @@ function buildDenseMatchState() {
     points,
     analysisMemos: [
       {
-        savedAt: "2026-05-29T05:30:00.000Z",
+        savedAt: "2026-05-30T05:30:00.000Z",
         scoreLabel: "G 3-2 / P 3-2",
         quickItems: [
           "第1サービス後の3球目を深く入れる",
@@ -95,15 +95,17 @@ function buildDenseMatchState() {
 
 test.describe("mobile layout", () => {
   test("record, analysis, history, archive and summary screens fit mobile widths", async ({ page }, testInfo) => {
-    await page.goto("/index.html?v=145");
+    test.setTimeout(45000);
+    await page.goto("/index.html?v=165");
 
     await expect(page.getByText("ソフトテニス試合ノート").first()).toBeVisible();
-    await expect(page.getByText("v145・2026-05-29").first()).toBeVisible();
+    await expect(page.getByText("v165・2026-06-01").first()).toBeVisible();
     await expectNoHorizontalOverflow(page, "record screen");
 
     await page.getByRole("button", { name: "分析" }).click();
     await expect(page.locator("#analysisSummary")).toBeVisible();
-    await expect(page.getByText("今すぐ意識すること").first()).toBeVisible();
+    await expect(page.getByText("次に見ること").first()).toBeVisible();
+    await expect(page.getByText("全体の傾向").first()).toBeVisible();
     await expectNoHorizontalOverflow(page, "analysis screen");
 
     await page.getByRole("button", { name: "履歴" }).click();
@@ -126,10 +128,12 @@ test.describe("mobile layout", () => {
     await page.getByRole("button", { name: "閉じる" }).click();
 
     await page.getByRole("button", { name: "メニュー" }).click();
-    await page.getByText("管理用").click();
-    await expect(page.getByRole("button", { name: "試合データを保存" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "試合データを読み込む" })).toBeVisible();
-    await expectNoHorizontalOverflow(page, "admin backup menu");
+    await page.getByText("引き継ぎ・共有", { exact: true }).click();
+    await expect(page.getByRole("button", { name: "引き継ぎ用データを保存" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "受け取ったデータを読み込む" })).toBeVisible();
+    await expectNoHorizontalOverflow(page, "transfer menu");
+    await page.getByText("管理用", { exact: true }).click();
+    await expect(page.getByRole("button", { name: "今の試合CSVを出力" })).toBeVisible();
     await page.getByRole("button", { name: "閉じる" }).click();
 
     await page.getByRole("button", { name: "メニュー" }).click();
@@ -152,7 +156,7 @@ test.describe("mobile layout", () => {
       localStorage.setItem("soft-tennis-logger-state-v1", JSON.stringify(state));
     }, buildDenseMatchState());
 
-    await page.goto("/index.html?v=145");
+    await page.goto("/index.html?v=165");
     await page.getByRole("button", { name: "メニュー" }).click();
     await page.getByRole("button", { name: "サマリー画像を表示" }).click();
 

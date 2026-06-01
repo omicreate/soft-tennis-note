@@ -19,15 +19,36 @@ assert.match(html, /id="archiveTournamentFilterSelect"/, "保存済み試合の�
 assert.match(html, /id="archiveSortSelect"/, "保存済み試合の並び替えがある");
 assert.match(html, /id="archiveCountLabel"/, "保存済み試合の件数表示がある");
 assert.match(html, /id="archiveStorageLabel"/, "保存容量の目安表示がある");
+assert.match(html, /引き継ぎ・共有[\s\S]*id="exportBackupButton"[\s\S]*id="importBackupButton"/, "引き継ぎ・共有メニューから試合データを保存・読み込みできる");
+assert.match(html, /id="exportArchivedCsvButton"/, "管理用メニューから保存した試合CSVを一括出力できる");
+assert.doesNotMatch(html, /id="archiveExportCsvButton"/, "保存済み試合画面には管理用CSVボタンを出さない");
 assert.match(html, /id="summaryModeControl"/, "サマリー画像の用途切替がある");
+assert.match(html, /1 サービス側[\s\S]*2 サービス結果[\s\S]*3 サーブした人[\s\S]*4 レシーブした人[\s\S]*5 誰のプレー[\s\S]*6 何が起きた？[\s\S]*得点[\s\S]*ミス/, "かんたん入力は実運用順に番号付きで表示する");
+assert.match(css, /simple-outcome-control \.outcome-score\.active[\s\S]*var\(--own\)/, "得点系プレー結果の選択色がある");
+assert.match(css, /simple-outcome-control \.outcome-miss\.active[\s\S]*var\(--opp\)/, "ミス系プレー結果の選択色がある");
 assert.match(css, /\.summary-dialog \.dialog-actions\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/, "サマリー画像画面の主要ボタンはスマホで2列表示になる");
 assert.match(css, /\.summary-dialog \.dialog-actions \.action-close\s*\{[\s\S]*grid-column:\s*1 \/ -1/, "サマリー画像画面の閉じるボタンは下段全幅になる");
-assert.match(html, /app-config\.js\?v=145[\s\S]*app-analysis\.js\?v=145[\s\S]*app-storage\.js\?v=145[\s\S]*app-rules\.js\?v=145[\s\S]*app\.js\?v=145/, "設定、分析、保存、ルール、本体の順に読み込む");
-assert.match(html, /styles\.css\?v=145/, "styles.cssのキャッシュ更新バージョンが最新");
-assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v145/, "Service Workerのキャッシュ名が最新");
+assert.match(html, /app-config\.js\?v=165[\s\S]*app-analysis\.js\?v=165[\s\S]*app-storage\.js\?v=165[\s\S]*app-rules\.js\?v=165[\s\S]*app\.js\?v=165/, "設定、分析、保存、ルール、本体の順に読み込む");
+assert.match(html, /styles\.css\?v=165/, "styles.cssのキャッシュ更新バージョンが最新");
+assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v165/, "Service Workerのキャッシュ名が最新");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-config\.js/, "Service Workerのキャッシュ対象に設定ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-analysis\.js/, "Service Workerのキャッシュ対象に分析ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-storage\.js/, "Service Workerのキャッシュ対象に保存ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-rules\.js/, "Service Workerのキャッシュ対象にルールファイルがある");
+
+assert.match(html, /class="match-dialog-section match-dialog-essential"[\s\S]*最低限の試合情報/, "試合情報編集に最低限の試合情報セクションがある");
+assert.match(html, /<details class="match-dialog-section match-dialog-optional">[\s\S]*<summary>追加項目<\/summary>/, "試合情報編集に折りたたみの追加項目がある");
+assert.match(css, /scroll-padding-bottom:\s*calc\(88px \+ env\(safe-area-inset-bottom\)\)/, "キーボード表示時も下部操作へスクロール余白を確保する");
+assert.match(html, /id="dialogTeamA"[^>]*enterkeyhint="next"/, "チーム名入力にスマホキーボードの次へヒントがある");
+assert.match(html, /id="venueInput"[^>]*enterkeyhint="done"/, "最後の入力欄に完了ヒントがある");
+
+assert.match(html, /<span>3 サーブした人<\/span>/, "かんたん記録でもサーブした人を選べる");
+assert.match(html, /<span>4 レシーブした人<\/span>/, "かんたん記録でもレシーブした人を選べる");
+assert.doesNotMatch(html, /service-player-group advanced-record/, "サーブ・レシーブ選手は詳細専用にしない");
+assert.match(html, /data-simple-outcome="レシーブミス"/, "かんたん記録でレシーブミスを選べる");
+assert.match(html, /class="analysis-summary"[\s\S]*class="coach-notes"[\s\S]*class="score-quality"[\s\S]*プレイヤー別 プレー内容[\s\S]*プレイヤー別 サーブ\/レシーブ/, "分析画面は次に見ること、得点の中身、プレイヤー別の順に表示する");
+assert.match(css, /\.serve-receive-cards/, "個人別S/RカードのCSSがある");
+assert.match(html, /class="control-group player-record-group"[\s\S]*5 誰のプレー/, "かんたん記録でも誰のプレーを選べる");
+assert.doesNotMatch(html, /class="control-group advanced-record"[\s\S]{0,80}<span>誰のプレー<\/span>/, "誰のプレーは詳細専用にしない");
 
 console.log("responsive-static: ok");

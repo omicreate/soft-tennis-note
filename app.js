@@ -28,6 +28,7 @@ let state = loadState();
 let matchDialogMode = "new";
 let summaryPreviewState = null;
 let summaryPreviewMode = "share";
+let editingPointIndex = null;
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -46,6 +47,48 @@ function escapeCsvCell(value) {
   const safeText = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
   return `"${safeText.replaceAll('"', '""')}"`;
 }
+
+const POINT_CSV_HEADERS = [
+  "No",
+  "日付",
+  "時間帯",
+  "開始時刻",
+  "終了時刻",
+  "天気",
+  "気温",
+  "風",
+  "風向き",
+  "コート種別",
+  "コート状態",
+  "種別",
+  "相手基本布陣",
+  "区分",
+  "大会名",
+  "開催地／会場",
+  "コート",
+  "試合形式",
+  "得点側",
+  "サービスサイド",
+  "サーブ選手",
+  "レシーブ選手",
+  "ゲーム",
+  "ポイント",
+  "場面",
+  "サービスの入り方",
+  "ポイント内容",
+  "ボールの結果",
+  "誰のプレー",
+  "ショット",
+  "打球面",
+  "コース",
+  "ラリー数",
+  "ゲーム取得",
+  "メモ",
+  "記録時刻"
+];
+const ARCHIVE_CSV_PREFIX_HEADERS = ["試合No", "保存ID", "保存日時", "保存タイトル"];
+const ARCHIVE_CSV_HEADERS = [...ARCHIVE_CSV_PREFIX_HEADERS, ...POINT_CSV_HEADERS];
+const CSV_SCHEMA_VERSION = "point-csv-v2/archive-csv-v1";
 
 const elements = {
   teamAName: $("#teamAName"),
@@ -75,6 +118,7 @@ const elements = {
   trialGuideLead: $("#trialGuideLead"),
   trialGuideList: $("#trialGuideList"),
   ruleNote: $("#ruleNote"),
+  recordModeControl: $("#recordModeControl"),
   courtModeLabel: $("#courtModeLabel"),
   shotSelect: $("#shotSelect"),
   rallyInput: $("#rallyInput"),
@@ -93,11 +137,25 @@ const elements = {
   phaseBars: $("#phaseBars"),
   handBars: $("#handBars"),
   playerBars: $("#playerBars"),
+  momentumBars: $("#momentumBars"),
+  serveReceiveBars: $("#serveReceiveBars"),
   courseBars: $("#courseBars"),
   pointList: $("#pointList"),
   historyFilterSelect: $("#historyFilterSelect"),
   historySortSelect: $("#historySortSelect"),
   historyDateLabel: $("#historyDateLabel"),
+  pointDetailDialog: $("#pointDetailDialog"),
+  pointDetailTitle: $("#pointDetailTitle"),
+  pointDetailIndex: $("#pointDetailIndex"),
+  pointEditPlayerSelect: $("#pointEditPlayerSelect"),
+  pointEditOutcomeSelect: $("#pointEditOutcomeSelect"),
+  pointEditShotSelect: $("#pointEditShotSelect"),
+  pointEditRallySelect: $("#pointEditRallySelect"),
+  pointEditHandSelect: $("#pointEditHandSelect"),
+  pointEditCourseSelect: $("#pointEditCourseSelect"),
+  pointEditResultSelect: $("#pointEditResultSelect"),
+  pointEditMemoInput: $("#pointEditMemoInput"),
+  savePointDetailButton: $("#savePointDetailButton"),
   dialog: $("#newMatchDialog"),
   actionMenuDialog: $("#actionMenuDialog"),
   summaryImageDialog: $("#summaryImageDialog"),
@@ -123,6 +181,7 @@ const elements = {
   shareSummaryImageButton: $("#shareSummaryImageButton"),
   downloadSummaryImageButton: $("#downloadSummaryImageButton"),
   exportCsvButton: $("#exportCsvButton"),
+  exportArchivedCsvButton: $("#exportArchivedCsvButton"),
   exportBackupButton: $("#exportBackupButton"),
   importBackupButton: $("#importBackupButton"),
   backupFileInput: $("#backupFileInput"),
@@ -224,6 +283,7 @@ function normalizeState(raw) {
     "サイド側アウト": "サイドアウト"
   };
 
+  saved.recordMode = ["simple", "detail"].includes(saved.recordMode) ? saved.recordMode : defaultState.recordMode;
   saved.selectedOutcome = outcomeAliases[saved.selectedOutcome] || saved.selectedOutcome || defaultState.selectedOutcome;
   saved.selectedCourse = courseAliases[saved.selectedCourse] || saved.selectedCourse || defaultState.selectedCourse;
   saved.selectedResult = resultAliases[saved.selectedResult] || saved.selectedResult || defaultState.selectedResult;
@@ -233,7 +293,9 @@ function normalizeState(raw) {
   saved.gamesToWin = gamesToWinFromFormat(saved.matchFormat);
   saved.matchInfo = { ...defaultState.matchInfo, ...(saved.matchInfo || {}) };
   saved.selectedHand = saved.selectedHand || defaultState.selectedHand;
-  saved.selectedPlayer = saved.selectedPlayer || saved.selectedRole || defaultState.selectedPlayer;
+  saved.selectedServerPlayer = normalizePlayerKey(saved.selectedServerPlayer || defaultState.selectedServerPlayer);
+  saved.selectedReceiverPlayer = normalizePlayerKey(saved.selectedReceiverPlayer || defaultState.selectedReceiverPlayer);
+  saved.selectedPlayer = normalizePlayerKey(saved.selectedPlayer || saved.selectedRole || defaultState.selectedPlayer);
   saved.points = (saved.points || []).map((point) => ({
     ...point,
     outcome: outcomeAliases[point.outcome] || point.outcome,
@@ -243,10 +305,53 @@ function normalizeState(raw) {
     firstServeIn: point.firstServeIn !== undefined ? point.firstServeIn : getLegacyServeStart(point) === "第1サービスで開始",
     shot: point.shot === "ロブ" ? "ロビング" : point.shot,
     hand: normalizeHand(point.hand),
-    player: point.player || point.role || "不明",
+    serverPlayer: normalizePlayerKey(point.serverPlayer || point.servicePlayer || "不明"),
+    receiverPlayer: normalizePlayerKey(point.receiverPlayer || point.receivePlayer || "不明"),
+    player: normalizePlayerKey(point.player || point.role || "不明"),
     phase: point.phase || getPhaseLabel(point.scoreBefore?.points || { A: 0, B: 0 })
   }));
   return saved;
+}
+
+
+function normalizePlayerKey(player) {
+  const aliases = {
+    ARear: "A後衛",
+    AFront: "A前衛",
+    BRear: "B後衛",
+    BFront: "B前衛",
+    ASingles: "A選手",
+    BSingles: "B選手"
+  };
+  return aliases[player] || player || "不明";
+}
+
+function sideFromPlayerKey(player) {
+  const key = normalizePlayerKey(player);
+  if (key.startsWith("A")) return "A";
+  if (key.startsWith("B")) return "B";
+  return "";
+}
+
+function playerKeyForSideRole(side, role) {
+  if (state.matchType === "singles") return side === "A" ? "A選手" : "B選手";
+  return `${side}${role}`;
+}
+
+function serviceSidePlayerKeys(side) {
+  if (state.matchType === "singles") return [playerKeyForSideRole(side, "選手")];
+  return [playerKeyForSideRole(side, "後衛"), playerKeyForSideRole(side, "前衛")];
+}
+
+function isSelectableServicePlayer(player, side) {
+  const key = normalizePlayerKey(player);
+  return key === "不明" || serviceSidePlayerKeys(side).includes(key);
+}
+
+function ensureServicePlayerSelections() {
+  const receiverSide = RULES.switchSide(state.server);
+  if (!isSelectableServicePlayer(state.selectedServerPlayer, state.server)) state.selectedServerPlayer = "不明";
+  if (!isSelectableServicePlayer(state.selectedReceiverPlayer, receiverSide)) state.selectedReceiverPlayer = "不明";
 }
 
 function normalizeHand(hand) {
@@ -465,7 +570,26 @@ function playerLabel(player) {
     A選手: displayName("A"),
     B選手: displayName("B")
   };
-  return labels[player] || player || "不明";
+  const key = normalizePlayerKey(player);
+  return labels[key] || key || "不明";
+}
+
+function playerLabelFromState(matchState, player) {
+  const key = normalizePlayerKey(player);
+  const players = matchState?.players || defaultState.players;
+  const labels = {
+    A後衛: players.ARear || defaultState.players.ARear,
+    A前衛: players.AFront || defaultState.players.AFront,
+    B後衛: players.BRear || defaultState.players.BRear,
+    B前衛: players.BFront || defaultState.players.BFront,
+    A選手: displayNameFromState(matchState, "A"),
+    B選手: displayNameFromState(matchState, "B")
+  };
+  return labels[key] || key || "不明";
+}
+
+function matchFormatLabelFromState(matchState) {
+  return RULES.matchFormatLabel(matchState?.matchFormat || matchFormatFromGamesToWin(matchState?.gamesToWin));
 }
 
 function getPhaseLabel(points) {
@@ -505,6 +629,8 @@ function addPoint(winner) {
     outcome: state.selectedOutcome,
     result: state.selectedResult,
     serveStart: state.selectedServe,
+    serverPlayer: state.selectedServerPlayer,
+    receiverPlayer: state.selectedReceiverPlayer,
     hand: state.selectedHand,
     player: state.selectedPlayer,
     shot: elements.shotSelect.value,
@@ -538,6 +664,7 @@ function addPoint(winner) {
   };
   state.points.push(entry);
   elements.memoInput.value = "";
+  ensureServicePlayerSelections();
   saveState();
   render();
   moveToNextPointInput();
@@ -561,6 +688,7 @@ function undoPoint() {
   state.server = last.server;
   state.matchInfo.endTime = last.endTimeBefore || "";
   state.finished = false;
+  ensureServicePlayerSelections();
   saveState();
   render();
 }
@@ -638,7 +766,9 @@ function renderScore() {
   renderMatchPointAlert();
   $(".point-button.own").innerHTML = `${escapeHtml(displayName("A"))}<br />1ポイント`;
   $(".point-button.opp").innerHTML = `${escapeHtml(displayName("B"))}<br />1ポイント`;
+  ensureServicePlayerSelections();
   renderPlayerButtons();
+  renderServicePlayerButtons();
   renderCourtMode();
   renderMatchInfo();
   renderWinnerState(winner);
@@ -658,11 +788,16 @@ function renderScore() {
   elements.liveMatchStatus.textContent = getCompactMatchStatus();
 
   renderScreenGuide();
+  renderRecordMode();
   elements.ruleNote.textContent = getRuleNoteText();
 
+  setActiveButton("#recordModeControl", "recordMode", state.recordMode);
   setActiveButton("#serverControl", "server", state.server);
   setActiveButton("#serveControl", "serve", state.selectedServe);
+  setActiveButton("#serverPlayerControl", "servicePlayer", state.selectedServerPlayer);
+  setActiveButton("#receiverPlayerControl", "receivePlayer", state.selectedReceiverPlayer);
   setActiveButton("#outcomeControl", "outcome", state.selectedOutcome);
+  setActiveButton("#simpleOutcomeControl", "simpleOutcome", state.selectedOutcome);
   setActiveButton("#resultControl", "result", state.selectedResult);
   setActiveButton("#handControl", "hand", state.selectedHand);
   setActiveButton("#playerControl", "player", state.selectedPlayer);
@@ -672,6 +807,19 @@ function renderScore() {
   if (state.selectedCourse === "未記録") {
     $$(".half-court button").forEach((button) => button.classList.remove("active"));
   }
+}
+
+
+function renderRecordMode() {
+  state.recordMode = "simple";
+  document.body.classList.toggle("simple-record-mode", true);
+  document.body.classList.toggle("detail-record-mode", false);
+  elements.screenGuide.textContent = "番号順に押して、選手ごとの結果まで残せます";
+}
+
+function setSimpleOutcome(outcome) {
+  state.selectedOutcome = outcome;
+  applyOutcomePreset(outcome);
 }
 
 function renderWinnerState(winner = getWinnerTeam()) {
@@ -793,6 +941,29 @@ function renderPlayerButtons() {
   $("#playerBSinglesButton").textContent = displayName("B");
 }
 
+
+function renderServicePlayerButtons() {
+  const receiverSide = RULES.switchSide(state.server);
+  const serverKeys = serviceSidePlayerKeys(state.server);
+  const receiverKeys = serviceSidePlayerKeys(receiverSide);
+  const serverRear = $("#serverPlayerRearButton");
+  const serverFront = $("#serverPlayerFrontButton");
+  const receiverRear = $("#receiverPlayerRearButton");
+  const receiverFront = $("#receiverPlayerFrontButton");
+
+  serverRear.dataset.servicePlayer = serverKeys[0];
+  serverRear.innerHTML = formatPlayerButtonLabel(playerLabel(serverKeys[0]));
+  serverFront.dataset.servicePlayer = serverKeys[1] || serverKeys[0];
+  serverFront.innerHTML = formatPlayerButtonLabel(playerLabel(serverKeys[1] || serverKeys[0]));
+  serverFront.hidden = state.matchType === "singles";
+
+  receiverRear.dataset.receivePlayer = receiverKeys[0];
+  receiverRear.innerHTML = formatPlayerButtonLabel(playerLabel(receiverKeys[0]));
+  receiverFront.dataset.receivePlayer = receiverKeys[1] || receiverKeys[0];
+  receiverFront.innerHTML = formatPlayerButtonLabel(playerLabel(receiverKeys[1] || receiverKeys[0]));
+  receiverFront.hidden = state.matchType === "singles";
+}
+
 function formatPlayerButtonLabel(label) {
   const text = String(label || "");
   const role = text.endsWith("後衛") ? "後衛" : text.endsWith("前衛") ? "前衛" : "";
@@ -831,13 +1002,13 @@ function renderScreenGuide() {
   const matchPointTeams = getMatchPointTeams();
   if (matchPointTeams.length) {
     elements.nextStep.textContent = `マッチポイント: ${matchPointTeams.map(displayName).join("・")}`;
-  elements.screenGuide.textContent = "次の1ポイントで試合が決まります。サービス・内容・得点側を確認";
+    elements.screenGuide.textContent = "次の1ポイントで試合が決まります。番号順に確認して得点側を保存";
+    renderTrialGuide();
+    return;
+  }
+  elements.nextStep.textContent = getNextStepText();
+  elements.screenGuide.textContent = "ポイント後に、画面の番号順に確認して得点側を保存";
   renderTrialGuide();
-  return;
-}
-elements.nextStep.textContent = getNextStepText();
-elements.screenGuide.textContent = "ポイント後に、サービス・内容・プレイヤー・得点側を確認";
-renderTrialGuide();
 }
 
 function getRuleNoteText() {
@@ -934,11 +1105,13 @@ function pointDiffTone(diff) {
 
 function renderAnalysisSummary() {
   const data = getAnalysisData();
+  const openingStats = getGameOpeningStats();
+  const openingTone = openingStats.total ? (openingStats.own >= openingStats.opp ? "own" : "opp") : "neutral";
   elements.analysisSummary.innerHTML = [
-    ["ポイント差", formatPointDiff(data.pointDiff), pointDiffTone(data.pointDiff)],
-    ["得点パターン", data.ownScoredByPattern, "own"],
-    ["相手ミス得点", data.ownPointsByOpponentError, "own"],
-    ["ミス失点", data.ownLostByOwnError, "opp"]
+    ["ゲーム最初の1本", openingStats.total ? `${openingStats.own}/${openingStats.total}本` : "未記録", openingTone],
+    ["ミスで落とした", `${data.ownLostByOwnError}本`, "opp"],
+    ["自分たちで取った", `${data.ownScoredByPattern}本`, "own"],
+    ["相手ミスで取った", `${data.ownPointsByOpponentError}本`, "own"]
   ].map(([label, value, tone]) => `
     <article class="metric-${tone}">
       <span>${escapeHtml(label)}</span>
@@ -955,8 +1128,8 @@ function renderScoreQuality() {
     <strong>${escapeHtml(quality.label)}</strong>
     <p>${escapeHtml(quality.text)}</p>
     <div class="quality-grid">
-      <span>${escapeHtml(ownSideLabel())}の得点 ${data.ownScoredByPattern}</span>
-      <span>相手のミス ${data.ownPointsByOpponentError}</span>
+      <span>自分たちで取った ${data.ownScoredByPattern}本</span>
+      <span>相手ミスで取った ${data.ownPointsByOpponentError}本</span>
     </div>
   `;
 }
@@ -965,23 +1138,47 @@ function buildQuickCoachItems(data = getAnalysisData()) {
   return SOFT_TENNIS_ANALYSIS.buildQuickCoachItemsFromData(data);
 }
 
+function uniqueAdviceItems(items) {
+  return items.reduce((acc, item) => {
+    const text = cleanPriorityText(item);
+    if (text && !acc.includes(text)) acc.push(text);
+    return acc;
+  }, []);
+}
+
+function buildPriorityAdviceItems(data = getAnalysisData()) {
+  if (!data.total) return ["まだ記録がありません。まずは1ポイント記録してください"];
+  return uniqueAdviceItems([...buildQuickCoachItems(data), ...buildPriorityItems()]).slice(0, ANALYSIS_COMMENT_RULES.priorityLimit);
+}
+
 function renderCoachNotes() {
   const data = getAnalysisData();
-  if (!data.total) {
-    elements.coachNotes.innerHTML = `<strong>今すぐ意識すること</strong><p>まだ記録がありません。まずは1ポイント記録してください。</p>`;
-    return;
-  }
-
-  const notes = buildQuickCoachItems(data);
-  elements.coachNotes.innerHTML = `<strong>今すぐ意識すること</strong><ul>${notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}</ul>`;
+  const notes = buildPriorityAdviceItems(data);
+  elements.coachNotes.innerHTML = `
+    <strong>次に見ること</strong>
+    <p>今の記録から、試合中にも見やすい順で並べています。</p>
+    <ol>${notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}</ol>
+  `;
 }
 
 function renderOpponentView() {
-  const priorityItems = buildPriorityItems();
+  const data = getAnalysisData();
+  const ownWon = state.points.filter((point) => point.winner === "A");
+  const opponentError = topEntry(countByOutcomeType("error", ownWon));
+  const comments = buildSummaryComments(data);
+  if (opponentError[1] > 0) {
+    comments.unshift(`相手の主なミスは「${opponentError[0]}」 ${opponentError[1]}本`);
+  }
+  const trendRows = [
+    ["自分たちで取った", `${data.ownScoredByPattern}本`],
+    ["相手ミスで取った", `${data.ownPointsByOpponentError}本`],
+    ["ミスで落とした", `${data.ownLostByOwnError}本`]
+  ];
 
   elements.opponentView.innerHTML = `
-    <strong>あとで確認すること</strong>
-    <ul>${priorityItems.map((item, index) => `<li><b>${index + 1}</b> ${escapeHtml(item)}</li>`).join("")}</ul>
+    <strong>全体の傾向</strong>
+    <ul>${uniqueAdviceItems(comments).slice(0, 3).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    <div class="trend-grid">${trendRows.map(([label, value]) => `<span><b>${escapeHtml(value)}</b>${escapeHtml(label)}</span>`).join("")}</div>
   `;
 }
 
@@ -1155,17 +1352,29 @@ function getPlayerPlusMinusRoster() {
 }
 
 function getPlayerPlusMinus() {
-  const counts = Object.fromEntries(getPlayerPlusMinusRoster().map((label) => [label, { plus: 0, minus: 0 }]));
+  const counts = Object.fromEntries(getPlayerPlusMinusRoster().map((label) => [label, { plus: 0, minus: 0, outcomes: {} }]));
   state.points.forEach((point) => {
     const label = playerLabel(point.player);
     if (!label || label === "不明" || label === "未設定" || label === "未記録") return;
-    counts[label] = counts[label] || { plus: 0, minus: 0 };
+    counts[label] = counts[label] || { plus: 0, minus: 0, outcomes: {} };
     if (isScoringOutcome(point.outcome)) counts[label].plus += 1;
     if (isErrorOutcome(point.outcome)) counts[label].minus += 1;
+    const outcome = point.outcome || "内容不明";
+    counts[label].outcomes[outcome] = (counts[label].outcomes[outcome] || 0) + 1;
   });
 
   return Object.entries(counts)
-    .map(([label, value]) => ({ label, plus: value.plus, minus: value.minus, diff: value.plus - value.minus }))
+    .map(([label, value]) => {
+      const outcomeEntries = Object.entries(value.outcomes || {})
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ja"));
+      return {
+        label,
+        plus: value.plus,
+        minus: value.minus,
+        diff: value.plus - value.minus,
+        outcomes: outcomeEntries
+      };
+    })
     .sort((a, b) => playerSortOrder(a.label) - playerSortOrder(b.label) || b.plus + b.minus - (a.plus + a.minus));
 }
 
@@ -1174,6 +1383,189 @@ function getTopPlayerPlusMinusLabel() {
   if (!entries.length || entries.every((entry) => entry.plus === 0 && entry.minus === 0)) return "未記録";
   const top = [...entries].sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff) || b.plus + b.minus - (a.plus + a.minus))[0];
   return `${top.label} +${top.plus} / -${top.minus} / ${formatPointDiff(top.diff)}`;
+}
+
+function getPlayerPlusMinusRows() {
+  return getPlayerPlusMinus().map((entry) => [entry.label, `+${entry.plus} / -${entry.minus} / ${formatPointDiff(entry.diff)}`, entry.diff > 0 ? "own" : entry.diff < 0 ? "opp" : "neutral"]);
+}
+
+function getPlayerPlayRows(limit = 3) {
+  return getPlayerPlusMinus().map((entry) => {
+    const total = entry.outcomes.reduce((sum, [, value]) => sum + value, 0);
+    if (!total) return [entry.label, "記録なし", "neutral"];
+    const top = entry.outcomes.slice(0, limit).map(([label, value]) => `${label} ${value}本`);
+    const rest = entry.outcomes.slice(limit).reduce((sum, [, value]) => sum + value, 0);
+    if (rest) top.push(`ほか ${rest}本`);
+    return [entry.label, top.join(" / "), entry.diff > 0 ? "own" : entry.diff < 0 ? "opp" : "neutral"];
+  });
+}
+
+function getGameOpeningStats() {
+  const openings = state.points.filter((point) => {
+    const before = point.scoreBefore?.points || { A: 0, B: 0 };
+    return (before.A || 0) === 0 && (before.B || 0) === 0;
+  });
+  const own = openings.filter((point) => point.winner === "A").length;
+  const opp = openings.filter((point) => point.winner === "B").length;
+  return { own, opp, total: openings.length, rate: openings.length ? Math.round((own / openings.length) * 100) : null };
+}
+
+function getStreakDetails() {
+  const streaks = [];
+  let current = null;
+  state.points.forEach((point, index) => {
+    if (!current || current.side !== point.winner) {
+      if (current) streaks.push(current);
+      current = { side: point.winner, count: 1, start: index + 1, end: index + 1, outcomes: [point.outcome || "内容不明"] };
+    } else {
+      current.count += 1;
+      current.end = index + 1;
+      current.outcomes.push(point.outcome || "内容不明");
+    }
+  });
+  if (current) streaks.push(current);
+  const bySide = (side) => streaks.filter((streak) => streak.side === side).sort((a, b) => b.count - a.count || a.start - b.start)[0] || null;
+  return { own: bySide("A"), opp: bySide("B"), all: streaks };
+}
+
+function formatStreak(streak) {
+  if (!streak) return "0本";
+  const topOutcome = topEntry(streak.outcomes.reduce((acc, outcome) => {
+    acc[outcome] = (acc[outcome] || 0) + 1;
+    return acc;
+  }, {}));
+  return `${streak.count}本 (${streak.start}-${streak.end}点目 / ${topOutcome[0]})`;
+}
+
+function oppositeSide(side) {
+  return side === "A" ? "B" : "A";
+}
+
+function isGamePointOpportunity(point, side) {
+  const before = point.scoreBefore?.points || { A: 0, B: 0 };
+  const target = getPointTargetForRecordedPoint(point);
+  return RULES.winsCurrentGameOnNextPoint({ ...state, gamePoints: before }, side) || ((before[side] || 0) >= target - 1 && (before[side] || 0) - (before[oppositeSide(side)] || 0) >= 1);
+}
+
+function isMatchPointOpportunity(point, side) {
+  if (!isGamePointOpportunity(point, side)) return false;
+  const beforeGames = point.scoreBefore?.games || { A: 0, B: 0 };
+  const gamesToWin = state.gamesToWin || gamesToWinFromFormat(state.matchFormat);
+  return (beforeGames[side] || 0) >= gamesToWin - 1;
+}
+
+function getClutchStats() {
+  return state.points.reduce((acc, point) => {
+    ["A", "B"].forEach((side) => {
+      if (isGamePointOpportunity(point, side) && point.winner !== side) {
+        if (side === "A") acc.ownGamePointMissed += 1;
+        else acc.oppGamePointMissed += 1;
+      }
+      if (isMatchPointOpportunity(point, side) && point.winner !== side) {
+        if (side === "A") acc.ownMatchPointMissed += 1;
+        else acc.oppMatchPointMissed += 1;
+      }
+    });
+    return acc;
+  }, { ownGamePointMissed: 0, oppGamePointMissed: 0, ownMatchPointMissed: 0, oppMatchPointMissed: 0 });
+}
+
+function getMomentumRows() {
+  const opening = getGameOpeningStats();
+  const streaks = getStreakDetails();
+  const clutch = getClutchStats();
+  return [
+    ["1ポイント目取得率", opening.rate === null ? "-" : `${opening.rate}% (${opening.own}/${opening.total})`, "own"],
+    ["最長連続得点", formatStreak(streaks.own), "own"],
+    ["最長連続失点", formatStreak(streaks.opp), "opp"],
+    ["ゲームポイント逸失", `${clutch.ownGamePointMissed}回`, clutch.ownGamePointMissed ? "opp" : "neutral"],
+    ["マッチポイント逸失", `${clutch.ownMatchPointMissed}回`, clutch.ownMatchPointMissed ? "opp" : "neutral"]
+  ];
+}
+
+function getServeReceiveRows() {
+  const rows = [];
+  const addSide = (side, label) => {
+    const servePoints = state.points.filter((point) => point.server === side);
+    const firstServe = servePoints.filter((point) => point.serveStart === "第1サービスで開始").length;
+    const doubleFaults = servePoints.filter((point) => point.outcome === "ダブルフォールト" && point.winner !== side).length;
+    const receiveMisses = state.points.filter((point) => point.server !== side && point.outcome === "レシーブミス" && point.winner !== side).length;
+    rows.push([`${label} 第1サービス`, servePoints.length ? `${firstServe}/${servePoints.length}本 (${Math.round((firstServe / servePoints.length) * 100)}%)` : "-"]);
+    rows.push([`${label} DF`, `${doubleFaults}本`]);
+    rows.push([`${label} レシーブミス`, `${receiveMisses}本`]);
+  };
+  addSide("A", displayName("A"));
+  addSide("B", displayName("B"));
+  rows.push(...getPlayerServeReceiveRows());
+  return rows;
+}
+
+function getPlayerServeReceiveStats() {
+  const roster = state.matchType === "singles"
+    ? ["A選手", "B選手"]
+    : ["A後衛", "A前衛", "B後衛", "B前衛"];
+  const plusMinusByLabel = Object.fromEntries(getPlayerPlusMinus().map((entry) => [entry.label, entry]));
+
+  return roster.map((player) => {
+    const side = sideFromPlayerKey(player);
+    const label = playerLabel(player);
+    const servePoints = state.points.filter((point) => normalizePlayerKey(point.serverPlayer) === player);
+    const receivePoints = state.points.filter((point) => normalizePlayerKey(point.receiverPlayer) === player);
+    const firstServe = servePoints.filter((point) => point.serveStart === "第1サービスで開始").length;
+    const doubleFaults = servePoints.filter((point) => point.outcome === "ダブルフォールト" && point.winner !== side).length;
+    const serveScores = servePoints.filter((point) => point.outcome === "サービス得点" && point.winner === side).length;
+    const receiveMisses = receivePoints.filter((point) => point.outcome === "レシーブミス" && point.winner !== side).length;
+    const receiveScores = receivePoints.filter((point) => point.outcome === "レシーブ得点" && point.winner === side).length;
+    const receiveKeep = receivePoints.length ? receivePoints.length - receiveMisses : 0;
+    const firstServeRate = servePoints.length ? Math.round((firstServe / servePoints.length) * 100) : null;
+    const receiveKeepRate = receivePoints.length ? Math.round((receiveKeep / receivePoints.length) * 100) : null;
+    const plusMinus = plusMinusByLabel[label] || { plus: 0, minus: 0, diff: 0 };
+    return {
+      player,
+      label,
+      side,
+      tone: side === "A" ? "own" : "opp",
+      servePoints: servePoints.length,
+      firstServe,
+      firstServeRate,
+      doubleFaults,
+      serveScores,
+      receivePoints: receivePoints.length,
+      receiveKeep,
+      receiveKeepRate,
+      receiveScores,
+      receiveMisses,
+      plus: plusMinus.plus,
+      minus: plusMinus.minus,
+      diff: plusMinus.diff
+    };
+  });
+}
+
+function getPlayerServeReceiveRows() {
+  return getPlayerServeReceiveStats().map((item) => {
+    const serveText = item.servePoints
+      ? `第1サービス ${item.firstServe}/${item.servePoints}本 (${item.firstServeRate}%)・DF ${item.doubleFaults}本・サーブ得点 ${item.serveScores}本`
+      : "S 未記録";
+    const receiveText = item.receivePoints
+      ? `レシーブ成功 ${item.receiveKeep}/${item.receivePoints}本 (${item.receiveKeepRate}%)・レシーブ得点 ${item.receiveScores}本・レシーブミス ${item.receiveMisses}本`
+      : "R 未記録";
+    return [item.label, `${serveText} / ${receiveText}`, item.tone];
+  });
+}
+
+
+function getTopPlayerServeReceiveLabel() {
+  const rows = getPlayerServeReceiveRows();
+  const recorded = rows.filter(([, value]) => value !== "S 未記録 / R 未記録");
+  if (!recorded.length) return "未記録";
+  return recorded.slice(0, 2).map(([label, value]) => `${label}: ${value}`).join(" / ");
+}
+
+function renderSimpleRows(container, rows) {
+  container.innerHTML = rows.length
+    ? rows.map(([label, value, tone]) => `<div class="bar-row ${escapeHtml(tone || "")}"><span>${escapeHtml(label)}</span><div class="bar-track text-track">${escapeHtml(value)}</div><b></b></div>`).join("")
+    : `<p class="empty">まだ記録がありません</p>`;
 }
 
 function renderStats() {
@@ -1194,21 +1586,22 @@ function renderStats() {
   renderBars(elements.resultBars, countBy("result"));
   renderBars(elements.handBars, countBy("hand", ownLost));
   renderPlayerPlusMinus();
+  renderSimpleRows(elements.momentumBars, getMomentumRows());
+  renderServeReceiveCards();
   renderBars(elements.courseBars, countBy("course"));
   renderAnalysisMemos();
 }
 
 function saveAnalysisMemo() {
-  const quickItems = buildQuickCoachItems();
-  const reviewItems = buildPriorityItems();
+  const items = buildPriorityAdviceItems();
   const memo = {
     at: new Date().toISOString(),
     pointCount: state.points.length,
     games: { ...state.games },
     points: { ...state.gamePoints },
-    quickItems,
-    reviewItems,
-    items: [...quickItems, ...reviewItems]
+    quickItems: items,
+    reviewItems: [],
+    items
   };
   state.analysisMemos = [memo, ...(state.analysisMemos || [])].slice(0, 12);
   saveState();
@@ -1222,11 +1615,9 @@ function renderAnalysisMemos() {
         const date = new Date(memo.at);
         const time = Number.isNaN(date.getTime()) ? "" : `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
         const score = `G ${memo.games?.A ?? 0}-${memo.games?.B ?? 0} / P ${memo.points?.A ?? 0}-${memo.points?.B ?? 0}`;
-        const quickItems = memo.quickItems || [];
-        const reviewItems = memo.reviewItems || memo.items || [];
-        const quickHtml = quickItems.length ? `<p>今すぐ意識すること</p><ul>${quickItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : "";
-        const reviewHtml = reviewItems.length ? `<p>あとで確認すること</p><ul>${reviewItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : "";
-        return `<article><strong>${escapeHtml(time)} ${escapeHtml(score)} ${escapeHtml(memo.pointCount)}点時点</strong>${quickHtml}${reviewHtml}</article>`;
+        const items = uniqueAdviceItems(memo.items || [...(memo.quickItems || []), ...(memo.reviewItems || [])]);
+        const itemsHtml = items.length ? `<p>次に見ること</p><ol>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>` : "";
+        return `<article><strong>${escapeHtml(time)} ${escapeHtml(score)} ${escapeHtml(memo.pointCount)}点時点</strong>${itemsHtml}</article>`;
       }).join("")
     : `<p>保存した分析はまだありません。</p>`;
 }
@@ -1247,16 +1638,58 @@ function renderPlayerPlusMinus() {
   elements.playerBars.innerHTML = entries.length
     ? entries.map((item) => {
         const tone = item.diff > 0 ? "own" : item.diff < 0 ? "opp" : "neutral";
+        const visibleOutcomes = item.outcomes.slice(0, 3);
+        const restCount = item.outcomes.slice(3).reduce((sum, [, value]) => sum + value, 0);
+        const outcomeChips = item.outcomes.length
+          ? `${visibleOutcomes.map(([label, value]) => `<span>${escapeHtml(label)} <b>${escapeHtml(value)}本</b></span>`).join("")}${restCount ? `<span class="muted-chip">ほか <b>${escapeHtml(restCount)}本</b></span>` : ""}`
+          : `<span class="muted-chip">記録なし</span>`;
         return `
-          <div class="pm-row ${tone}">
-            <span>${escapeHtml(item.label)}</span>
-            <b class="plus">+${escapeHtml(item.plus)}</b>
-            <b class="minus">-${escapeHtml(item.minus)}</b>
-            <strong>${escapeHtml(formatPointDiff(item.diff))}</strong>
-          </div>
+          <article class="pm-card ${tone}">
+            <div class="pm-card-head">
+              <strong>${escapeHtml(item.label)}</strong>
+              <span>${escapeHtml(formatPointDiff(item.diff))}</span>
+            </div>
+            <div class="pm-score-row">
+              <b class="plus">+${escapeHtml(item.plus)}</b>
+              <b class="minus">-${escapeHtml(item.minus)}</b>
+            </div>
+            <div class="pm-outcomes" aria-label="${escapeHtml(item.label)}のプレー内容">${outcomeChips}</div>
+          </article>
         `;
       }).join("")
     : `<p class="empty">得点またはミスを、プレイヤー付きで記録すると表示されます</p>`;
+}
+
+function formatRate(rate) {
+  return rate === null ? "-" : `${rate}%`;
+}
+
+function renderServeReceiveCards() {
+  const stats = getPlayerServeReceiveStats();
+  elements.serveReceiveBars.innerHTML = stats.length
+    ? stats.map((item) => `
+      <article class="sr-card ${escapeHtml(item.tone)}">
+        <div class="sr-card-head">
+          <strong>${escapeHtml(item.label)}</strong>
+          <span>+${escapeHtml(item.plus)} / -${escapeHtml(item.minus)} / ${escapeHtml(formatPointDiff(item.diff))}</span>
+        </div>
+        <div class="sr-metrics">
+          <div class="sr-metric-row">
+            <strong>サーブ</strong>
+            <span class="sr-metric"><b>${escapeHtml(item.servePoints ? `${item.firstServe}/${item.servePoints}本` : "未記録")}</b><small>第1サービス ${escapeHtml(formatRate(item.firstServeRate))}</small></span>
+            <span class="sr-metric"><b>${escapeHtml(`${item.doubleFaults}本`)}</b><small>DF</small></span>
+            <span class="sr-metric"><b>${escapeHtml(`${item.serveScores}本`)}</b><small>サーブ得点</small></span>
+          </div>
+          <div class="sr-metric-row">
+            <strong>レシーブ</strong>
+            <span class="sr-metric"><b>${escapeHtml(item.receivePoints ? `${item.receiveKeep}/${item.receivePoints}本` : "未記録")}</b><small>成功 ${escapeHtml(formatRate(item.receiveKeepRate))}</small></span>
+            <span class="sr-metric"><b>${escapeHtml(`${item.receiveScores}本`)}</b><small>レシーブ得点</small></span>
+            <span class="sr-metric"><b>${escapeHtml(`${item.receiveMisses}本`)}</b><small>レシーブミス</small></span>
+          </div>
+        </div>
+      </article>
+    `).join("")
+    : `<p class="empty">サーブした人・レシーブした人を記録すると表示されます</p>`;
 }
 
 function historyFilterLabel(value) {
@@ -1309,7 +1742,8 @@ function renderHistoryPoint(point) {
   const winner = `${displayName(point.winner)}の得点`;
   const actor = playerLabel(point.player);
   const location = [point.course, point.result && point.result !== "イン" ? point.result : ""].filter(Boolean).join(" / ");
-  const service = `${point.serveStart || "サービス不明"} / S ${shortSideName(point.server)}`;
+  const serviceActors = [point.serverPlayer && point.serverPlayer !== "不明" ? `S:${playerLabel(point.serverPlayer)}` : "", point.receiverPlayer && point.receiverPlayer !== "不明" ? `R:${playerLabel(point.receiverPlayer)}` : ""].filter(Boolean).join("・");
+  const service = [`${point.serveStart || "サービス不明"} / S ${shortSideName(point.server)}`, serviceActors].filter(Boolean).join("・");
   const meta = [location, historyPhaseLabel(point), service, point.memo].filter(Boolean).join("・");
   const sideClass = point.winner === "A" ? "own" : "opp";
   return `
@@ -1324,6 +1758,7 @@ function renderHistoryPoint(point) {
         <span class="history-score">${escapeHtml(before)} → ${escapeHtml(after)}</span>
       </div>
       <small>${escapeHtml(meta)}</small>
+      <button class="history-edit-button" data-point-edit="${escapeHtml(number - 1)}" type="button">詳細を補足</button>
     </li>
   `;
 }
@@ -1348,6 +1783,64 @@ function renderHistoryGameGroup(points, index) {
       </details>
     </li>
   `;
+}
+
+function getPointEditPlayerOptions() {
+  if (state.matchType === "singles") {
+    return [
+      ["A選手", playerLabel("A選手")],
+      ["B選手", playerLabel("B選手")],
+      ["不明", "不明"]
+    ];
+  }
+  return [
+    ["A後衛", playerLabel("A後衛")],
+    ["A前衛", playerLabel("A前衛")],
+    ["B後衛", playerLabel("B後衛")],
+    ["B前衛", playerLabel("B前衛")],
+    ["不明", "不明"]
+  ];
+}
+
+function setSelectOptions(select, options, value) {
+  if (!select) return;
+  select.innerHTML = options.map(([optionValue, label]) => `<option value="${escapeHtml(optionValue)}">${escapeHtml(label)}</option>`).join("");
+  select.value = value;
+}
+
+function openPointDetailEditor(index) {
+  const pointIndex = Number(index);
+  const point = state.points[pointIndex];
+  if (!Number.isInteger(pointIndex) || !point) return;
+  editingPointIndex = pointIndex;
+  elements.pointDetailIndex.value = String(pointIndex);
+  elements.pointDetailTitle.textContent = `${pointIndex + 1}点目の詳細を補足`;
+  setSelectOptions(elements.pointEditPlayerSelect, getPointEditPlayerOptions(), normalizePlayerKey(point.player || "不明"));
+  elements.pointEditOutcomeSelect.value = point.outcome || "ストローク得点";
+  elements.pointEditShotSelect.value = point.shot || "ストローク";
+  elements.pointEditRallySelect.value = point.rally || "0";
+  elements.pointEditHandSelect.value = point.hand || "不明";
+  elements.pointEditCourseSelect.value = point.course || "未記録";
+  elements.pointEditResultSelect.value = point.result || "不明";
+  elements.pointEditMemoInput.value = point.memo || "";
+  elements.pointDetailDialog.showModal();
+}
+
+function savePointDetailEdit() {
+  const pointIndex = Number(elements.pointDetailIndex.value || editingPointIndex);
+  const point = state.points[pointIndex];
+  if (!Number.isInteger(pointIndex) || !point) return;
+  point.player = normalizePlayerKey(elements.pointEditPlayerSelect.value || "不明");
+  point.outcome = elements.pointEditOutcomeSelect.value || point.outcome;
+  point.shot = elements.pointEditShotSelect.value || point.shot;
+  point.rally = elements.pointEditRallySelect.value || point.rally || "0";
+  point.hand = elements.pointEditHandSelect.value || "不明";
+  point.course = elements.pointEditCourseSelect.value || "未記録";
+  point.result = elements.pointEditResultSelect.value || "不明";
+  point.memo = elements.pointEditMemoInput.value.trim();
+  saveState();
+  elements.pointDetailDialog.close();
+  render();
 }
 
 function renderHistory() {
@@ -1387,54 +1880,109 @@ function render() {
   renderHistory();
 }
 
-function exportCsv() {
-  const rows = [
-    ["No", "日付", "時間帯", "開始時刻", "終了時刻", "天気", "気温", "風", "風向き", "コート種別", "コート状態", "種別", "相手基本布陣", "区分", "大会名", "開催地／会場", "コート", "試合形式", "得点側", "サービスサイド", "ゲーム", "ポイント", "場面", "サービスの入り方", "ポイント内容", "ボールの結果", "誰のプレー", "ショット", "打球面", "コース", "ラリー数", "ゲーム取得", "メモ", "記録時刻"],
-    ...state.points.map((point, index) => [
-      index + 1,
-      state.matchInfo.date,
-      state.matchInfo.timeOfDay,
-      state.matchInfo.startTime,
-      state.matchInfo.endTime,
-      state.matchInfo.weather,
-      state.matchInfo.temperature,
-      state.matchInfo.wind,
-      state.matchInfo.windSide,
-      state.matchInfo.surface,
-      state.matchInfo.courtCondition,
-      state.matchType === "singles" ? "シングルス" : "ダブルス",
-      state.matchInfo.opponentFormation,
-      state.matchInfo.event,
-      state.matchInfo.tournament,
-      state.matchInfo.venueName,
-      state.matchInfo.venue,
-      matchFormatLabel(),
-      displayName(point.winner),
-      displayName(point.server),
-      `${point.scoreBefore.games.A}-${point.scoreBefore.games.B}`,
-      `${point.scoreBefore.points.A}-${point.scoreBefore.points.B}`,
-      point.phase,
-      point.serveStart,
-      point.outcome,
-      point.result,
-      playerLabel(point.player),
-      point.shot,
-      point.hand,
-      point.course,
-      point.rally,
-      point.gameWonBy ? displayName(point.gameWonBy) : "",
-      point.memo,
-      point.at
-    ])
+function buildPointCsvRow(matchState, point = null, index = "") {
+  const normalized = normalizeState(matchState || defaultState);
+  const info = normalized.matchInfo || defaultState.matchInfo;
+  const beforeGames = point?.scoreBefore?.games || { A: 0, B: 0 };
+  const beforePoints = point?.scoreBefore?.points || { A: 0, B: 0 };
+  return [
+    index,
+    info.date,
+    info.timeOfDay,
+    info.startTime,
+    info.endTime,
+    info.weather,
+    info.temperature,
+    info.wind,
+    info.windSide,
+    info.surface,
+    info.courtCondition,
+    normalized.matchType === "singles" ? "シングルス" : "ダブルス",
+    info.opponentFormation,
+    info.event,
+    info.tournament,
+    info.venueName,
+    info.venue,
+    matchFormatLabelFromState(normalized),
+    point ? displayNameFromState(normalized, point.winner) : "",
+    point ? displayNameFromState(normalized, point.server) : "",
+    point ? playerLabelFromState(normalized, point.serverPlayer) : "",
+    point ? playerLabelFromState(normalized, point.receiverPlayer) : "",
+    point ? `${beforeGames.A || 0}-${beforeGames.B || 0}` : "",
+    point ? `${beforePoints.A || 0}-${beforePoints.B || 0}` : "",
+    point?.phase || "",
+    point?.serveStart || "",
+    point?.outcome || "",
+    point?.result || "",
+    point ? playerLabelFromState(normalized, point.player) : "",
+    point?.shot || "",
+    point?.hand || "",
+    point?.course || "",
+    point?.rally || "",
+    point?.gameWonBy ? displayNameFromState(normalized, point.gameWonBy) : "",
+    point?.memo || "",
+    point?.at || ""
   ];
-  const csv = rows.map((row) => row.map(escapeCsvCell).join(",")).join("\n");
-  const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" });
+}
+
+function buildPointCsvRows(matchState = state, { includeEmptyMatchRow = false } = {}) {
+  const normalized = normalizeState(matchState || defaultState);
+  const pointRows = normalized.points.map((point, index) => buildPointCsvRow(normalized, point, index + 1));
+  if (!pointRows.length && includeEmptyMatchRow) {
+    pointRows.push(buildPointCsvRow(normalized, null, ""));
+  }
+  return [POINT_CSV_HEADERS, ...pointRows];
+}
+
+function rowsToCsv(rows) {
+  return rows.map((row) => row.map(escapeCsvCell).join(",")).join("\n");
+}
+
+function downloadCsvRows(rows, fileName) {
+  const blob = new Blob([`\ufeff${rowsToCsv(rows)}`], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = getCsvFileName();
+  link.download = fileName;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function exportCsv() {
+  downloadCsvRows(buildPointCsvRows(state), getCsvFileName());
+}
+
+function getArchivedCsvFileName(date = new Date()) {
+  const timestamp = [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+    String(date.getHours()).padStart(2, "0"),
+    String(date.getMinutes()).padStart(2, "0"),
+    String(date.getSeconds()).padStart(2, "0")
+  ].join("");
+  return `soft-tennis-archive-points-${timestamp}.csv`;
+}
+
+function buildArchivedCsvRows(archived = loadArchivedMatches()) {
+  const rows = [ARCHIVE_CSV_HEADERS];
+  archived.forEach((entry, matchIndex) => {
+    const normalized = normalizeState(entry.state || defaultState);
+    const pointRows = buildPointCsvRows(normalized, { includeEmptyMatchRow: true }).slice(1);
+    const prefix = [matchIndex + 1, entry.id || "", entry.savedAt || "", entry.title || buildArchivedMatchTitle(normalized)];
+    pointRows.forEach((row) => rows.push([...prefix, ...row]));
+  });
+  return rows;
+}
+
+function exportArchivedCsv() {
+  const archived = loadArchivedMatches();
+  if (!archived.length) {
+    window.alert?.("保存済み試合がまだありません。");
+    return false;
+  }
+  downloadCsvRows(buildArchivedCsvRows(archived), getArchivedCsvFileName());
+  return true;
 }
 
 function getBackupFileName(date = new Date()) {
@@ -1613,11 +2161,53 @@ function getSummaryImageData() {
     ["相手布陣", state.matchType === "singles" ? "シングルス" : info.opponentFormation || "不明"]
   ];
 
+  const openingStats = getGameOpeningStats();
+  const streakStats = getStreakDetails();
+  const clutchStats = getClutchStats();
+  const playerPlusMinusRows = getPlayerPlusMinusRows();
+  const playerPlayRows = getPlayerPlayRows(3);
+  const playerServeReceiveStats = getPlayerServeReceiveStats().map((item) => ({
+    label: item.label,
+    tone: item.tone,
+    plus: item.plus,
+    minus: item.minus,
+    diff: item.diff,
+    servePoints: item.servePoints,
+    firstServe: item.firstServe,
+    firstServeRate: item.firstServeRate,
+    doubleFaults: item.doubleFaults,
+    serveScores: item.serveScores,
+    receivePoints: item.receivePoints,
+    receiveKeep: item.receiveKeep,
+    receiveKeepRate: item.receiveKeepRate,
+    receiveScores: item.receiveScores,
+    receiveMisses: item.receiveMisses
+  }));
+  const pointBreakdownRows = [
+    ["自分たちで取った", data.ownScoredByPattern, "own", "攻めて取れた点"],
+    ["相手ミスで取った", data.ownPointsByOpponentError, "own", "相手のミスで取れた点"],
+    ["ミスで落とした", data.ownLostByOwnError, "opp", "自分たちのミスで落とした点"]
+  ];
+  const openingTone = openingStats.total ? (openingStats.own >= openingStats.opp ? "own" : "opp") : "neutral";
+  const openingMetric = openingStats.total ? `${openingStats.own}/${openingStats.total}本` : "未記録";
+  const flowRows = [
+    ["1ポイント目取得率", openingStats.rate === null ? 0 : openingStats.rate, "own", openingStats.rate === null ? "記録なし" : `${openingStats.own}/${openingStats.total}`],
+    ["最長連続得点", streakStats.own?.count || 0, "own", formatStreak(streakStats.own)],
+    ["最長連続失点", streakStats.opp?.count || 0, "opp", formatStreak(streakStats.opp)],
+    ["GP逸失", clutchStats.ownGamePointMissed, clutchStats.ownGamePointMissed ? "opp" : "neutral", `${clutchStats.ownGamePointMissed}回`],
+    ["MP逸失", clutchStats.ownMatchPointMissed, clutchStats.ownMatchPointMissed ? "opp" : "neutral", `${clutchStats.ownMatchPointMissed}回`]
+  ];
+
   return {
     title: "ソフトテニス試合ノート",
     subtitle: `${typeLabel} / ${matchFormatLabel()}`,
     teams: `${displayName("A")}  vs  ${displayName("B")}`,
     playerRows,
+    playerPlusMinusRows,
+    playerPlayRows,
+    playerServeReceiveStats,
+    pointBreakdownRows,
+    flowRows,
     gameScore: `${state.games.A}-${state.games.B}`,
     currentPointScore: state.finished ? "終了" : `${pointLabel("A")}-${pointLabel("B")}`,
     gameScoreRows: getGamePointScoreRows(),
@@ -1634,12 +2224,15 @@ function getSummaryImageData() {
       info.venue !== "未記録" ? info.venue : ""
     ].filter(Boolean),
     summaryRows: [
-      ["ポイント差", formatPointDiff(data.pointDiff), pointDiffTone(data.pointDiff)],
+      ["ゲーム最初の1本", openingMetric, openingTone],
+      ["ミスで落とした", data.ownLostByOwnError, "opp"],
+      ["自分たちで取った", data.ownScoredByPattern, "own"],
+      ["相手ミスで取った", data.ownPointsByOpponentError, "own"],
       ["記録ポイント", data.total, "neutral"],
-      ["得点パターン", data.ownScoredByPattern, "own"],
-      ["相手ミス得点", data.ownPointsByOpponentError, "own"],
-      ["ミス失点", data.ownLostByOwnError, "opp"],
-      ["個人別 + / -", getTopPlayerPlusMinusLabel(), "neutral"]
+      ["プレイヤー別 + / -", getTopPlayerPlusMinusLabel(), "neutral"],
+      ["プレイヤー別S/R", getTopPlayerServeReceiveLabel(), "neutral"],
+      ["最長連続得点", streakStats.own ? `${streakStats.own.count}本` : "0本", "own"],
+      ["最長連続失点", streakStats.opp ? `${streakStats.opp.count}本` : "0本", "opp"]
     ],
     resultRows: [
       ["試合結果", matchResultLabel],
@@ -1648,11 +2241,11 @@ function getSummaryImageData() {
       ["各ゲーム", getGamePointScoreRows().slice(0, 9).map(([label, score]) => `${label} ${score}`).join(" / ")]
     ],
     analysisComments: buildSummaryComments(data),
-    quickTitle: latestMemo ? `今すぐ意識すること ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "今すぐ意識すること",
+    quickTitle: latestMemo ? `次に見ること ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "次に見ること",
     quickItems: latestMemo ? (latestMemo.quickItems || []) : buildQuickCoachItems(data),
-    reviewTitle: "あとで確認すること",
+    reviewTitle: "",
     reviewItems: latestMemo ? (latestMemo.reviewItems || latestMemo.items || []) : buildPriorityItems(),
-    analysisMemoTitle: latestMemo ? `保存した分析 ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "今すぐ意識すること",
+    analysisMemoTitle: latestMemo ? `保存した分析 ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "次に見ること",
     analysisMemoItems: latestMemo ? [...(latestMemo.quickItems || []), ...(latestMemo.reviewItems || latestMemo.items || [])].slice(0, 4) : [...buildQuickCoachItems(data), ...buildPriorityItems()].slice(0, 4),
     priorityItems: latestMemo ? [...(latestMemo.quickItems || []), ...(latestMemo.reviewItems || latestMemo.items || [])].slice(0, 4) : buildPriorityItems(),
     detailRows: [
@@ -1662,6 +2255,12 @@ function getSummaryImageData() {
       ["第1サービス開始率", data.firstServeRate === null ? "-" : `${data.firstServeRate}%`],
       ["ダブルフォールト", data.ownDoubleFaults],
       ["レシーブミス", data.ownReceiveMisses],
+      ["プレイヤー別S/R", getTopPlayerServeReceiveLabel()],
+      ["1ポイント目取得率", openingStats.rate === null ? "-" : `${openingStats.rate}% (${openingStats.own}/${openingStats.total})`],
+      ["最長連続得点", formatStreak(streakStats.own)],
+      ["最長連続失点", formatStreak(streakStats.opp)],
+      ["ゲームポイント逸失", `${clutchStats.ownGamePointMissed}回`],
+      ["マッチポイント逸失", `${clutchStats.ownMatchPointMissed}回`],
       ["最初の2本で失点", data.ownEarlyLost]
     ],
     phaseRows: Object.entries(phaseCounts).filter(([, value]) => value > 0)
@@ -1749,37 +2348,82 @@ function strokeRoundedRect(ctx, x, y, width, height, radius, strokeStyle, lineWi
 function drawSummaryImage(canvas, summary, mode = "detail") {
   const ctx = canvas.getContext("2d");
   const width = 1080;
+  const pageHeight = 1500;
   const isShareMode = mode === "share";
-  const height = isShareMode ? 1500 : 1880;
+  const pageCount = isShareMode ? 3 : 5;
+  const height = pageHeight * pageCount;
   const ownColor = "#2563eb";
   const oppColor = "#dc2626";
+  const neutralColor = "#0f766e";
   const inkColor = "#1f2937";
   const mutedColor = "#64748b";
   const lineColor = "#d9e1ea";
+  const softLineColor = "#eef2f7";
+  const pageMargin = 56;
+  const contentWidth = width - pageMargin * 2;
   canvas.width = width;
   canvas.height = height;
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = "#f8fafc";
   ctx.fillRect(0, 0, width, height);
 
-  const textColor = (tone) => (tone === "own" ? ownColor : tone === "opp" ? oppColor : inkColor);
+  const textColor = (tone) => (tone === "own" ? ownColor : tone === "opp" ? oppColor : tone === "neutral" ? neutralColor : inkColor);
+  const softColor = (tone) => (tone === "own" ? "#eff6ff" : tone === "opp" ? "#fef2f2" : "#f0fdfa");
+  const setFont = (size, weight = 800) => {
+    ctx.font = `${weight} ${size}px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif`;
+  };
   const drawText = (text, x, y, options = {}) => {
     const size = options.size || 28;
     const weight = options.weight || 800;
     const lineHeight = options.lineHeight || Math.round(size * 1.45);
     const maxLines = options.maxLines || 1;
-    const maxWidth = options.maxWidth || 952;
+    const maxWidth = options.maxWidth || contentWidth;
     ctx.fillStyle = options.color || inkColor;
-    ctx.font = `${weight} ${size}px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif`;
+    setFont(size, weight);
     return drawClampedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) + (options.after || 0);
   };
-  const bullet = (text, y, tone = "neutral", maxLines = 1) => {
-    fillRoundedRect(ctx, 70, y - 22, 10, 10, 5, textColor(tone));
-    return drawText(text, 96, y, { size: 27, lineHeight: 36, maxLines, color: textColor(tone), after: 4 });
-  };
   const sections = [];
+  const pageTop = (pageIndex) => pageIndex * pageHeight;
+  const pageFooter = (pageIndex) => {
+    const base = pageTop(pageIndex);
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pageMargin, base + pageHeight - 110);
+    ctx.lineTo(width - pageMargin, base + pageHeight - 110);
+    ctx.stroke();
+    ctx.fillStyle = mutedColor;
+    setFont(22, 800);
+    const footer = ["端末内で画像生成。開発者や管理者へ送られません。", `${pageIndex + 1}/${pageCount}`].join(" / ");
+    drawClampedText(ctx, footer, pageMargin, base + pageHeight - 72, contentWidth, 30, 1);
+  };
+  const pageHeader = (pageIndex, title, subtitle = "") => {
+    const base = pageTop(pageIndex);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(24, base + 24, width - 48, pageHeight - 48);
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 2;
+    roundedRect(ctx, 24, base + 24, width - 48, pageHeight - 48, 18);
+    ctx.stroke();
+    let y = base + 82;
+    y = drawText(title, pageMargin, y, { size: 42, weight: 900, lineHeight: 52, after: 4 });
+    if (subtitle) y = drawText(subtitle, pageMargin, y, { size: 24, weight: 800, color: mutedColor, lineHeight: 32, after: 8 });
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pageMargin, y + 4);
+    ctx.lineTo(width - pageMargin, y + 4);
+    ctx.stroke();
+    return y + 38;
+  };
   const heading = (text, y) => {
     sections.push(text);
-    return drawText(text, 64, y, { size: 32, weight: 900, lineHeight: 42, after: 6 });
+    fillRoundedRect(ctx, pageMargin, y - 28, 9, 34, 5, neutralColor);
+    return drawText(text, pageMargin + 22, y, { size: 32, weight: 900, lineHeight: 42, after: 10 });
+  };
+  const paragraph = (text, y, tone = "neutral") => drawText(text, pageMargin, y, { size: 25, weight: 800, lineHeight: 36, color: textColor(tone), maxLines: 3, after: 10 });
+  const bullet = (text, y, tone = "neutral", maxLines = 1) => {
+    fillRoundedRect(ctx, pageMargin + 14, y - 21, 10, 10, 5, textColor(tone));
+    return drawText(text, pageMargin + 40, y, { size: 25, lineHeight: 34, maxLines, color: textColor(tone), after: 4 });
   };
   const drawRows = (rows, y, options = {}) => {
     rows.forEach(([label, value, tone]) => {
@@ -1793,69 +2437,192 @@ function drawSummaryImage(canvas, summary, mode = "detail") {
     });
     return y;
   };
+  const drawPanel = (title, note, y, tone = "neutral") => {
+    fillRoundedRect(ctx, pageMargin, y, contentWidth, 116, 12, softColor(tone));
+    strokeRoundedRect(ctx, pageMargin, y, contentWidth, 116, 12, lineColor, 2);
+    drawText(title, pageMargin + 26, y + 40, { size: 29, weight: 900, color: textColor(tone), maxWidth: contentWidth - 52 });
+    drawText(note, pageMargin + 26, y + 78, { size: 23, weight: 800, color: mutedColor, lineHeight: 30, maxWidth: contentWidth - 52, maxLines: 2 });
+    return y + 136;
+  };
+  const drawHorizontalBar = (label, value, total, y, tone = "neutral", note = "") => {
+    const safeTotal = Math.max(1, Number(total) || 1);
+    const safeValue = Math.max(0, Number(value) || 0);
+    const rate = Math.min(1, safeValue / safeTotal);
+    const barX = pageMargin + 250;
+    const barY = y - 24;
+    const barW = contentWidth - 370;
+    drawText(label, pageMargin, y, { size: 24, weight: 900, maxWidth: 220, color: textColor(tone) });
+    fillRoundedRect(ctx, barX, barY, barW, 24, 12, "#e5e7eb");
+    fillRoundedRect(ctx, barX, barY, Math.max(8, barW * rate), 24, 12, textColor(tone));
+    drawText(String(value), barX + barW + 18, y, { size: 24, weight: 900, maxWidth: 80, color: textColor(tone) });
+    if (note) drawText(note, barX, y + 28, { size: 20, weight: 800, color: mutedColor, maxWidth: barW + 90 });
+    return y + 64;
+  };
+  const drawStackedBar = (rows, y) => {
+    const total = Math.max(1, rows.reduce((sum, [, value]) => sum + (Number(value) || 0), 0));
+    let x = pageMargin;
+    const barW = contentWidth;
+    rows.forEach(([label, value, tone]) => {
+      const segmentWidth = Math.max(value > 0 ? 10 : 0, barW * ((Number(value) || 0) / total));
+      if (segmentWidth > 0) {
+        fillRoundedRect(ctx, x, y, segmentWidth, 42, 10, textColor(tone));
+        x += segmentWidth;
+      }
+    });
+    y += 80;
+    rows.forEach(([label, value, tone, note]) => {
+      y = drawHorizontalBar(label, value, total, y, tone, note);
+    });
+    return y;
+  };
+  const drawScoreBoard = (y) => {
+    sections.push("試合結果");
+    fillRoundedRect(ctx, pageMargin, y, contentWidth, 210, 14, "#f8fafc");
+    strokeRoundedRect(ctx, pageMargin, y, contentWidth, 210, 14, lineColor, 2);
+    drawText(summary.teams, pageMargin + 28, y + 42, { size: 29, weight: 900, maxWidth: contentWidth - 56 });
+    drawText(`ゲーム ${summary.gameScore}　ポイント ${summary.currentPointScore}`, pageMargin + 28, y + 92, { size: 42, weight: 900, color: inkColor, maxWidth: contentWidth - 56 });
+    drawText(summary.resultRows.find(([label]) => label === "各ゲーム")?.[1] || "各ゲーム 未記録", pageMargin + 28, y + 146, { size: 24, weight: 800, color: mutedColor, maxWidth: contentWidth - 56, maxLines: 2, lineHeight: 32 });
+    return y + 236;
+  };
+  const drawPlayerImpact = (y) => {
+    const playByPlayer = Object.fromEntries((summary.playerPlayRows || []).map(([label, value]) => [label, value]));
+    const max = Math.max(1, ...summary.playerPlusMinusRows.map(([, value]) => {
+      const plus = Number(String(value).match(/\+(\d+)/)?.[1] || 0);
+      const minus = Number(String(value).match(/-(\d+)/)?.[1] || 0);
+      return Math.max(plus, minus);
+    }));
+    summary.playerPlusMinusRows.forEach(([label, value, tone]) => {
+      const plus = Number(String(value).match(/\+(\d+)/)?.[1] || 0);
+      const minus = Number(String(value).match(/-(\d+)/)?.[1] || 0);
+      const labelW = 220;
+      const barX = pageMargin + labelW + 28;
+      const barW = contentWidth - labelW - 300;
+      fillRoundedRect(ctx, pageMargin, y, contentWidth, 124, 12, "#ffffff");
+      strokeRoundedRect(ctx, pageMargin, y, contentWidth, 124, 12, lineColor, 2);
+      drawText(label, pageMargin + 22, y + 38, { size: 24, weight: 900, maxWidth: labelW });
+      fillRoundedRect(ctx, barX, y + 22, barW, 18, 9, "#e5e7eb");
+      fillRoundedRect(ctx, barX, y + 22, Math.max(plus > 0 ? 8 : 0, barW * (plus / max)), 18, 9, ownColor);
+      drawText(`+${plus}`, barX + barW + 14, y + 39, { size: 22, weight: 900, color: ownColor, maxWidth: 72 });
+      fillRoundedRect(ctx, barX, y + 56, barW, 18, 9, "#e5e7eb");
+      fillRoundedRect(ctx, barX, y + 56, Math.max(minus > 0 ? 8 : 0, barW * (minus / max)), 18, 9, oppColor);
+      drawText(`-${minus}`, barX + barW + 14, y + 73, { size: 22, weight: 900, color: oppColor, maxWidth: 72 });
+      drawText(value, pageMargin + contentWidth - 180, y + 52, { size: 23, weight: 900, color: textColor(tone), maxWidth: 158 });
+      drawText(playByPlayer[label] || "記録なし", pageMargin + 22, y + 104, { size: 19, weight: 800, color: mutedColor, maxWidth: contentWidth - 44, maxLines: 1 });
+      y += 138;
+    });
+    return y;
+  };
+  const drawServeReceiveRow = (title, primary, secondary, tertiary, x, y, w, tone) => {
+    fillRoundedRect(ctx, x + 18, y, w - 36, 64, 12, "rgba(255,255,255,0.84)");
+    drawText(title, x + 32, y + 26, { size: 18, weight: 900, color: textColor(tone), maxWidth: 92 });
+    drawText(primary, x + 124, y + 25, { size: 23, weight: 900, color: inkColor, maxWidth: w - 230 });
+    drawText(secondary, x + 124, y + 51, { size: 17, weight: 800, color: mutedColor, maxWidth: w - 230 });
+    drawText(tertiary, x + w - 100, y + 41, { size: 20, weight: 900, color: textColor(tone), maxWidth: 78 });
+  };
+  const drawServeReceiveCard = (item, x, y, w) => {
+    fillRoundedRect(ctx, x, y, w, 250, 14, softColor(item.tone));
+    strokeRoundedRect(ctx, x, y, w, 250, 14, lineColor, 2);
+    drawText(item.label, x + 20, y + 38, { size: 26, weight: 900, color: textColor(item.tone), maxWidth: w - 40 });
+    drawText(`+${item.plus} / -${item.minus} / ${formatPointDiff(item.diff)}`, x + 20, y + 72, { size: 21, weight: 900, color: textColor(item.tone), maxWidth: w - 40 });
+    const firstServe = item.servePoints ? `${item.firstServe}/${item.servePoints}本 (${formatRate(item.firstServeRate)})` : "未記録";
+    const receiveKeep = item.receivePoints ? `${item.receiveKeep}/${item.receivePoints}本 (${formatRate(item.receiveKeepRate)})` : "未記録";
+    drawServeReceiveRow("サーブ", `第1 ${firstServe}`, `DF ${item.doubleFaults}本`, `得点 ${item.serveScores}本`, x, y + 94, w, item.tone);
+    drawServeReceiveRow("レシーブ", `成功 ${receiveKeep}`, `ミス ${item.receiveMisses}本`, `得点 ${item.receiveScores}本`, x, y + 168, w, item.tone);
+  };
+  const drawServeReceiveGrid = (y) => {
+    const cardW = (contentWidth - 20) / 2;
+    summary.playerServeReceiveStats.forEach((item, index) => {
+      const x = pageMargin + (index % 2) * (cardW + 20);
+      const rowY = y + Math.floor(index / 2) * 272;
+      drawServeReceiveCard(item, x, rowY, cardW);
+    });
+    return y + Math.ceil(summary.playerServeReceiveStats.length / 2) * 272 + 8;
+  };
+  const drawFlowTimeline = (rows, y) => {
+    const max = Math.max(1, ...rows.map(([, value]) => Number(value) || 0));
+    rows.forEach(([label, value, tone, note], index) => {
+      const x = pageMargin + index * (contentWidth / rows.length);
+      const w = contentWidth / rows.length - 12;
+      fillRoundedRect(ctx, x, y, w, 138, 14, softColor(tone));
+      strokeRoundedRect(ctx, x, y, w, 138, 14, lineColor, 2);
+      fillRoundedRect(ctx, x + 18, y + 22, Math.max(12, (w - 36) * ((Number(value) || 0) / max)), 14, 7, textColor(tone));
+      drawText(label, x + 18, y + 66, { size: 18, weight: 900, color: textColor(tone), maxWidth: w - 36, maxLines: 2, lineHeight: 24 });
+      drawText(note, x + 18, y + 108, { size: 18, weight: 800, color: mutedColor, maxWidth: w - 36, maxLines: 2, lineHeight: 23 });
+    });
+    return y + 164;
+  };
 
-  let y = 76;
-  y = drawText(summary.title, 56, y, { size: 46, weight: 900, lineHeight: 58, after: 8 });
-  y = drawText(`${isShareMode ? "共有用サマリー" : "詳細保存用サマリー"} / ${summary.subtitle}`, 64, y, { size: 27, weight: 800, color: mutedColor, lineHeight: 36, after: 10 });
-  ctx.strokeStyle = lineColor;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(56, y + 4);
-  ctx.lineTo(1024, y + 4);
-  ctx.stroke();
-  y += 42;
-
-  y = heading("試合結果", y);
-  y = drawRows(summary.resultRows, y, { maxLinesByLabel: { 各ゲーム: isShareMode ? 1 : 2 } });
+  let y = pageHeader(0, summary.title, `${isShareMode ? "共有用サマリー" : "詳細保存用サマリー"} / ${summary.subtitle}`);
+  y = drawScoreBoard(y);
+  y = heading("プレイヤー別 + / -", y);
+  y = paragraph("+は得点につながったプレー、-はミスとして記録されたプレーです。まず選手ごとの結果を見ます。", y, "neutral");
+  y = drawPlayerImpact(y);
   y += 10;
+  y = heading("流れと勝負所", y);
+  y = paragraph("1ポイント目、連続得点・連続失点、ゲームポイント/マッチポイントの逸失を確認します。", y, "neutral");
+  y = drawFlowTimeline(summary.flowRows, y);
+  pageFooter(0);
 
-  y = heading("分析コメント", y);
-  y = drawItems(summary.analysisComments, y, isShareMode ? ANALYSIS_COMMENT_RULES.shareSummaryComments : ANALYSIS_COMMENT_RULES.detailSummaryComments);
+  y = pageHeader(1, "サーブ・レシーブと得点内訳", "次の練習テーマにしやすい数字を先に整理");
+  y = heading("プレイヤー別 サーブ/レシーブ", y);
+  y = paragraph("選手ごとにサーブとレシーブを分け、何本中何本できたかを先に確認します。", y, "neutral");
+  y = drawServeReceiveGrid(y);
   y += 10;
+  y = heading("得点と失点の内訳", y);
+  y = drawPanel("どの点で試合が動いたか", "青は自チームの得点要素、赤は自チームのミス失点。次の練習テーマを決める材料です。", y, "neutral");
+  y = drawStackedBar(summary.pointBreakdownRows, y);
+  pageFooter(1);
 
-  y = heading("次に活かすこと", y);
-  y = drawItems([...summary.quickItems, ...summary.reviewItems], y, isShareMode ? ANALYSIS_COMMENT_RULES.shareNextItems : ANALYSIS_COMMENT_RULES.detailNextItems);
-  y += 8;
-
-  if (isShareMode) {
-    y = heading("主な数字", y);
-    y = drawRows(summary.summaryRows.filter(([label]) => label !== "記録ポイント").slice(0, 4), y);
+  if (!isShareMode) {
+    y = pageHeader(2, "分析コメントと次に活かすこと", "数字と事実から、次に見る順で整理");
+    y = heading("分析コメント", y);
+    y = paragraph("数字から見えた試合の流れを、親子・コーチで同じ画面を見ながら確認します。", y, "neutral");
+    y = drawItems(summary.analysisComments, y, ANALYSIS_COMMENT_RULES.detailSummaryComments, 2);
     y += 8;
+    y = heading("次に見ること", y);
+    y = drawItems([...summary.quickItems, ...summary.reviewItems], y, ANALYSIS_COMMENT_RULES.detailNextItems, 2);
+    pageFooter(2);
 
+    y = pageHeader(3, "試合条件", "同じ日付の試合をあとから見分けるための情報");
     y = heading("基本情報", y);
     y = bullet(summary.teams, y, "neutral", 1);
     summary.playerRows.forEach(([label, value]) => {
       y = bullet(`${label}: ${value}`, y, "neutral", 1);
     });
-    summary.conditionRows.slice(0, 1).forEach(([label, value]) => {
-      y = bullet(`${label}: ${value}`, y, "neutral", 1);
-    });
-  } else {
+    y += 8;
+    y = heading("試合条件", y);
+    y = drawRows(summary.conditionRows.slice(0, 8), y, { maxLinesByLabel: { "開催地／会場": 2, コート: 2 } });
+    pageFooter(3);
+
+    y = pageHeader(4, "詳細データ", "あとで詳しく見返すための根拠数字");
     y = heading("根拠データ", y);
     y = drawRows(
-      [...summary.summaryRows, ...summary.detailRows, ...summary.phaseRows].filter(([label]) => label !== "記録ポイント").slice(0, 9),
-      y
+      [...summary.summaryRows, ...summary.detailRows, ...summary.phaseRows].filter(([label]) => label !== "記録ポイント"),
+      y,
+      { maxLinesByLabel: { "プレイヤー別S/R": 3, 最長連続得点: 2, 最長連続失点: 2 } }
     );
+    pageFooter(4);
+  } else {
+    y = pageHeader(2, "次に活かすこと", "短く共有しやすい形で、分析コメントと基本情報を残す");
+    y = heading("分析コメント", y);
+    y = drawItems(summary.analysisComments, y, ANALYSIS_COMMENT_RULES.shareSummaryComments, 2);
     y += 8;
-
+    y = heading("次に活かすこと", y);
+    y = drawItems([...summary.quickItems, ...summary.reviewItems], y, ANALYSIS_COMMENT_RULES.shareNextItems, 2);
+    y += 10;
     y = heading("基本情報", y);
     y = bullet(summary.teams, y, "neutral", 1);
     summary.playerRows.forEach(([label, value]) => {
       y = bullet(`${label}: ${value}`, y, "neutral", 1);
     });
-    y += 8;
-
-    y = heading("試合条件", y);
-    y = drawRows(summary.conditionRows.slice(0, 6), y);
+    summary.conditionRows.slice(0, 2).forEach(([label, value]) => {
+      y = bullet(`${label}: ${value}`, y, "neutral", 1);
+    });
+    pageFooter(2);
   }
 
-  ctx.fillStyle = mutedColor;
-  ctx.font = '700 24px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif';
-  const footer = ["端末内で画像生成。開発者や管理者へ送られません。", ...summary.meta].join(" / ");
-  drawClampedText(ctx, footer, 56, height - 86, 968, 32, 2);
-  return { contentBottom: y, footerTop: height - 112, height, mode, sections };
+  return { contentBottom: y, footerTop: pageTop(pageCount - 1) + pageHeight - 112, height, mode, sections, pageCount };
 }
-
 function createSummaryImageDataUrl(matchState = state, mode = summaryPreviewMode) {
   const canvas = document.createElement("canvas");
   const originalState = state;
@@ -2215,6 +2982,13 @@ elements.openArchiveButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
   openArchivedMatches();
 });
+elements.pointList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-point-edit]");
+  if (!button) return;
+  openPointDetailEditor(button.dataset.pointEdit);
+});
+elements.savePointDetailButton.addEventListener("click", savePointDetailEdit);
+
 elements.archivedMatchList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-archive-action]");
   if (!button) return;
@@ -2245,6 +3019,10 @@ elements.resetMatchDialogButton.addEventListener("click", resetMatchDialogFields
 elements.exportCsvButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
   exportCsv();
+});
+elements.exportArchivedCsvButton.addEventListener("click", () => {
+  elements.actionMenuDialog.close();
+  exportArchivedCsv();
 });
 elements.exportBackupButton.addEventListener("click", exportBackupJson);
 elements.importBackupButton.addEventListener("click", () => elements.backupFileInput.click());
@@ -2310,10 +3088,45 @@ $$(".tab").forEach((button) => {
   });
 });
 
+
+$("#recordModeControl").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-record-mode]");
+  if (!button) return;
+  state.recordMode = button.dataset.recordMode;
+  saveState();
+  renderScore();
+});
+
+$("#simpleOutcomeControl").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-simple-outcome]");
+  if (!button) return;
+  setSimpleOutcome(button.dataset.simpleOutcome);
+  saveState();
+  renderScore();
+});
+
 $("#serverControl").addEventListener("click", (event) => {
   const button = event.target.closest("button[data-server]");
   if (!button) return;
   state.server = button.dataset.server;
+  ensureServicePlayerSelections();
+  saveState();
+  renderScore();
+});
+
+
+$("#serverPlayerControl").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-service-player]");
+  if (!button) return;
+  state.selectedServerPlayer = button.dataset.servicePlayer;
+  saveState();
+  renderScore();
+});
+
+$("#receiverPlayerControl").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-receive-player]");
+  if (!button) return;
+  state.selectedReceiverPlayer = button.dataset.receivePlayer;
   saveState();
   renderScore();
 });

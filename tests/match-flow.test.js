@@ -391,6 +391,73 @@ const scenarioCode = `
     true,
     "CSVファイル名に年月日時分秒を含める"
   );
+  assert.equal(CSV_SCHEMA_VERSION, "point-csv-v2/archive-csv-v1", "CSV仕様バージョンを固定する");
+  assert.deepEqual(
+    buildPointCsvRows(state)[0].slice(18, 22),
+    ["得点側", "サービスサイド", "サーブ選手", "レシーブ選手"],
+    "通常CSVはS/R選手列を固定位置に持つ"
+  );
+  const injectionCsv = rowsToCsv([["=1+1", "+1", "-1", "@cmd", "通常"]]);
+  assert.equal(injectionCsv.includes("\\"'=1+1\\""), true, "=開始セルを文字列化する");
+  assert.equal(injectionCsv.includes("\\"'+1\\""), true, "+開始セルを文字列化する");
+  assert.equal(injectionCsv.includes("\\"'-1\\""), true, "-開始セルを文字列化する");
+  assert.equal(injectionCsv.includes("\\"'@cmd\\""), true, "@開始セルを文字列化する");
+  const archiveExportFixture = [
+    {
+      id: "csv-archive-1",
+      savedAt: "2026-05-28T10:00:00.000Z",
+      title: "CSV 青チーム vs 赤チーム",
+      state: {
+        matchType: "doubles",
+        matchFormat: "7",
+        teams: { A: "青チーム", B: "赤チーム" },
+        players: { ARear: "青 後衛", AFront: "青 前衛", BRear: "赤 後衛", BFront: "赤 前衛" },
+        games: { A: 1, B: 0 },
+        gamePoints: { A: 1, B: 0 },
+        matchInfo: { date: "2026-05-28", timeOfDay: "午前", tournament: "春季大会", venueName: "中央公園" },
+        points: [{
+          winner: "A",
+          server: "A",
+          serverPlayer: "A後衛",
+          receiverPlayer: "B後衛",
+          scoreBefore: { games: { A: 0, B: 0 }, points: { A: 0, B: 0 } },
+          outcome: "ストローク得点",
+          result: "イン",
+          player: "A後衛",
+          shot: "ストローク",
+          hand: "フォアハンド",
+          course: "中央奥",
+          rally: "3",
+          phase: "ゲーム序盤",
+          serveStart: "第1サービスで開始",
+          at: "2026-05-28T10:02:00.000Z"
+        }]
+      }
+    },
+    {
+      id: "csv-archive-2",
+      savedAt: "2026-05-27T10:00:00.000Z",
+      title: "CSV 白チーム vs 黒チーム",
+      state: {
+        matchType: "singles",
+        matchFormat: "7",
+        teams: { A: "白チーム", B: "黒チーム" },
+        games: { A: 0, B: 0 },
+        matchInfo: { date: "2026-05-27", tournament: "練習試合", venueName: "南コート" },
+        points: []
+      }
+    }
+  ];
+  const archivedCsvRows = buildArchivedCsvRows(archiveExportFixture);
+  assert.deepEqual(archivedCsvRows[0].slice(0, 4), ["試合No", "保存ID", "保存日時", "保存タイトル"], "保存済み一括CSVは試合識別列を先頭に持つ");
+  assert.equal(archivedCsvRows.length, 3, "保存済み一括CSVはポイントあり試合とポイントなし試合を両方出す");
+  assert.equal(archivedCsvRows[1][0], 1, "保存済み一括CSVに試合番号を出す");
+  assert.equal(archivedCsvRows[1][4], 1, "保存済み一括CSVのNoは試合内ポイント番号を出す");
+  assert.equal(archivedCsvRows[1][22], "青チーム", "保存済み一括CSVに得点側のチーム名を出す");
+  assert.equal(archivedCsvRows[1][24], "青 後衛", "保存済み一括CSVにサーブ選手名を出す");
+  assert.equal(archivedCsvRows[2][0], 2, "ポイントなし保存試合も識別行を出す");
+  assert.equal(archivedCsvRows[2][4], "", "ポイントなし保存試合のポイント番号は空にする");
+  assert.equal(getArchivedCsvFileName(new Date("2026-05-28T10:11:12")), "soft-tennis-archive-points-20260528101112.csv", "保存済み一括CSVファイル名に年月日時分秒を含める");
   state = structuredClone(defaultState);
   state.teams.A = "バックアップ自チーム";
   state.points = [{ winner: "A", scoreBefore: { games: { A: 0, B: 0 }, points: { A: 0, B: 0 } }, scoreAfter: { games: { A: 0, B: 0 }, points: { A: 1, B: 0 } } }];

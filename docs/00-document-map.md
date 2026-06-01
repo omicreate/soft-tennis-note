@@ -1,6 +1,6 @@
 # ドキュメント一覧
 
-最終更新: 2026-05-28
+最終更新: 2026-06-01
 
 このフォルダは、ソフトテニス試合ノートの開発内容を後から見返せるように整理したものです。
 
@@ -58,6 +58,9 @@
 | `project-structure.md` | ローカルフォルダ、GitHub、各ファイルの説明 |
 | `expansion-roadmap.md` | 横展開、今後作りたいアプリの方向性 |
 | `technical-review.md` | 技術レビュー、改善バックログ |
+| `csv-spec.md` | CSV出力仕様。通常CSVと保存済み試合一括CSVの列順、用途、注意点 |
+| `ux-improvement-backlog.md` | 今後のユーザビリティ改善候補。親、学生、コーチそれぞれの使いやすさを優先度付きで整理 |
+| `research/google-drive-data-review.md` | Google Drive保存データの調査メモ。個人情報を持ち込まず、参考にできる構造だけ整理 |
 
 ## 更新ルール
 

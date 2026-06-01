@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=145" />
-    <link rel="stylesheet" href="styles.css?v=145" />
+    <link rel="manifest" href="manifest.webmanifest?v=165" />
+    <link rel="stylesheet" href="styles.css?v=165" />
   </head>
   <body>
     <main class="app-shell">
@@ -38,7 +38,7 @@
           <ol id="trialGuideList">
             <li>サービス開始（1st/2nd/DF）を確認する</li>
             <li>ポイント内容、プレイヤー、得点側を選ぶ</li>
-            <li>到達位置やメモは、余裕がある時だけ詳細記録に残す</li>
+            <li>細かいコースや打球面は、あとで履歴から補足できる</li>
           </ol>
           <p id="trialGuideStorage">入力データは、この端末のブラウザ内に保存されます。開発者、管理者、コーチの端末やサーバーには送られません。</p>
           <p id="trialGuidePrivacy">本名を入れず、学校名・Aチーム・後衛/前衛などでも記録できます。サマリー画像やCSVを共有する時は、入力した名前が含まれる点に注意してください。</p>
@@ -94,9 +94,17 @@
       </nav>
 
       <section class="panel active" id="recordPanel">
+        <div class="record-mode-switch" aria-label="記録モード" hidden>
+          <span>入力方法</span>
+          <div class="segmented" id="recordModeControl">
+            <button class="active" data-record-mode="simple" type="button">かんたん入力</button>
+            <button data-record-mode="detail" type="button">詳細入力</button>
+          </div>
+        </div>
+
         <div class="record-flow" id="recordStart" tabindex="-1">
           <div class="control-group">
-            <span>サービス</span>
+            <span>1 サービス側</span>
             <div class="segmented" id="serverControl">
               <button class="active" data-server="A" type="button">自</button>
               <button data-server="B" type="button">相手</button>
@@ -104,7 +112,7 @@
           </div>
 
           <div class="control-group">
-            <span>サービス開始</span>
+            <span>2 サービス結果</span>
             <div class="chips compact" id="serveControl">
               <button class="active" data-serve="第1サービスで開始" type="button" title="第1サービスで開始">1st</button>
               <button data-serve="第2サービスで開始" type="button" title="第2サービスで開始">2nd</button>
@@ -112,7 +120,60 @@
             </div>
           </div>
 
-          <div class="control-group">
+          <div class="control-group service-player-group">
+            <span>3 サーブした人</span>
+            <div class="chips compact player-mini-control" id="serverPlayerControl">
+              <button class="active player-unknown" data-service-player="不明" type="button">不明</button>
+              <button data-service-player="A後衛" type="button" id="serverPlayerRearButton">後衛</button>
+              <button data-service-player="A前衛" type="button" id="serverPlayerFrontButton">前衛</button>
+            </div>
+          </div>
+
+          <div class="control-group service-player-group">
+            <span>4 レシーブした人</span>
+            <div class="chips compact player-mini-control" id="receiverPlayerControl">
+              <button class="active player-unknown" data-receive-player="不明" type="button">不明</button>
+              <button data-receive-player="B後衛" type="button" id="receiverPlayerRearButton">後衛</button>
+              <button data-receive-player="B前衛" type="button" id="receiverPlayerFrontButton">前衛</button>
+            </div>
+          </div>
+
+          <div class="control-group player-record-group">
+            <span>5 誰のプレー</span>
+            <div class="chips compact" id="playerControl">
+              <button data-player="A後衛" type="button" id="playerARearButton">自後衛</button>
+              <button data-player="A前衛" type="button" id="playerAFrontButton">自前衛</button>
+              <button data-player="B後衛" type="button" id="playerBRearButton">相手後衛</button>
+              <button data-player="B前衛" type="button" id="playerBFrontButton">相手前衛</button>
+              <button data-player="A選手" type="button" id="playerASinglesButton" hidden>自分</button>
+              <button data-player="B選手" type="button" id="playerBSinglesButton" hidden>相手</button>
+              <button class="active player-unknown" data-player="不明" type="button">不明</button>
+            </div>
+          </div>
+
+          <div class="control-group simple-record-group">
+            <span>6 何が起きた？</span>
+            <div class="simple-outcome-control" id="simpleOutcomeControl">
+              <div class="simple-outcome-section outcome-score-section">
+                <strong>得点</strong>
+                <div>
+                  <button class="active outcome-score" data-simple-outcome="ストローク得点" type="button"><span>ラリー</span><small>で取った</small></button>
+                  <button class="outcome-score" data-simple-outcome="サービス得点" type="button"><span>サーブ</span><small>で取った</small></button>
+                  <button class="outcome-score" data-simple-outcome="レシーブ得点" type="button"><span>レシーブ</span><small>で取った</small></button>
+                </div>
+              </div>
+              <div class="simple-outcome-section outcome-miss-section">
+                <strong>ミス</strong>
+                <div>
+                  <button class="outcome-miss" data-simple-outcome="ダブルフォールト" type="button"><span>DF</span><small>2本ミス</small></button>
+                  <button class="outcome-miss" data-simple-outcome="レシーブミス" type="button"><span>レシーブ</span><small>ミス</small></button>
+                  <button class="outcome-miss" data-simple-outcome="ストロークミス" type="button"><span>ラリー</span><small>ミス</small></button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="control-group advanced-record">
             <span>ポイント内容</span>
             <div class="chips" id="outcomeControl">
               <div class="chip-section">
@@ -140,21 +201,8 @@
             </div>
           </div>
 
-          <div class="control-group">
-            <span>プレイヤー</span>
-            <div class="chips compact" id="playerControl">
-              <button data-player="A後衛" type="button" id="playerARearButton">自後衛</button>
-              <button data-player="A前衛" type="button" id="playerAFrontButton">自前衛</button>
-              <button data-player="B後衛" type="button" id="playerBRearButton">相手後衛</button>
-              <button data-player="B前衛" type="button" id="playerBFrontButton">相手前衛</button>
-              <button data-player="A選手" type="button" id="playerASinglesButton" hidden>自分</button>
-              <button data-player="B選手" type="button" id="playerBSinglesButton" hidden>相手</button>
-              <button class="active player-unknown" data-player="不明" type="button">不明</button>
-            </div>
-          </div>
-
           <div class="save-point-section">
-            <strong>得点した側を押して保存</strong>
+            <strong>7 得点した側を押して保存</strong>
             <div class="winner-grid">
               <button class="point-button own" data-winner="A" type="button">自チーム<br />1ポイント</button>
               <button class="point-button opp" data-winner="B" type="button">相手<br />1ポイント</button>
@@ -162,8 +210,8 @@
           </div>
         </div>
 
-        <details class="detail-panel">
-          <summary>詳細記録</summary>
+        <details class="detail-panel advanced-record" hidden>
+          <summary>上級者向け補足</summary>
 
           <section class="court-card" aria-label="コース記録">
             <div class="section-title">
@@ -260,6 +308,8 @@
           </label>
         </details>
 
+        <p class="record-support-note">細かいコースや打球面は、あとで履歴の「詳細を補足」から追加できます。</p>
+
         <div class="rule-note" id="ruleNote"></div>
 
         <div class="action-row">
@@ -269,36 +319,44 @@
       </section>
 
       <section class="panel" id="analysisPanel">
+        <div class="analysis-summary" id="analysisSummary"></div>
         <div class="coach-notes" id="coachNotes"></div>
+        <div class="score-quality" id="scoreQuality"></div>
+        <div class="chart-block emphasis player-impact-block">
+          <h2>プレイヤー別 プレー内容</h2>
+          <div id="playerBars" class="bars"></div>
+        </div>
+        <div class="chart-block emphasis serve-receive-block">
+          <h2>プレイヤー別 サーブ/レシーブ</h2>
+          <div id="serveReceiveBars" class="serve-receive-cards"></div>
+        </div>
+        <div class="chart-block emphasis">
+          <h2>次に攻めたい相手ミス</h2>
+          <div id="opponentErrorBars" class="bars"></div>
+        </div>
+        <div class="chart-block emphasis">
+          <h2>失点しやすい場面</h2>
+          <div id="phaseBars" class="bars"></div>
+        </div>
         <div class="opponent-view" id="opponentView"></div>
         <div class="analysis-save">
           <button class="action-button action-save" id="saveAnalysisMemoButton" type="button">この分析を保存</button>
-          <p class="analysis-save-note">上の「今すぐ意識すること」と「あとで確認すること」を、時刻・スコア付きで残します。サマリー画像にも反映されます。</p>
+          <p class="analysis-save-note">今表示しているアドバイスを、時刻・スコア付きで残します。サマリー画像にも反映されます。</p>
           <div id="analysisMemoList" class="analysis-memo-list"></div>
-        </div>
-        <div class="analysis-summary" id="analysisSummary"></div>
-        <div class="chart-block emphasis">
-          <h2>失点した場面</h2>
-          <div id="phaseBars" class="bars"></div>
         </div>
         <details class="detail-panel analysis-details">
           <summary>試合後に詳しく見る</summary>
-          <div class="score-quality" id="scoreQuality"></div>
           <div class="chart-block">
             <h2>どうやって取ったか</h2>
             <div id="scoringBars" class="bars"></div>
-          </div>
-          <div class="chart-block">
-            <h2>相手のミスパターン</h2>
-            <div id="opponentErrorBars" class="bars"></div>
           </div>
           <div class="chart-block">
             <h2>どうやって失点したか</h2>
             <div id="errorBars" class="bars"></div>
           </div>
           <div class="chart-block">
-            <h2>個人別 + / -</h2>
-            <div id="playerBars" class="bars"></div>
+            <h2>流れと勝負所</h2>
+            <div id="momentumBars" class="bars"></div>
           </div>
           <div class="stats-grid" id="statsGrid"></div>
           <div class="chart-block">
@@ -337,11 +395,115 @@
       </section>
 
       <footer class="app-footer">
-        <span class="app-version">v145・2026-05-29</span>
+        <span class="app-version">v165・2026-06-01</span>
         <span>© 2026 OmiCreate</span>
         <span>無断転載・再配布・改変利用を禁じます</span>
       </footer>
     </main>
+
+
+    <dialog id="pointDetailDialog">
+      <form method="dialog" class="dialog-content point-detail-dialog">
+        <h2 id="pointDetailTitle">ポイント詳細を補足</h2>
+        <input id="pointDetailIndex" type="hidden" />
+        <div class="control-grid">
+          <label>
+            誰のプレー
+            <select id="pointEditPlayerSelect"></select>
+          </label>
+          <label>
+            ポイント内容
+            <select id="pointEditOutcomeSelect">
+              <option value="ストローク得点">ストローク得点</option>
+              <option value="ボレー得点">ボレー得点</option>
+              <option value="スマッシュ得点">スマッシュ得点</option>
+              <option value="サービス得点">サービス得点</option>
+              <option value="レシーブ得点">レシーブ得点</option>
+              <option value="ロビング得点">ロビング得点</option>
+              <option value="ダブルフォールト">ダブルフォールト</option>
+              <option value="レシーブミス">レシーブミス</option>
+              <option value="ストロークミス">ストロークミス</option>
+              <option value="ボレーミス">ボレーミス</option>
+              <option value="スマッシュミス">スマッシュミス</option>
+              <option value="その他">その他</option>
+            </select>
+          </label>
+          <label>
+            最後のショット
+            <select id="pointEditShotSelect">
+              <option>ストローク</option>
+              <option>ボレー</option>
+              <option>スマッシュ</option>
+              <option>サービス</option>
+              <option>レシーブ</option>
+              <option>ロビング</option>
+              <option>ショートボール</option>
+              <option>ツイスト</option>
+              <option>ドロップショット</option>
+            </select>
+          </label>
+          <label>
+            ラリー数
+            <select id="pointEditRallySelect">
+              <option value="0">0 本</option>
+              <option value="1">1 本</option>
+              <option value="2">2 本</option>
+              <option value="3">3 本</option>
+              <option value="4">4 本</option>
+              <option value="5">5 本</option>
+              <option value="6-9">6-9 本</option>
+              <option value="10+">10 本以上</option>
+            </select>
+          </label>
+          <label>
+            打球面
+            <select id="pointEditHandSelect">
+              <option>不明</option>
+              <option>フォアハンド</option>
+              <option>バックハンド</option>
+              <option>正面処理</option>
+            </select>
+          </label>
+          <label>
+            到達位置
+            <select id="pointEditCourseSelect">
+              <option>未記録</option>
+              <option>左奥</option>
+              <option>中央奥</option>
+              <option>右奥</option>
+              <option>左中</option>
+              <option>中央</option>
+              <option>右中</option>
+              <option>左前</option>
+              <option>中央前</option>
+              <option>右前</option>
+              <option>左サイドアウト</option>
+              <option>右サイドアウト</option>
+              <option>バックアウト</option>
+              <option>ネット</option>
+            </select>
+          </label>
+          <label>
+            ボールの結果
+            <select id="pointEditResultSelect">
+              <option>不明</option>
+              <option>イン</option>
+              <option>ネット</option>
+              <option>サイドアウト</option>
+              <option>バックアウト</option>
+            </select>
+          </label>
+        </div>
+        <label class="memo-label">
+          メモ
+          <textarea id="pointEditMemoInput" rows="2" maxlength="160" placeholder="試合後に思い出した内容を補足"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary action-button action-close" value="cancel" type="submit">閉じる</button>
+          <button class="action-button action-save" id="savePointDetailButton" type="button">補足を保存</button>
+        </div>
+      </form>
+    </dialog>
 
     <dialog id="actionMenuDialog">
       <form method="dialog" class="dialog-content menu-dialog">
@@ -356,20 +518,25 @@
           <dl>
             <div>
               <dt>現在の版</dt>
-              <dd>v145・2026-05-29</dd>
+              <dd>v165・2026-06-01</dd>
             </div>
             <div>
               <dt>更新内容</dt>
-              <dd>サマリー画像からMarkdown記号を外し、一般ユーザ向けに読みやすい表示へ調整。</dd>
+              <dd>分析表示、引き継ぎ、サマリー画像を整理。</dd>
             </div>
           </dl>
         </details>
+        <details class="transfer-menu">
+          <summary>引き継ぎ・共有</summary>
+          <button class="action-button action-backup" id="exportBackupButton" type="button">引き継ぎ用データを保存</button>
+          <button class="action-button action-restore" id="importBackupButton" type="button">受け取ったデータを読み込む</button>
+          <p class="admin-help">別端末へ渡す時は、保存したファイルをLINEなどで送ります。CSVではなく、このデータを使うとアプリに読み込めます。</p>
+          <input id="backupFileInput" type="file" accept="application/json,.json" hidden />
+        </details>
         <details class="admin-menu">
           <summary>管理用</summary>
-          <button class="action-button action-export" id="exportCsvButton" type="button">CSVを出力</button>
-          <button class="action-button action-backup" id="exportBackupButton" type="button">試合データを保存</button>
-          <button class="action-button action-restore" id="importBackupButton" type="button">試合データを読み込む</button>
-          <input id="backupFileInput" type="file" accept="application/json,.json" hidden />
+          <button class="action-button action-export" id="exportCsvButton" type="button">今の試合CSVを出力</button>
+          <button class="action-button action-export" id="exportArchivedCsvButton" type="button">保存した試合CSVを一括出力</button>
         </details>
         <button class="secondary action-button action-close" value="cancel" type="submit">閉じる</button>
       </form>
@@ -378,7 +545,7 @@
     <dialog id="summaryImageDialog">
       <form method="dialog" class="dialog-content summary-dialog">
         <h2>サマリー画像</h2>
-        <p>内容を確認してから端末に保存できます。画像はこの端末内で作成され、開発者や管理者へ送られることはありません。</p>
+        <p>分析コメント、グラフ、個人別の数字をページ区切り付きで確認してから保存できます。画像はこの端末内で作成され、開発者や管理者へ送られることはありません。</p>
         <div class="summary-mode segmented" id="summaryModeControl" aria-label="サマリー画像の種類">
           <button class="active" data-summary-mode="share" type="button">共有用</button>
           <button data-summary-mode="detail" type="button">詳細保存用</button>
@@ -461,196 +628,203 @@
     <dialog id="newMatchDialog">
       <form method="dialog" class="dialog-content">
         <h2 id="matchDialogTitle">新規試合</h2>
-        <label>
-          種別
-          <select id="matchTypeSelect">
-            <option value="doubles" selected>ダブルス</option>
-            <option value="singles">シングルス</option>
-          </select>
-        </label>
-        <label>
-          <span id="dialogTeamALabel">自チーム名</span>
-          <input id="dialogTeamA" value="自チーム" maxlength="40" />
-        </label>
-        <div class="dialog-grid doubles-field">
+        <section class="match-dialog-section match-dialog-essential" aria-label="最低限の試合情報">
+          <h3>最低限の試合情報</h3>
           <label>
-            自チーム後衛
-            <input id="dialogARear" value="自後衛" maxlength="40" />
-          </label>
-          <label>
-            自チーム前衛
-            <input id="dialogAFront" value="自前衛" maxlength="40" />
-          </label>
-        </div>
-        <label>
-          <span id="dialogTeamBLabel">相手名</span>
-          <input id="dialogTeamB" value="相手ペア" maxlength="40" />
-        </label>
-        <div class="dialog-grid doubles-field">
-          <label>
-            相手後衛
-            <input id="dialogBRear" value="相手後衛" maxlength="40" />
-          </label>
-          <label>
-            相手前衛
-            <input id="dialogBFront" value="相手前衛" maxlength="40" />
-          </label>
-        </div>
-        <label class="doubles-field">
-          相手の基本布陣
-          <select id="opponentFormationSelect">
-            <option>不明</option>
-            <option selected>雁行陣</option>
-            <option>W前衛</option>
-            <option>W後衛</option>
-            <option>その他</option>
-          </select>
-        </label>
-        <label>
-          試合形式
-          <select id="matchFormatSelect">
-            <option value="5">5ゲームマッチ</option>
-            <option value="7" selected>7ゲームマッチ</option>
-            <option value="9">9ゲームマッチ</option>
-            <option value="final">ファイナルゲームのみ</option>
-          </select>
-        </label>
-        <div class="dialog-grid">
-          <label>
-            日付
-            <input id="matchDateInput" type="date" />
-          </label>
-          <label>
-            時間帯
-            <select id="matchTimeSelect">
-              <option>未記録</option>
-              <option>朝</option>
-              <option>午前</option>
-              <option>昼</option>
-              <option>午後</option>
-              <option>夕方</option>
-              <option>夜</option>
-            </select>
-          </label>
-        </div>
-        <div class="dialog-grid">
-          <label>
-            開始時刻
-            <input id="matchStartTimeInput" type="time" />
-          </label>
-          <label>
-            終了時刻
-            <input id="matchEndTimeInput" type="time" />
-          </label>
-        </div>
-        <div class="dialog-grid">
-          <label>
-            天気
-            <select id="weatherSelect">
-              <option>未記録</option>
-              <option>晴れ</option>
-              <option>くもり</option>
-              <option>雨</option>
-              <option>小雨</option>
-              <option>雪</option>
-              <option>強風</option>
+            種別
+            <select id="matchTypeSelect">
+              <option value="doubles" selected>ダブルス</option>
+              <option value="singles">シングルス</option>
             </select>
           </label>
           <label>
-            気温
-            <select id="temperatureInput">
-              <option value="">未記録</option>
-              <option>5℃未満</option>
-              <option>5-9℃</option>
-              <option>10-14℃</option>
-              <option>15-19℃</option>
-              <option>20-24℃</option>
-              <option>25-29℃</option>
-              <option>30℃以上</option>
-            </select>
+            <span id="dialogTeamALabel">自チーム名</span>
+            <input id="dialogTeamA" value="自チーム" maxlength="40" autocomplete="off" enterkeyhint="next" />
           </label>
-        </div>
-        <div class="dialog-grid">
+          <div class="dialog-grid doubles-field">
+            <label>
+              自チーム後衛
+              <input id="dialogARear" value="自後衛" maxlength="40" autocomplete="off" enterkeyhint="next" />
+            </label>
+            <label>
+              自チーム前衛
+              <input id="dialogAFront" value="自前衛" maxlength="40" autocomplete="off" enterkeyhint="next" />
+            </label>
+          </div>
           <label>
-            風
-            <select id="windSelect">
-              <option>未記録</option>
-              <option>なし</option>
-              <option>弱い</option>
-              <option>強い</option>
-            </select>
+            <span id="dialogTeamBLabel">相手名</span>
+            <input id="dialogTeamB" value="相手ペア" maxlength="40" autocomplete="off" enterkeyhint="next" />
           </label>
-        </div>
-        <div class="dialog-grid">
-          <label>
-            コート種別
-            <select id="surfaceSelect">
-              <option>未記録</option>
-              <option>クレー</option>
-              <option>オムニ</option>
-              <option>ハード</option>
-              <option>インドア（体育館）</option>
-              <option>その他</option>
-            </select>
-          </label>
-          <label>
-            コート状態
-            <select id="courtConditionSelect">
-              <option>未記録</option>
-              <option>乾いている</option>
-              <option>湿っている</option>
-              <option>滑りやすい</option>
-              <option>砂が多い</option>
-              <option>荒れている</option>
-            </select>
-          </label>
-        </div>
-        <div class="dialog-grid">
-          <label>
-            区分
-            <select id="eventInput">
-              <option>未記録</option>
-              <option>公式戦</option>
-              <option>練習試合</option>
-              <option>校内戦</option>
-              <option>練習</option>
-              <option>その他</option>
-            </select>
-          </label>
-          <label>
-            大会名
-            <input id="tournamentInput" value="未記録" maxlength="50" />
-          </label>
-        </div>
-        <div class="dialog-grid">
-          <label>
-            開催地／会場
-            <input id="venueNameInput" value="未記録" maxlength="50" />
-          </label>
-          <label>
-            コート
-            <input id="venueInput" list="courtOptions" value="未記録" maxlength="30" />
-            <datalist id="courtOptions">
-              <option value="未記録"></option>
-              <option value="第1コート"></option>
-              <option value="第2コート"></option>
-              <option value="第3コート"></option>
-              <option value="第4コート"></option>
-              <option value="第5コート"></option>
-              <option value="第6コート"></option>
-              <option value="第7コート"></option>
-              <option value="第8コート"></option>
-              <option value="第9コート"></option>
-              <option value="第10コート"></option>
-              <option value="第11コート"></option>
-              <option value="第12コート"></option>
-              <option value="第13コート"></option>
-              <option value="第14コート"></option>
-              <option value="第15コート"></option>
-              <option value="第16コート"></option>
-            </datalist>
-          </label>
-        </div>
+          <div class="dialog-grid doubles-field">
+            <label>
+              相手後衛
+              <input id="dialogBRear" value="相手後衛" maxlength="40" autocomplete="off" enterkeyhint="next" />
+            </label>
+            <label>
+              相手前衛
+              <input id="dialogBFront" value="相手前衛" maxlength="40" autocomplete="off" enterkeyhint="next" />
+            </label>
+          </div>
+          <div class="dialog-grid">
+            <label>
+              試合形式
+              <select id="matchFormatSelect">
+                <option value="5">5ゲームマッチ</option>
+                <option value="7" selected>7ゲームマッチ</option>
+                <option value="9">9ゲームマッチ</option>
+                <option value="final">ファイナルゲームのみ</option>
+              </select>
+            </label>
+            <label>
+              日付
+              <input id="matchDateInput" type="date" />
+            </label>
+          </div>
+        </section>
+
+        <details class="match-dialog-section match-dialog-optional">
+          <summary>追加項目</summary>
+          <div class="match-dialog-extra-fields">
+            <label class="doubles-field">
+              相手の基本布陣
+              <select id="opponentFormationSelect">
+                <option>不明</option>
+                <option selected>雁行陣</option>
+                <option>W前衛</option>
+                <option>W後衛</option>
+                <option>その他</option>
+              </select>
+            </label>
+            <div class="dialog-grid">
+              <label>
+                時間帯
+                <select id="matchTimeSelect">
+                  <option>未記録</option>
+                  <option>朝</option>
+                  <option>午前</option>
+                  <option>昼</option>
+                  <option>午後</option>
+                  <option>夕方</option>
+                  <option>夜</option>
+                </select>
+              </label>
+              <label>
+                開始時刻
+                <input id="matchStartTimeInput" type="time" />
+              </label>
+              <label>
+                終了時刻
+                <input id="matchEndTimeInput" type="time" />
+              </label>
+            </div>
+            <div class="dialog-grid">
+              <label>
+                天気
+                <select id="weatherSelect">
+                  <option>未記録</option>
+                  <option>晴れ</option>
+                  <option>くもり</option>
+                  <option>雨</option>
+                  <option>小雨</option>
+                  <option>雪</option>
+                  <option>強風</option>
+                </select>
+              </label>
+              <label>
+                気温
+                <select id="temperatureInput">
+                  <option value="">未記録</option>
+                  <option>5℃未満</option>
+                  <option>5-9℃</option>
+                  <option>10-14℃</option>
+                  <option>15-19℃</option>
+                  <option>20-24℃</option>
+                  <option>25-29℃</option>
+                  <option>30℃以上</option>
+                </select>
+              </label>
+              <label>
+                風
+                <select id="windSelect">
+                  <option>未記録</option>
+                  <option>なし</option>
+                  <option>弱い</option>
+                  <option>強い</option>
+                </select>
+              </label>
+            </div>
+            <div class="dialog-grid">
+              <label>
+                コート種別
+                <select id="surfaceSelect">
+                  <option>未記録</option>
+                  <option>クレー</option>
+                  <option>オムニ</option>
+                  <option>ハード</option>
+                  <option>インドア（体育館）</option>
+                  <option>その他</option>
+                </select>
+              </label>
+              <label>
+                コート状態
+                <select id="courtConditionSelect">
+                  <option>未記録</option>
+                  <option>乾いている</option>
+                  <option>湿っている</option>
+                  <option>滑りやすい</option>
+                  <option>砂が多い</option>
+                  <option>荒れている</option>
+                </select>
+              </label>
+            </div>
+            <div class="dialog-grid">
+              <label>
+                区分
+                <select id="eventInput">
+                  <option>未記録</option>
+                  <option>公式戦</option>
+                  <option>練習試合</option>
+                  <option>校内戦</option>
+                  <option>練習</option>
+                  <option>その他</option>
+                </select>
+              </label>
+              <label>
+                大会名
+                <input id="tournamentInput" value="未記録" maxlength="50" autocomplete="off" enterkeyhint="next" />
+              </label>
+            </div>
+            <div class="dialog-grid">
+              <label>
+                開催地／会場
+                <input id="venueNameInput" value="未記録" maxlength="50" autocomplete="off" enterkeyhint="next" />
+              </label>
+              <label>
+                コート
+                <input id="venueInput" list="courtOptions" value="未記録" maxlength="30" autocomplete="off" enterkeyhint="done" />
+                <datalist id="courtOptions">
+                  <option value="未記録"></option>
+                  <option value="第1コート"></option>
+                  <option value="第2コート"></option>
+                  <option value="第3コート"></option>
+                  <option value="第4コート"></option>
+                  <option value="第5コート"></option>
+                  <option value="第6コート"></option>
+                  <option value="第7コート"></option>
+                  <option value="第8コート"></option>
+                  <option value="第9コート"></option>
+                  <option value="第10コート"></option>
+                  <option value="第11コート"></option>
+                  <option value="第12コート"></option>
+                  <option value="第13コート"></option>
+                  <option value="第14コート"></option>
+                  <option value="第15コート"></option>
+                  <option value="第16コート"></option>
+                </datalist>
+              </label>
+            </div>
+          </div>
+        </details>
         <div class="action-row dialog-sticky-actions">
           <button class="secondary action-button action-close" value="cancel" type="submit">閉じる</button>
           <button class="secondary action-button action-reset" id="resetMatchDialogButton" type="button">入力をリセット</button>
@@ -659,10 +833,10 @@
       </form>
     </dialog>
 
-    <script src="app-config.js?v=145" defer></script>
-    <script src="app-analysis.js?v=145" defer></script>
-    <script src="app-storage.js?v=145" defer></script>
-    <script src="app-rules.js?v=145" defer></script>
-    <script src="app.js?v=145" defer></script>
+    <script src="app-config.js?v=165" defer></script>
+    <script src="app-analysis.js?v=165" defer></script>
+    <script src="app-storage.js?v=165" defer></script>
+    <script src="app-rules.js?v=165" defer></script>
+    <script src="app.js?v=165" defer></script>
   </body>
 </html>

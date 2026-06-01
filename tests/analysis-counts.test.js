@@ -12,7 +12,7 @@ function createElement(selector = "") {
     hidden: false,
     title: "",
     style: {},
-    classList: { toggle() {} },
+    classList: { toggled: {}, toggle(name, force) { this.toggled[name] = force; } },
     addEventListener() {},
     focus() {
       this.focused = true;
@@ -114,6 +114,8 @@ const testCode = `
       phase: "ゲーム序盤",
       hand: "不明",
       player: "不明",
+      serverPlayer: "不明",
+      receiverPlayer: "不明",
       course: "中央奥",
       scoreBefore: { games: { A: 0, B: 0 }, points: { A: 0, B: 0 } },
       scoreAfter: { games: { A: 0, B: 0 }, points: { A: 1, B: 0 } },
@@ -141,9 +143,10 @@ const testCode = `
   renderStats();
   assert.match(elements.opponentErrorBars.innerHTML, /レシーブミス/, "相手ミスパターンには相手のミスを表示する");
   assert.match(elements.errorBars.innerHTML, /まだ記録がありません/, "相手ミスを自チーム失点バーに表示しない");
-  assert.match(elements.opponentView.innerHTML, /あとで確認すること/, "あとで確認することを表示する");
+  assert.match(elements.coachNotes.innerHTML, /次に見ること/, "次に見ることを表示する");
+  assert.match(elements.opponentView.innerHTML, /全体の傾向/, "全体の傾向を表示する");
   assert.match(elements.opponentView.innerHTML, /レシーブミス/, "次に狙いたい相手ミスを表示する");
-  assert.doesNotMatch(buildPriorityItems().join("\\n"), /。$/, "あとで確認することの文末には句点を付けない");
+  assert.doesNotMatch(buildPriorityItems().join("\\n"), /。$/, "次に見ることの文末には句点を付けない");
 
   setPoints([
     point({ winner: "B", server: "B", outcome: "レシーブミス" })
@@ -174,8 +177,10 @@ const testCode = `
   assert.deepEqual(data.topError, ["ダブルフォールト", 1], "自チームDFは失点内訳に数える");
 
   renderAnalysisSummary();
-  assert.doesNotMatch(elements.analysisSummary.innerHTML, /取れた割合/, "分析サマリーから取れた割合を外す");
-  assert.match(elements.analysisSummary.innerHTML, /ミス失点/, "分析サマリーに自チームミス失点を表示する");
+  assert.doesNotMatch(elements.analysisSummary.innerHTML, /ポイント差/, "分析サマリーではポイント差を主役にしない");
+  assert.doesNotMatch(elements.analysisSummary.innerHTML, /取得ポイント/, "分析サマリーから取得ポイントを外す");
+  assert.match(elements.analysisSummary.innerHTML, /ゲーム最初の1本/, "分析サマリーにゲーム最初の1本を表示する");
+  assert.match(elements.analysisSummary.innerHTML, /ミスで落とした/, "分析サマリーに自チームミス失点を表示する");
 
   setPoints([
     point({ winner: "A", outcome: "ストローク得点", player: "A後衛" }),
@@ -187,10 +192,12 @@ const testCode = `
   assert.match(elements.playerBars.innerHTML, /相手後衛/, "個人別に相手後衛を0件でも表示する");
   assert.match(elements.playerBars.innerHTML, /相手前衛/, "個人別に相手前衛を表示する");
   assert.match(elements.playerBars.innerHTML, /\\+0/, "未記録選手は0で表示する");
+  assert.match(elements.playerBars.innerHTML, /ストローク得点/, "プレイヤー別に記録した得点内容を表示する");
+  assert.match(elements.playerBars.innerHTML, /ボレーミス/, "プレイヤー別に記録したミス内容を表示する");
 
   setPoints([
-    point({ winner: "B", scoreBefore: score({ A: 0, B: 0 }) }),
-    point({ winner: "A", scoreBefore: score({ A: 0, B: 1 }) })
+    point({ winner: "B", outcome: "ストロークミス", player: "A後衛", scoreBefore: score({ A: 0, B: 0 }) }),
+    point({ winner: "A", outcome: "ストローク得点", player: "A後衛", scoreBefore: score({ A: 0, B: 1 }) })
   ]);
   assert.equal(ANALYSIS_COMMENT_RULES.attackRateHigh, 60, "分析コメントの攻撃型しきい値を設定で管理する");
   assert.equal(ANALYSIS_COMMENT_RULES.summaryLimit, 5, "分析コメントの表示件数を設定で管理する");
@@ -200,12 +207,19 @@ const testCode = `
   assert.equal(SOFT_TENNIS_RULES.pointLabel({ matchFormat: "7", gamesToWin: 4, games: { A: 0, B: 0 }, gamePoints: { A: 4, B: 4 } }, "A"), "4 D", "デュース表示をルールファイルで判定する");
   const summaryImage = getSummaryImageData();
   assert.match(summaryImage.title, /ソフトテニス試合ノート/, "画像サマリー用のタイトルを作る");
-  assert.equal(summaryImage.summaryRows.some(([label]) => label === "ミス失点"), true, "画像サマリーに重要指標を含める");
+  assert.equal(summaryImage.summaryRows.some(([label]) => label === "ミスで落とした"), true, "画像サマリーに重要指標を含める");
   assert.equal(Array.isArray(summaryImage.priorityItems), true, "画像サマリーにあとで確認することを含める");
   assert.equal(summaryImage.conditionRows.some(([label]) => label === "日時"), true, "画像サマリーに試合条件を含める");
   assert.deepEqual(summaryImage.playerRows.map(([label]) => label), ["自チーム後衛", "自チーム前衛", "相手後衛", "相手前衛"], "画像サマリーに全プレイヤー名を含める");
   assert.equal(summaryImage.gameScore, "0-0", "画像サマリーに全体ゲームスコアを含める");
   assert.equal(summaryImage.gameScoreRows[0][1], "1-1", "画像サマリーに各ゲームのポイントスコアを含める");
+  assert.equal(summaryImage.playerPlusMinusRows.length, 4, "詳細サマリーに個人別+/-を全員分含める");
+  assert.equal(summaryImage.playerPlayRows.length, 4, "詳細サマリーにプレイヤー別プレー内容を全員分含める");
+  assert.equal(summaryImage.playerPlayRows.some(([, value]) => String(value).includes("ストローク得点")), true, "詳細サマリーにプレイヤー別プレー内容を含める");
+  assert.equal(summaryImage.playerServeReceiveStats.length, 4, "サマリーに個人別S/Rを全員分含める");
+  assert.equal(summaryImage.playerServeReceiveStats.every((item) => Number.isInteger(item.serveScores) && Number.isInteger(item.receiveScores)), true, "サマリー個人別S/Rにサーブ得点・レシーブ得点を含める");
+  assert.equal(summaryImage.pointBreakdownRows.length >= 3, true, "サマリーに得点と失点の図解用データを含める");
+  assert.equal(summaryImage.detailRows.some(([label]) => label === "1ポイント目取得率"), true, "詳細サマリーに1ポイント目取得率を含める");
   state.finished = true;
   state.games = { A: 4, B: 2 };
   const finishedSummaryImage = getSummaryImageData();
@@ -222,19 +236,22 @@ const testCode = `
   const detailLayout = drawSummaryImage(document.createElement("canvas"), summaryImage, "detail");
   const summaryImageTexts = shareCanvas.getContext("2d").calls.filter((call) => call.type === "fillText").map((call) => call.text);
   assert.equal(summaryImageTexts.some((text) => /^(#|>|- )/.test(text)), false, "一般ユーザ向け画像にMarkdown記号を表示しない");
+  assert.equal(summaryImageTexts.some((text) => String(text).includes("undefined")), false, "画像サマリーにundefinedを表示しない");
   assert.ok(shareLayout.contentBottom < shareLayout.footerTop, "共有用サマリー画像の本文がフッターに重ならない");
   assert.ok(detailLayout.contentBottom < detailLayout.footerTop, "詳細保存用サマリー画像の本文がフッターに重ならない");
   assert.equal(shareLayout.height < detailLayout.height, true, "共有用は詳細保存用より短い画像にする");
   assert.deepEqual(
-    shareLayout.sections.slice(0, 4),
-    ["試合結果", "分析コメント", "次に活かすこと", "主な数字"],
-    "共有用サマリーは結果と次に活かす内容を先に表示する"
+    shareLayout.sections.slice(0, 5),
+    ["試合結果", "プレイヤー別 + / -", "流れと勝負所", "プレイヤー別 サーブ/レシーブ", "得点と失点の内訳"],
+    "共有用サマリーは結果、個人別、流れ、サーブ/レシーブを先に表示する"
   );
   assert.deepEqual(
-    detailLayout.sections.slice(0, 5),
-    ["試合結果", "分析コメント", "次に活かすこと", "根拠データ", "基本情報"],
-    "詳細保存用サマリーは振り返りやすい順番で表示する"
+    detailLayout.sections.slice(0, 7),
+    ["試合結果", "プレイヤー別 + / -", "流れと勝負所", "プレイヤー別 サーブ/レシーブ", "得点と失点の内訳", "分析コメント", "次に見ること"],
+    "詳細保存用サマリーは個人別、サーブ/レシーブ、分析コメントの順に表示する"
   );
+  assert.equal(shareLayout.pageCount, 3, "共有用サマリーはページ区切り付きで表示する");
+  assert.equal(detailLayout.pageCount, 5, "詳細保存用サマリーは詳細データを含む複数ページにする");
   saveAnalysisMemo();
   const summaryImageWithMemo = getSummaryImageData();
   assert.match(summaryImageWithMemo.analysisMemoTitle, /保存した分析/, "画像サマリーに保存した分析の見出しを含める");
@@ -252,6 +269,39 @@ const testCode = `
   assert.equal(phases["ゲームポイント付近で失点"], 1, "ゲームポイント付近の失点を数える");
   assert.equal(phases["デュース以降で失点"], 1, "デュース以降の失点を数える");
   assert.equal(phases["サービス/レシーブ失点"], 1, "サービス/レシーブ失点を別枠でも数える");
+
+  setPoints([
+    point({ winner: "A", scoreBefore: score({ A: 0, B: 0 }) }),
+    point({ winner: "A", scoreBefore: score({ A: 1, B: 0 }) }),
+    point({ winner: "B", outcome: "ストロークミス", scoreBefore: score({ A: 2, B: 0 }) }),
+    point({ winner: "B", scoreBefore: score({ A: 3, B: 2 }) }),
+    point({ winner: "B", scoreBefore: { games: { A: 3, B: 2 }, points: { A: 3, B: 2 } } })
+  ]);
+  const opening = getGameOpeningStats();
+  assert.equal(opening.rate, 100, "ゲームの1ポイント目取得率を集計する");
+  const streaks = getStreakDetails();
+  assert.equal(streaks.own.count, 2, "最長連続得点を集計する");
+  assert.equal(streaks.opp.count, 3, "最長連続失点を集計する");
+  const clutch = getClutchStats();
+  assert.equal(clutch.ownGamePointMissed >= 2, true, "ゲームポイント逸失を集計する");
+  assert.equal(clutch.ownMatchPointMissed >= 1, true, "マッチポイント逸失を集計する");
+  renderSimpleRows(elements.momentumBars, getMomentumRows());
+  assert.match(elements.momentumBars.innerHTML, /1ポイント目取得率/, "流れと勝負所を表示する");
+  renderServeReceiveCards();
+  assert.match(elements.serveReceiveBars.innerHTML, /第1サービス/, "サーブ\/レシーブ傾向を表示する");
+  setPoints([
+    point({ winner: "A", server: "A", serveStart: "第1サービスで開始", outcome: "サービス得点", serverPlayer: "A後衛", receiverPlayer: "B後衛" }),
+    point({ winner: "B", server: "A", serveStart: "第2サービスで開始", outcome: "ダブルフォールト", serverPlayer: "A後衛", receiverPlayer: "B前衛" }),
+    point({ winner: "A", server: "B", outcome: "レシーブ得点", serverPlayer: "B後衛", receiverPlayer: "A前衛" }),
+    point({ winner: "B", server: "B", outcome: "レシーブミス", serverPlayer: "B前衛", receiverPlayer: "A前衛" }),
+    point({ winner: "B", server: "A", outcome: "ストロークミス", serverPlayer: "A前衛", receiverPlayer: "B後衛" })
+  ]);
+  const srRows = getPlayerServeReceiveRows();
+  assert.equal(srRows.find(([label]) => label === "自後衛")[1].includes("第1サービス 1/2本 (50%)・DF 1本"), true, "サーブ選手別に1st本数とDFを表示する");
+  assert.equal(srRows.find(([label]) => label === "自前衛")[1].includes("レシーブ成功 1/2本 (50%)・レシーブ得点 1本・レシーブミス 1本"), true, "レシーブ選手別に成功本数、得点、ミスを表示する");
+  renderServeReceiveCards();
+  assert.match(elements.serveReceiveBars.innerHTML, /自前衛/, "個人別サーブ/レシーブ傾向をカード表示する");
+  assert.match(elements.serveReceiveBars.innerHTML, /sr-card own/, "自チームのS/Rカードを表示する");
 
   const zeroBars = document.querySelector("#zeroBars");
   renderBars(zeroBars, { "最初の2本で失点": 0, "ゲームポイント付近で失点": 0 });
@@ -287,17 +337,40 @@ const testCode = `
   assert.match(elements.pointList.innerHTML, /ゲーム終盤|ゲームポイント付近|デュース以降|履歴はまだありません/, "履歴フィルターで終盤を対象にする");
   elements.historyFilterSelect.value = "all";
 
+  setPoints([point({ winner: "A", outcome: "ストローク得点", player: "不明" })]);
+  renderHistory();
+  assert.match(elements.pointList.innerHTML, /詳細を補足/, "履歴からポイント詳細を後で補足できる");
+  openPointDetailEditor(0);
+  document.querySelector("#pointEditPlayerSelect").value = "A後衛";
+  document.querySelector("#pointEditOutcomeSelect").value = "ボレー得点";
+  document.querySelector("#pointEditShotSelect").value = "ボレー";
+  document.querySelector("#pointEditRallySelect").value = "4";
+  document.querySelector("#pointEditHandSelect").value = "フォアハンド";
+  document.querySelector("#pointEditCourseSelect").value = "中央前";
+  document.querySelector("#pointEditResultSelect").value = "イン";
+  document.querySelector("#pointEditMemoInput").value = "試合後に補足";
+  savePointDetailEdit();
+  assert.equal(state.points[0].player, "A後衛", "補足で誰のプレーを更新する");
+  assert.equal(state.points[0].outcome, "ボレー得点", "補足でポイント内容を更新する");
+  assert.equal(state.points[0].memo, "試合後に補足", "補足でメモを更新する");
+
   setPoints([]);
   const recordStart = document.querySelector("#recordStart");
   addPoint("A");
+  state = structuredClone(defaultState);
+  renderScore();
+  assert.equal(document.body.classList.toggled?.["simple-record-mode"], true, "初期表示はかんたん記録モード");
+  state.recordMode = "detail";
+  renderScore();
+  assert.equal(document.body.classList.toggled?.["detail-record-mode"], false, "詳細記録モードは試合中の主導線にしない");
+
   assert.equal(recordStart.scrolled, true, "記録後は次の入力欄へスクロールする");
   assert.equal(recordStart.focused, true, "記録後は次の入力欄へフォーカスする");
 
   saveAnalysisMemo();
   assert.equal(state.analysisMemos.length, 1, "分析を保存する");
   assert.match(elements.analysisMemoList.innerHTML, /点時点/, "保存した分析を表示する");
-  assert.match(elements.analysisMemoList.innerHTML, /今すぐ意識すること/, "保存した分析に即時アドバイスを含める");
-  assert.match(elements.analysisMemoList.innerHTML, /あとで確認すること/, "保存した分析に確認ポイントを含める");
+  assert.match(elements.analysisMemoList.innerHTML, /次に見ること/, "保存した分析に次に見ることを含める");
 `;
 
 context.assert = assert;
