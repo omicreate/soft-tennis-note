@@ -87,7 +87,7 @@ test.describe("match data backup restore", () => {
     });
 
     await page.getByRole("button", { name: "メニュー" }).click();
-    await page.getByText("引き継ぎ・共有", { exact: true }).click();
+    await page.getByText("端末引き継ぎ", { exact: true }).click();
 
     const fileChooserPromise = page.waitForEvent("filechooser");
     await page.getByRole("button", { name: "受け取ったデータを読み込む" }).click();

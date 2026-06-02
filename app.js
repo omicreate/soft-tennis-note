@@ -29,6 +29,7 @@ let matchDialogMode = "new";
 let summaryPreviewState = null;
 let summaryPreviewMode = "share";
 let summaryPreviewNameMode = "role";
+let analysisViewMode = "standard";
 let editingPointIndex = null;
 
 const $ = (selector) => document.querySelector(selector);
@@ -126,24 +127,23 @@ const elements = {
   rallyAutoPreview: $("#rallyAutoPreview"),
   memoInput: $("#memoInput"),
   playerSavePreview: $("#playerSavePreview"),
+  analysisModeControl: $("#analysisModeControl"),
+  analysisViewNote: $("#analysisViewNote"),
+  standardGrowthBoard: $("#standardGrowthBoard"),
   analysisSummary: $("#analysisSummary"),
   scoreQuality: $("#scoreQuality"),
-  coachNotes: $("#coachNotes"),
+  actionPlan: $("#actionPlan"),
   opponentView: $("#opponentView"),
   saveAnalysisMemoButton: $("#saveAnalysisMemoButton"),
   analysisMemoList: $("#analysisMemoList"),
-  statsGrid: $("#statsGrid"),
   scoringBars: $("#scoringBars"),
-  opponentErrorBars: $("#opponentErrorBars"),
+  scoringSituationBars: $("#scoringSituationBars"),
   errorBars: $("#errorBars"),
-  resultBars: $("#resultBars"),
   phaseBars: $("#phaseBars"),
-  handBars: $("#handBars"),
   playerBars: $("#playerBars"),
   momentumBars: $("#momentumBars"),
   rallyLengthBars: $("#rallyLengthBars"),
   serveReceiveBars: $("#serveReceiveBars"),
-  courseBars: $("#courseBars"),
   pointList: $("#pointList"),
   historyFilterSelect: $("#historyFilterSelect"),
   historySortSelect: $("#historySortSelect"),
@@ -164,6 +164,7 @@ const elements = {
   actionMenuDialog: $("#actionMenuDialog"),
   summaryImageDialog: $("#summaryImageDialog"),
   summaryPreviewImage: $("#summaryPreviewImage"),
+  summaryPreviewFrame: $("#summaryPreviewFrame"),
   summaryModeControl: $("#summaryModeControl"),
   summaryNameModeControl: $("#summaryNameModeControl"),
   summaryNameModeNote: $("#summaryNameModeNote"),
@@ -182,7 +183,6 @@ const elements = {
   openNewMatchButton: $("#openNewMatchButton"),
   editMatchInfoButton: $("#editMatchInfoButton"),
   previewSummaryImageButton: $("#previewSummaryImageButton"),
-  saveCurrentMatchButton: $("#saveCurrentMatchButton"),
   openArchiveButton: $("#openArchiveButton"),
   shareSummaryImageButton: $("#shareSummaryImageButton"),
   downloadSummaryImageButton: $("#downloadSummaryImageButton"),
@@ -289,6 +289,7 @@ function normalizeState(raw) {
     "サイド側アウト": "サイドアウト"
   };
 
+  saved.archiveId = typeof saved.archiveId === "string" ? saved.archiveId : "";
   saved.recordMode = ["simple", "detail"].includes(saved.recordMode) ? saved.recordMode : defaultState.recordMode;
   saved.selectedOutcome = outcomeAliases[saved.selectedOutcome] || saved.selectedOutcome || defaultState.selectedOutcome;
   saved.selectedCourse = courseAliases[saved.selectedCourse] || saved.selectedCourse || defaultState.selectedCourse;
@@ -489,6 +490,15 @@ function displayNameFromState(matchState, side) {
   return matchState.matchType === "singles" ? matchState.teams?.B || "相手" : matchState.teams?.B || "相手ペア";
 }
 
+function createArchiveId() {
+  return crypto.randomUUID?.() || `match-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function ensureCurrentArchiveId() {
+  if (!state.archiveId) state.archiveId = createArchiveId();
+  return state.archiveId;
+}
+
 function archiveSignature(matchState = state) {
   const lastPoint = matchState.points?.at?.(-1) || {};
   return JSON.stringify({
@@ -509,13 +519,17 @@ function buildArchivedMatchTitle(matchState = state) {
   return [date, event, `${displayNameFromState(matchState, "A")} vs ${displayNameFromState(matchState, "B")}`, score].filter(Boolean).join(" / ");
 }
 
-function archiveCurrentMatch(reason = "manual") {
+function archiveCurrentMatch(reason = "auto") {
   if (!matchHasRecordableData(state)) return null;
+  const archiveId = ensureCurrentArchiveId();
   const snapshot = normalizeState(structuredClone(state));
+  snapshot.archiveId = archiveId;
   const signature = archiveSignature(snapshot);
-  const archived = loadArchivedMatches().filter((entry) => entry.signature !== signature);
+  const archived = loadArchivedMatches();
+  const existing = archived.find((entry) => entry.id === archiveId);
   const entry = {
-    id: crypto.randomUUID?.() || `${Date.now()}`,
+    id: archiveId,
+    createdAt: existing?.createdAt || existing?.savedAt || new Date().toISOString(),
     savedAt: new Date().toISOString(),
     reason,
     signature,
@@ -525,8 +539,18 @@ function archiveCurrentMatch(reason = "manual") {
     finished: snapshot.finished,
     state: snapshot
   };
-  saveArchivedMatches([entry, ...archived]);
+  saveArchivedMatches([entry, ...archived.filter((archive) => archive.id !== archiveId)]);
   return entry;
+}
+
+function syncCurrentArchive(reason = "auto") {
+  if (!state.archiveId && !matchHasRecordableData(state)) return null;
+  if (!matchHasRecordableData(state)) {
+    const archiveId = state.archiveId;
+    if (archiveId) saveArchivedMatches(loadArchivedMatches().filter((entry) => entry.id !== archiveId));
+    return null;
+  }
+  return archiveCurrentMatch(reason);
 }
 
 function sanitizeFileNamePart(value) {
@@ -743,6 +767,7 @@ function addPoint(winner) {
   state.points.push(entry);
   elements.memoInput.value = "";
   ensureServicePlayerSelections();
+  syncCurrentArchive("auto-point");
   saveState();
   render();
   moveToNextPointInput();
@@ -767,6 +792,7 @@ function undoPoint() {
   state.matchInfo.endTime = last.endTimeBefore || "";
   state.finished = false;
   ensureServicePlayerSelections();
+  syncCurrentArchive("auto-undo");
   saveState();
   render();
 }
@@ -809,6 +835,7 @@ function applyMatchDialogValues({ resetMatch }) {
     venueName: elements.venueNameInput.value.trim(),
     venue: elements.venueInput.value
   };
+  syncCurrentArchive(resetMatch ? "auto-new-info" : "auto-info");
   saveState();
   render();
 }
@@ -1161,6 +1188,10 @@ function getAnalysisData() {
   const opening = getGameOpeningStats();
   const streaks = getStreakDetails();
   const clutch = getClutchStats();
+  const rallyStats = getRallyLengthStats();
+  const rallyRecorded = rallyStats.recorded;
+  const rallyShortRate = rallyRecorded ? Math.round((rallyStats.short / rallyRecorded) * 100) : 0;
+  const rallyLongRate = rallyRecorded ? Math.round((rallyStats.long / rallyRecorded) * 100) : 0;
   return {
     total,
     ownPoints,
@@ -1186,7 +1217,12 @@ function getAnalysisData() {
     longestOwnStreakText: formatStreak(streaks.own),
     longestOppStreak: streaks.opp?.count || 0,
     longestOppStreakText: formatStreak(streaks.opp),
-    rallyStats: getRallyLengthStats(),
+    rallyStats,
+    rallyShort: rallyStats.short,
+    rallyLong: rallyStats.long,
+    rallyRecorded,
+    rallyShortRate,
+    rallyLongRate,
     ownGamePointMissed: clutch.ownGamePointMissed,
     ownMatchPointMissed: clutch.ownMatchPointMissed,
     topError: topEntry(countByOutcomeType("error", ownLost)),
@@ -1211,6 +1247,61 @@ function pointDiffTone(diff) {
   if (diff > 0) return "own";
   if (diff < 0) return "opp";
   return "neutral";
+}
+
+
+function buildStandardGrowthHighlight(data) {
+  if (!data.total) return ["まず記録を増やす", "1ゲーム分を目安に残すと、練習テーマが見え始めます", "neutral"];
+  if (data.topScore[1] > 0) return ["今日よかった形", `${data.topScore[0]} ${data.topScore[1]}本。練習でも同じ入り方を再現します`, "own"];
+  if (data.ownPointsByOpponentError > 0) return ["相手ミスを誘えた", `${data.ownPointsByOpponentError}本。相手が崩れた配球を見返します`, "own"];
+  if (data.ownLostByOwnError > 0) return ["先に減らすミス", `${data.ownLostByOwnError}本。まず安全に返す形を決めます`, "opp"];
+  return ["まだ判断しない", "記録を増やして、良い形と修正点を分けて見ます", "neutral"];
+}
+
+function renderStandardGrowthBoard() {
+  const data = getAnalysisData();
+  const openingStats = getGameOpeningStats();
+  const actionRows = buildActionPlanRows(data, { limit: 3 });
+  const [highlightTitle, highlightNote, highlightTone] = buildStandardGrowthHighlight(data);
+  const comments = uniqueAdviceItems(buildSummaryComments(data)).slice(0, 2);
+  const openingText = openingStats.total ? `${openingStats.own}/${openingStats.total}本` : "未記録";
+  const playerText = getTopPlayerPlusMinusLabel();
+  const serveReceiveText = getTopPlayerServeReceiveLabel();
+  const involvementItems = getPlayerInvolvementItems();
+
+  elements.standardGrowthBoard.innerHTML = `
+    <article class="growth-hero ${escapeHtml(highlightTone)}">
+      <span>育成ノート</span>
+      <strong>${escapeHtml(highlightTitle)}</strong>
+      <p>${escapeHtml(highlightNote)}</p>
+    </article>
+    <div class="growth-card-grid">
+      <article><span>ゲーム最初の1本</span><strong>${escapeHtml(openingText)}</strong><small>入り方を見る</small></article>
+      <article><span>選手別 + / -</span><strong>${escapeHtml(playerText)}</strong><small>本人の振り返り</small></article>
+      <article><span>サーブ/レシーブ</span><strong>${escapeHtml(serveReceiveText)}</strong><small>最初の2本を見る</small></article>
+    </div>
+    <section class="growth-note-section">
+      <h2>試合から分かったこと</h2>
+      <ul>${(comments.length ? comments : ["まだ記録が少ないため、数ポイント記録して傾向を見る"]).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    </section>
+    <section class="growth-note-section player-involvement-section">
+      <h2>選手別の関わり</h2>
+      <p>後衛・前衛の評価を決めつけず、記録された関与本数と + / - で見ます。</p>
+      <div>${involvementItems.map((item) => `
+        <article class="${escapeHtml(item.tone)}">
+          <strong>${escapeHtml(item.label)}</strong>
+          <span>${escapeHtml(formatPointDiff(item.diff))}</span>
+          <small>${escapeHtml(item.comment)}</small>
+        </article>
+      `).join("")}</div>
+    </section>
+    <section class="growth-note-section practice-theme">
+      <h2>次の練習テーマ</h2>
+      <ol>${actionRows.map(([title, note, tone], index) => `
+        <li class="${escapeHtml(tone || "neutral")}"><span>${escapeHtml(index + 1)}</span><div><b>${escapeHtml(title)}</b><small>${escapeHtml(note)}</small></div></li>
+      `).join("")}</ol>
+    </section>
+  `;
 }
 
 function renderAnalysisSummary() {
@@ -1252,6 +1343,20 @@ function renderRallyLengthAnalysis() {
   });
 }
 
+function renderAnalysisViewMode() {
+  const detailMode = analysisViewMode === "detail";
+  document.body.classList.toggle("analysis-standard-mode", !detailMode);
+  document.body.classList.toggle("analysis-detail-mode", detailMode);
+  elements.analysisModeControl?.querySelectorAll("[data-analysis-mode]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.analysisMode === analysisViewMode);
+  });
+  if (elements.analysisViewNote) {
+    elements.analysisViewNote.textContent = detailMode
+      ? "得点場面、失点場面、ラリー、試合後の深掘りまで表示します。"
+      : "記録者が選手へ見せやすい内容を中心に表示します。";
+  }
+}
+
 function buildQuickCoachItems(data = getAnalysisData()) {
   return SOFT_TENNIS_ANALYSIS.buildQuickCoachItemsFromData(data);
 }
@@ -1269,34 +1374,83 @@ function buildPriorityAdviceItems(data = getAnalysisData()) {
   return uniqueAdviceItems([...buildQuickCoachItems(data), ...buildPriorityItems()]).slice(0, ANALYSIS_COMMENT_RULES.priorityLimit);
 }
 
-function renderCoachNotes() {
-  const data = getAnalysisData();
-  const notes = buildPriorityAdviceItems(data);
-  elements.coachNotes.innerHTML = `
-    <strong>次に活かすこと</strong>
-    <p>今の記録から、次のポイントや練習で見たい順に並べています。</p>
-    <ol>${notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}</ol>
+function buildActionPlanRows(data = getAnalysisData(), { limit = 6 } = {}) {
+  const ownWon = state.points.filter((point) => point.winner === "A");
+  const ownLost = state.points.filter((point) => point.winner === "B");
+  const opponentError = topEntry(countByOutcomeType("error", ownWon));
+  const opponentScore = topEntry(countByOutcomeType("score", ownLost));
+  const rallyStats = getRallyLengthStats();
+  const rows = [];
+
+  if (!data.total) {
+    rows.push(["まず記録を増やす", "1ゲーム分を目安に記録し、サービス・レシーブ・ミスの傾向を見る", "neutral"]);
+  } else {
+    if (data.ownDoubleFaults > 0) rows.push(["サービスを安定させる", `DF ${data.ownDoubleFaults}本。第2サービスは入れるコースを先に決める`, "opp"]);
+    if (data.ownReceiveMisses > 0) rows.push(["レシーブで相手に渡さない", `レシーブミス ${data.ownReceiveMisses}本。まず深く返す形を確認`, "opp"]);
+    if (data.openingPointRate !== null && data.openingPointRate < ANALYSIS_COMMENT_RULES.openingRateLow) rows.push(["ゲームの入りを作る", `1ポイント目 ${data.openingPointOwn}/${data.openingPointTotal}本。最初の1本は安全な形を固定`, "opp"]);
+    if (data.longestOppStreak >= ANALYSIS_COMMENT_RULES.longLostStreakAlert) rows.push(["連続失点を止める", `最長連続失点 ${data.longestOppStreakText}。1本返して流れを切るプレーを決める`, "opp"]);
+    if (data.ownGamePointMissed > 0 || data.ownMatchPointMissed > 0) rows.push(["勝負どころを整理する", `GP逸失 ${data.ownGamePointMissed}回 / MP逸失 ${data.ownMatchPointMissed}回。決め急がず先に形を作る`, "opp"]);
+    if (data.ownLostByOwnError > data.ownScoredByPattern) rows.push(["ミス失点を減らす", `ミス失点 ${data.ownLostByOwnError}本が得点パターン ${data.ownScoredByPattern}本を上回る`, "opp"]);
+    if (rallyStats.recorded >= ANALYSIS_COMMENT_RULES.rallyRecordedMin && data.rallyShortRate >= ANALYSIS_COMMENT_RULES.shortRallyRateHigh) rows.push(["3本以内を丁寧にする", `3本以内 ${rallyStats.short}/${rallyStats.recorded}本。サービス・レシーブ直後の選択を確認`, "neutral"]);
+    if (rallyStats.recorded >= ANALYSIS_COMMENT_RULES.rallyRecordedMin && data.rallyLongRate >= ANALYSIS_COMMENT_RULES.longRallyRateHigh) rows.push(["ラリー後に取り切る", `4本以上 ${rallyStats.long}/${rallyStats.recorded}本。粘った後の決め方を練習`, "neutral"]);
+    if (opponentScore[1] > 0) rows.push(["相手の得点形を消す", `相手の主な得点は ${opponentScore[0]} ${opponentScore[1]}本。先に止める守り方を確認`, "opp"]);
+    if (opponentError[1] > 0) rows.push(["相手のミスを誘う", `相手の主なミスは ${opponentError[0]} ${opponentError[1]}本。誘えた配球を再確認`, "own"]);
+    if (data.topScore[1] > 0) rows.push(["良い得点形を再現する", `${data.topScore[0]} ${data.topScore[1]}本。練習でも同じ入り方を作る`, "own"]);
+  }
+
+  return rows.filter((row, index, allRows) => allRows.findIndex((item) => item[0] === row[0]) === index).slice(0, limit);
+}
+
+function renderActionPlan() {
+  const rows = buildActionPlanRows(getAnalysisData(), { limit: 5 });
+  elements.actionPlan.innerHTML = `
+    <strong>次の練習テーマ</strong>
+    <p>数字から優先度順に整理します。記録者が選手へ共有しやすい形にします。</p>
+    <div class="action-plan-list">
+      ${rows.map(([title, note, tone], index) => `
+        <article class="${escapeHtml(tone || "neutral")}">
+          <span>${escapeHtml(index + 1)}</span>
+          <div><b>${escapeHtml(title)}</b><small>${escapeHtml(note)}</small></div>
+        </article>
+      `).join("")}
+    </div>
   `;
+}
+
+function getSideInsightItems() {
+  const data = getAnalysisData();
+  const ownWon = state.points.filter((point) => point.winner === "A");
+  const ownLost = state.points.filter((point) => point.winner === "B");
+  const opponentError = topEntry(countByOutcomeType("error", ownWon));
+  const opponentScore = topEntry(countByOutcomeType("score", ownLost));
+  const ownError = topEntry(countByOutcomeType("error", ownLost));
+  const ownTopScore = data.topScore;
+  const ownItems = [
+    `自分たちで取った形 ${data.ownScoredByPattern}本 / 相手ミスで取った ${data.ownPointsByOpponentError}本`,
+    `ミスで落とした ${data.ownLostByOwnError}本 / 主なミス ${ownError[1] ? `${ownError[0]} ${ownError[1]}本` : "未記録"}`,
+    ownTopScore[1] ? `良い得点形は ${ownTopScore[0]} ${ownTopScore[1]}本` : "良い得点形はまだ未記録"
+  ];
+  const opponentItems = [
+    `相手が取り切った形 ${ownLost.filter((point) => isScoringOutcome(point.outcome)).length}本 / 自チームのミスで取った ${data.ownLostByOwnError}本`,
+    opponentScore[1] ? `相手の主な得点形は ${opponentScore[0]} ${opponentScore[1]}本` : "相手の得点形はまだ未記録",
+    opponentError[1] ? `相手の主なミスは ${opponentError[0]} ${opponentError[1]}本` : "相手ミスはまだ未記録"
+  ];
+  return { ownItems, opponentItems };
 }
 
 function renderOpponentView() {
   const data = getAnalysisData();
-  const ownWon = state.points.filter((point) => point.winner === "A");
-  const opponentError = topEntry(countByOutcomeType("error", ownWon));
-  const comments = buildSummaryComments(data);
-  if (opponentError[1] > 0) {
-    comments.unshift(`相手の主なミスは「${opponentError[0]}」 ${opponentError[1]}本`);
-  }
-  const trendRows = [
-    ["自分たちで取った", `${data.ownScoredByPattern}本`],
-    ["相手ミスで取った", `${data.ownPointsByOpponentError}本`],
-    ["ミスで落とした", `${data.ownLostByOwnError}本`]
-  ];
+  const comments = uniqueAdviceItems(buildSummaryComments(data)).slice(0, 3);
+  const { ownItems, opponentItems } = getSideInsightItems();
 
   elements.opponentView.innerHTML = `
-    <strong>見えてきたこと</strong>
-    <ul>${uniqueAdviceItems(comments).slice(0, 4).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
-    <div class="trend-grid">${trendRows.map(([label, value]) => `<span><b>${escapeHtml(value)}</b>${escapeHtml(label)}</span>`).join("")}</div>
+    <strong>試合から分かったこと</strong>
+    <p>自チームと相手を同じ基準で見て、次の練習材料を見つけます。</p>
+    ${comments.length ? `<ul>${comments.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+    <div class="insight-side-grid">
+      <article class="own-side"><b>自チーム</b><ul>${ownItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></article>
+      <article class="opp-side"><b>相手</b><ul>${opponentItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></article>
+    </div>
   `;
 }
 
@@ -1328,6 +1482,16 @@ function buildPriorityItems() {
   if (opponentError[1] > 0) {
     const target = targetPlayer[1] > 0 && targetPlayer[0] !== "不明" ? ` 対象は ${targetPlayer[0]} が最多` : "";
     items.push(`相手の主なミスは「${opponentError[0]}」 ${opponentError[1]}本。${target}`);
+  }
+  const rallyStats = getRallyLengthStats();
+  if (rallyStats.recorded >= ANALYSIS_COMMENT_RULES.rallyRecordedMin) {
+    const shortRate = Math.round((rallyStats.short / rallyStats.recorded) * 100);
+    const longRate = Math.round((rallyStats.long / rallyStats.recorded) * 100);
+    if (shortRate >= ANALYSIS_COMMENT_RULES.shortRallyRateHigh) {
+      items.push(`3本以内のポイント ${rallyStats.short}/${rallyStats.recorded}本。サービス・レシーブ直後を最優先で確認`);
+    } else if (longRate >= ANALYSIS_COMMENT_RULES.longRallyRateHigh) {
+      items.push(`4本以上のポイント ${rallyStats.long}/${rallyStats.recorded}本。粘った後に取り切る形を確認`);
+    }
   }
   if (opponentReceiveMissGain > 0) {
     items.push(`相手サービス時のレシーブミス献上 ${opponentReceiveMissGain}本`);
@@ -1497,6 +1661,30 @@ function getPhaseCounts() {
   };
 }
 
+function getScoringSituationCounts() {
+  const ownWon = state.points.filter((point) => point.winner === "A");
+  return {
+    "自チーム得点パターン": ownWon.filter((point) => isScoringOutcome(point.outcome)).length,
+    "相手ミスで得点": ownWon.filter((point) => isErrorOutcome(point.outcome)).length,
+    "サービス/レシーブで得点": ownWon.filter((point) => ["サービス得点", "レシーブ得点", "ダブルフォールト", "レシーブミス"].includes(point.outcome)).length,
+    "最初の2本で得点": ownWon.filter((point) => {
+      const before = point.scoreBefore?.points || { A: 0, B: 0 };
+      return (before.A || 0) + (before.B || 0) <= 1;
+    }).length
+  };
+}
+
+function getLosingSituationCounts() {
+  const ownLost = state.points.filter((point) => point.winner === "B");
+  return {
+    "自チームミスで失点": ownLost.filter((point) => isErrorOutcome(point.outcome)).length,
+    "相手得点パターン": ownLost.filter((point) => isScoringOutcome(point.outcome)).length,
+    "サービス/レシーブ失点": ownLost.filter((point) => ["ダブルフォールト", "レシーブミス", "サービス得点", "レシーブ得点"].includes(point.outcome)).length,
+    "最初の2本で失点": ownLost.filter(isOpeningPointLoss).length,
+    "勝負どころで失点": ownLost.filter((point) => isGamePointAreaLoss(point) || isDeuceOrLaterLoss(point)).length
+  };
+}
+
 function countByPlayer(points = state.points) {
   return points.reduce((acc, point) => {
     const label = playerLabel(point.player);
@@ -1593,14 +1781,37 @@ function getPlayerPlayRows(limit = 5) {
   });
 }
 
+function getPlayerReviewRows() {
+  const serveReceiveByPlayer = Object.fromEntries(getPlayerServeReceiveStats().map((item) => [item.player, item]));
+  return getPlayerPlusMinus().map((item) => {
+    const decorated = { ...item, serveReceive: serveReceiveByPlayer[item.key] };
+    const tone = item.diff > 0 ? "own" : item.diff < 0 ? "opp" : "neutral";
+    return [item.label, buildPlayerReviewItems(decorated).join(" / "), tone];
+  });
+}
+
+function formatPointLocation(point) {
+  if (!point) return "場面なし";
+  const before = point.scoreBefore?.points || { A: 0, B: 0 };
+  return `${gameNumberLabel(historyGameNumber(point))} ${before.A || 0}-${before.B || 0}`;
+}
+
+function formatPointLocations(points = [], limit = 3) {
+  const locations = points.map(formatPointLocation);
+  const unique = [...new Set(locations)].filter(Boolean);
+  if (!unique.length) return "該当なし";
+  const visible = unique.slice(0, limit).join("、");
+  return unique.length > limit ? `${visible}、ほか${unique.length - limit}件` : visible;
+}
+
 function getGameOpeningStats() {
   const openings = state.points.filter((point) => {
     const before = point.scoreBefore?.points || { A: 0, B: 0 };
     return (before.A || 0) === 0 && (before.B || 0) === 0;
   });
-  const own = openings.filter((point) => point.winner === "A").length;
-  const opp = openings.filter((point) => point.winner === "B").length;
-  return { own, opp, total: openings.length, rate: openings.length ? Math.round((own / openings.length) * 100) : null };
+  const ownPoints = openings.filter((point) => point.winner === "A");
+  const oppPoints = openings.filter((point) => point.winner === "B");
+  return { own: ownPoints.length, opp: oppPoints.length, total: openings.length, rate: openings.length ? Math.round((ownPoints.length / openings.length) * 100) : null, ownPoints, oppPoints, points: openings };
 }
 
 function getStreakDetails() {
@@ -1609,10 +1820,11 @@ function getStreakDetails() {
   state.points.forEach((point, index) => {
     if (!current || current.side !== point.winner) {
       if (current) streaks.push(current);
-      current = { side: point.winner, count: 1, start: index + 1, end: index + 1, outcomes: [point.outcome || "内容不明"] };
+      current = { side: point.winner, count: 1, start: index + 1, end: index + 1, points: [point], outcomes: [point.outcome || "内容不明"] };
     } else {
       current.count += 1;
       current.end = index + 1;
+      current.points.push(point);
       current.outcomes.push(point.outcome || "内容不明");
     }
   });
@@ -1627,7 +1839,10 @@ function formatStreak(streak) {
     acc[outcome] = (acc[outcome] || 0) + 1;
     return acc;
   }, {}));
-  return `${streak.count}本 (${streak.start}-${streak.end}点目 / ${topOutcome[0]})`;
+  const start = formatPointLocation(streak.points[0]);
+  const end = formatPointLocation(streak.points[streak.points.length - 1]);
+  const range = start === end ? start : `${start}〜${end}`;
+  return `${streak.count}本 (${range} / ${topOutcome[0]})`;
 }
 
 function oppositeSide(side) {
@@ -1651,16 +1866,26 @@ function getClutchStats() {
   return state.points.reduce((acc, point) => {
     ["A", "B"].forEach((side) => {
       if (isGamePointOpportunity(point, side) && point.winner !== side) {
-        if (side === "A") acc.ownGamePointMissed += 1;
-        else acc.oppGamePointMissed += 1;
+        if (side === "A") {
+          acc.ownGamePointMissed += 1;
+          acc.ownGamePointMissedPoints.push(point);
+        } else {
+          acc.oppGamePointMissed += 1;
+          acc.oppGamePointMissedPoints.push(point);
+        }
       }
       if (isMatchPointOpportunity(point, side) && point.winner !== side) {
-        if (side === "A") acc.ownMatchPointMissed += 1;
-        else acc.oppMatchPointMissed += 1;
+        if (side === "A") {
+          acc.ownMatchPointMissed += 1;
+          acc.ownMatchPointMissedPoints.push(point);
+        } else {
+          acc.oppMatchPointMissed += 1;
+          acc.oppMatchPointMissedPoints.push(point);
+        }
       }
     });
     return acc;
-  }, { ownGamePointMissed: 0, oppGamePointMissed: 0, ownMatchPointMissed: 0, oppMatchPointMissed: 0 });
+  }, { ownGamePointMissed: 0, oppGamePointMissed: 0, ownMatchPointMissed: 0, oppMatchPointMissed: 0, ownGamePointMissedPoints: [], oppGamePointMissedPoints: [], ownMatchPointMissedPoints: [], oppMatchPointMissedPoints: [] });
 }
 
 function getMomentumRows() {
@@ -1668,11 +1893,11 @@ function getMomentumRows() {
   const streaks = getStreakDetails();
   const clutch = getClutchStats();
   return [
-    ["1ポイント目取得", opening.rate === null ? "-" : `${opening.own}/${opening.total}本 (${opening.rate}%)`, "own", "各ゲームの入り。低い時は最初のサービス/レシーブの約束事を決める"],
-    ["最長連続得点", formatStreak(streaks.own), "own", "良い流れを作れた場面。内容を次の試合でも再現する"],
-    ["最長連続失点", formatStreak(streaks.opp), "opp", "止めるべき流れ。どのプレーで切るかを決める"],
-    ["ゲームポイントを逃した数", `${clutch.ownGamePointMissed}回`, clutch.ownGamePointMissed ? "opp" : "neutral", "ゲームを取れる場面で落とした数。決め急ぎやレシーブミスを確認"],
-    ["マッチポイントを逃した数", `${clutch.ownMatchPointMissed}回`, clutch.ownMatchPointMissed ? "opp" : "neutral", "試合を終わらせる場面で落とした数。次は先に安全な形を作る"]
+    ["1ポイント目取得", opening.rate === null ? "-" : `${opening.own}/${opening.total}本 (${opening.rate}%)`, "own", "各ゲームの入りを確認", `取った: ${formatPointLocations(opening.ownPoints)} / 落とした: ${formatPointLocations(opening.oppPoints)}`],
+    ["最長連続得点", formatStreak(streaks.own), "own", "連続して取れた場面", streaks.own ? `発生: ${formatPointLocations(streaks.own.points)}` : "発生: 該当なし"],
+    ["最長連続失点", formatStreak(streaks.opp), "opp", "連続して落とした場面", streaks.opp ? `発生: ${formatPointLocations(streaks.opp.points)}` : "発生: 該当なし"],
+    ["ゲームポイント逸失", `${clutch.ownGamePointMissed}回`, clutch.ownGamePointMissed ? "opp" : "neutral", "ゲームを取れる場面で落とした数", `発生: ${formatPointLocations(clutch.ownGamePointMissedPoints)}`],
+    ["マッチポイント逸失", `${clutch.ownMatchPointMissed}回`, clutch.ownMatchPointMissed ? "opp" : "neutral", "試合を終わらせる場面で落とした数", `発生: ${formatPointLocations(clutch.ownMatchPointMissedPoints)}`]
   ];
 }
 
@@ -1756,11 +1981,12 @@ function getTopPlayerServeReceiveLabel() {
 
 function renderMomentumRows(container, rows) {
   container.innerHTML = rows.length
-    ? `<div class="momentum-list">${rows.map(([label, value, tone, note]) => `
+    ? `<div class="momentum-list">${rows.map(([label, value, tone, note, detail]) => `
       <article class="momentum-card ${escapeHtml(tone || "neutral")}">
         <span>${escapeHtml(label)}</span>
         <strong>${escapeHtml(value)}</strong>
         <p>${escapeHtml(note || "")}</p>
+        <small>${escapeHtml(detail || "")}</small>
       </article>
     `).join("")}</div>`
     : `<p class="empty">まだ記録がありません</p>`;
@@ -1769,25 +1995,19 @@ function renderMomentumRows(container, rows) {
 function renderStats() {
   const ownWon = state.points.filter((point) => point.winner === "A");
   const ownLost = state.points.filter((point) => point.winner === "B");
+  renderStandardGrowthBoard();
   renderAnalysisSummary();
   renderScoreQuality();
   renderRallyLengthAnalysis();
-  renderCoachNotes();
+  renderActionPlan();
   renderOpponentView();
-  elements.statsGrid.innerHTML = summarize()
-    .map(([label, value, note]) => `<article class="stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(note || "")}</small></article>`)
-    .join("");
-
-  renderBars(elements.phaseBars, getPhaseCounts(), "opp");
+  renderBars(elements.scoringSituationBars, getScoringSituationCounts(), "own");
+  renderBars(elements.phaseBars, getLosingSituationCounts(), "opp");
   renderBars(elements.scoringBars, countByOutcomeType("score", ownWon), "own");
-  renderBars(elements.opponentErrorBars, countByOutcomeType("error", ownWon), "opp");
   renderBars(elements.errorBars, countByOutcomeType("error", ownLost), "own");
-  renderBars(elements.resultBars, countBy("result"));
-  renderBars(elements.handBars, countBy("hand", ownLost));
   renderPlayerPlusMinus();
   renderMomentumRows(elements.momentumBars, getMomentumRows());
   renderServeReceiveCards();
-  renderBars(elements.courseBars, countBy("course"));
   renderAnalysisMemos();
 }
 
@@ -1803,6 +2023,7 @@ function saveAnalysisMemo() {
     items
   };
   state.analysisMemos = [memo, ...(state.analysisMemos || [])].slice(0, 12);
+  syncCurrentArchive("auto-analysis");
   saveState();
   renderAnalysisMemos();
 }
@@ -1815,7 +2036,7 @@ function renderAnalysisMemos() {
         const time = Number.isNaN(date.getTime()) ? "" : `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
         const score = `G ${memo.games?.A ?? 0}-${memo.games?.B ?? 0} / P ${memo.points?.A ?? 0}-${memo.points?.B ?? 0}`;
         const items = uniqueAdviceItems(memo.items || [...(memo.quickItems || []), ...(memo.reviewItems || [])]);
-        const itemsHtml = items.length ? `<p>次に活かすこと</p><ol>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>` : "";
+        const itemsHtml = items.length ? `<p>次の練習テーマ</p><ol>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>` : "";
         return `<article><strong>${escapeHtml(time)} ${escapeHtml(score)} ${escapeHtml(memo.pointCount)}点時点</strong>${itemsHtml}</article>`;
       }).join("")
     : `<p>保存した分析はまだありません。</p>`;
@@ -1832,6 +2053,84 @@ function renderBars(container, counts, side = "") {
     : `<p class="empty">まだ記録がありません</p>`;
 }
 
+function buildPlayerReviewItems(item) {
+  const serveReceive = item.serveReceive || {};
+  const scoring = item.outcomes.filter(([label]) => isScoringOutcome(label))[0] || ["", 0];
+  const error = item.outcomes.filter(([label]) => isErrorOutcome(label))[0] || ["", 0];
+  const shot = item.shots[0] || ["", 0];
+  const total = item.plus + item.minus;
+  const items = [];
+  const isOwn = item.side === "A";
+
+  if (!total && !(serveReceive.servePoints || serveReceive.receivePoints)) {
+    return ["記録なし。まだ傾向は判断しない"];
+  }
+
+  if (item.diff < 0) {
+    items.push(`+${item.plus}/-${item.minus}。ミス記録が${Math.abs(item.diff)}本多い`);
+  } else if (item.diff > 0) {
+    items.push(`+${item.plus}/-${item.minus}。得点記録が${item.diff}本多い`);
+  } else if (total) {
+    items.push(`+${item.plus}/-${item.minus}。得点記録とミス記録は同数`);
+  }
+
+  if (error[1] > 0) {
+    items.push(`${error[0]} ${error[1]}本が最多のミス`);
+  }
+  if (scoring[1] > 0) {
+    items.push(`${scoring[0]} ${scoring[1]}本が最多の得点`);
+  }
+  if (serveReceive.doubleFaults > 0) {
+    items.push(`サーブ記録: DF ${serveReceive.doubleFaults}本`);
+  }
+  if (serveReceive.receiveMisses > 0) {
+    items.push(`レシーブ記録: ミス ${serveReceive.receiveMisses}本`);
+  }
+  if (serveReceive.servePoints >= 2 && serveReceive.firstServeRate !== null) {
+    items.push(`第1サービス ${serveReceive.firstServe}/${serveReceive.servePoints}本 (${serveReceive.firstServeRate}%)`);
+  }
+  if (serveReceive.receivePoints >= 2 && serveReceive.receiveKeepRate !== null) {
+    items.push(`レシーブ成功 ${serveReceive.receiveKeep}/${serveReceive.receivePoints}本 (${serveReceive.receiveKeepRate}%)`);
+  }
+  if (shot[1] > 0 && items.length < 3) {
+    items.push(`${shot[0]} ${shot[1]}本が最多のプレー`);
+  }
+  if (!items.length) items.push("大きな偏りはまだ見えません。記録を続けて確認");
+  return uniqueAdviceItems(items).slice(0, 3);
+}
+
+function buildPlayerInvolvementComment(item) {
+  const total = item.plus + item.minus;
+  const serveReceive = item.serveReceive || {};
+  const scoring = item.outcomes.filter(([label]) => isScoringOutcome(label))[0] || ["", 0];
+  const error = item.outcomes.filter(([label]) => isErrorOutcome(label))[0] || ["", 0];
+  const srTotal = (serveReceive.servePoints || 0) + (serveReceive.receivePoints || 0);
+  const parts = [];
+
+  if (!total && !srTotal) return "記録なし。役割評価ではなく、まず関わった本数を増やして確認";
+
+  parts.push(`関与 ${total}本（+${item.plus}/-${item.minus}/${formatPointDiff(item.diff)}）`);
+  if (item.diff > 0) parts.push("得点記録がミス記録を上回る");
+  if (item.diff < 0) parts.push("ミス記録が得点記録を上回る");
+  if (item.diff === 0 && total) parts.push("得点記録とミス記録は同数");
+  if (scoring[1] > 0) parts.push(`主な得点は${scoring[0]} ${scoring[1]}本`);
+  if (error[1] > 0) parts.push(`主なミスは${error[0]} ${error[1]}本`);
+  if (srTotal) parts.push(`S/R関与 ${srTotal}本`);
+  return parts.slice(0, 4).join("。") || "大きな偏りはまだ見えません";
+}
+
+function getPlayerInvolvementItems() {
+  const serveReceiveByPlayer = Object.fromEntries(getPlayerServeReceiveStats().map((item) => [item.player, item]));
+  return getPlayerPlusMinus().map((item) => {
+    const decorated = { ...item, serveReceive: serveReceiveByPlayer[item.key] };
+    return {
+      ...decorated,
+      tone: item.diff > 0 ? "own" : item.diff < 0 ? "opp" : "neutral",
+      comment: buildPlayerInvolvementComment(decorated)
+    };
+  });
+}
+
 function renderPlayerPlusMinusCard(item) {
   const tone = item.diff > 0 ? "own" : item.diff < 0 ? "opp" : "neutral";
   const visibleOutcomes = item.outcomes.slice(0, 5);
@@ -1844,11 +2143,12 @@ function renderPlayerPlusMinusCard(item) {
   const shotChips = item.shots.length
     ? `${visibleShots.map(([label, value]) => `<span>${escapeHtml(label)} <b>${escapeHtml(value)}本</b></span>`).join("")}${shotRestCount ? `<span class="muted-chip">ほか <b>${escapeHtml(shotRestCount)}本</b></span>` : ""}`
     : `<span class="muted-chip">記録なし</span>`;
+  const reviewItems = buildPlayerReviewItems(item);
   return `
     <article class="pm-card ${tone}">
       <div class="pm-card-head">
         <strong>${escapeHtml(item.label)}</strong>
-        <span>${escapeHtml(formatPointDiff(item.diff))}</span>
+        <span class="pm-total-badge">${escapeHtml(formatPointDiff(item.diff))}</span>
       </div>
       <div class="pm-score-row">
         <b class="plus">+${escapeHtml(item.plus)}</b>
@@ -1863,6 +2163,10 @@ function renderPlayerPlusMinusCard(item) {
           <small>プレー別</small>
           <div class="pm-outcomes" aria-label="${escapeHtml(item.label)}のプレー種別">${shotChips}</div>
         </div>
+      </div>
+      <div class="pm-review">
+        <small>記録から分かること</small>
+        <ul>${reviewItems.map((text) => `<li>${escapeHtml(text)}</li>`).join("")}</ul>
       </div>
     </article>
   `;
@@ -1883,10 +2187,12 @@ function renderPlayerPlusMinus() {
     elements.playerBars.innerHTML = `<p class="empty">得点またはミスを、プレイヤー付きで記録すると表示されます</p>`;
     return;
   }
+  const serveReceiveByPlayer = Object.fromEntries(getPlayerServeReceiveStats().map((item) => [item.player, item]));
+  const decoratedEntries = entries.map((item) => ({ ...item, serveReceive: serveReceiveByPlayer[item.key] }));
   const ownTitle = state.matchType === "singles" ? "自分" : "自チーム";
   elements.playerBars.innerHTML = [
-    renderPlayerPlusMinusGroup(ownTitle, entries.filter((item) => item.side === "A"), "own-side"),
-    renderPlayerPlusMinusGroup("相手", entries.filter((item) => item.side === "B"), "opp-side")
+    renderPlayerPlusMinusGroup(ownTitle, decoratedEntries.filter((item) => item.side === "A"), "own-side"),
+    renderPlayerPlusMinusGroup("相手", decoratedEntries.filter((item) => item.side === "B"), "opp-side")
   ].join("");
 }
 
@@ -2087,6 +2393,7 @@ function savePointDetailEdit() {
   point.course = elements.pointEditCourseSelect.value || "未記録";
   point.result = elements.pointEditResultSelect.value || "不明";
   point.memo = elements.pointEditMemoInput.value.trim();
+  syncCurrentArchive("auto-detail");
   saveState();
   elements.pointDetailDialog.close();
   render();
@@ -2415,6 +2722,8 @@ function getSummaryImageData() {
   const clutchStats = getClutchStats();
   const playerPlusMinusRows = getPlayerPlusMinusRows();
   const playerPlayRows = getPlayerPlayRows(5);
+  const playerReviewRows = getPlayerReviewRows();
+  const playerInvolvementRows = getPlayerInvolvementItems().map((item) => [item.label, item.comment, item.tone, formatPointDiff(item.diff)]);
   const playerServeReceiveStats = getPlayerServeReceiveStats().map((item) => ({
     label: item.label,
     tone: item.tone,
@@ -2449,6 +2758,7 @@ function getSummaryImageData() {
     ["GP逸失", clutchStats.ownGamePointMissed, clutchStats.ownGamePointMissed ? "opp" : "neutral", `${clutchStats.ownGamePointMissed}回`],
     ["MP逸失", clutchStats.ownMatchPointMissed, clutchStats.ownMatchPointMissed ? "opp" : "neutral", `${clutchStats.ownMatchPointMissed}回`]
   ];
+  const uniqueActionPlanRows = buildActionPlanRows(data, { limit: 6 });
 
   return {
     title: "ソフトテニス試合ノート",
@@ -2457,9 +2767,12 @@ function getSummaryImageData() {
     playerRows,
     playerPlusMinusRows,
     playerPlayRows,
+    playerReviewRows,
+    playerInvolvementRows,
     playerServeReceiveStats,
     pointBreakdownRows,
     flowRows,
+    actionPlanRows: uniqueActionPlanRows,
     gameScore: `${state.games.A}-${state.games.B}`,
     currentPointScore: state.finished ? "終了" : `${pointLabel("A")}-${pointLabel("B")}`,
     gameScoreRows: getGamePointScoreRows(),
@@ -2481,8 +2794,8 @@ function getSummaryImageData() {
       ["自分たちで取った", data.ownScoredByPattern, "own"],
       ["相手ミスで取った", data.ownPointsByOpponentError, "own"],
       ["記録ポイント", data.total, "neutral"],
-      ["プレイヤー別 + / -", getTopPlayerPlusMinusLabel(), "neutral"],
-      ["プレイヤー別S/R", getTopPlayerServeReceiveLabel(), "neutral"],
+      ["選手別 + / -", getTopPlayerPlusMinusLabel(), "neutral"],
+      ["選手別S/R", getTopPlayerServeReceiveLabel(), "neutral"],
       ["最長連続得点", streakStats.own ? `${streakStats.own.count}本` : "0本", "own"],
       ["最長連続失点", streakStats.opp ? `${streakStats.opp.count}本` : "0本", "opp"],
       ["3本以内", rallyStats.recorded ? `${rallyStats.short}/${rallyStats.recorded}本` : "未記録", "neutral"],
@@ -2495,11 +2808,11 @@ function getSummaryImageData() {
       ["各ゲーム", getGamePointScoreRows().slice(0, 9).map(([label, score]) => `${label} ${score}`).join(" / ")]
     ],
     analysisComments: buildSummaryComments(data),
-    quickTitle: latestMemo ? `次に活かすこと ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "次に活かすこと",
+    quickTitle: latestMemo ? `次の練習テーマ ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "次の練習テーマ",
     quickItems: latestMemo ? (latestMemo.quickItems || []) : buildQuickCoachItems(data),
     reviewTitle: "",
     reviewItems: latestMemo ? (latestMemo.reviewItems || latestMemo.items || []) : buildPriorityItems(),
-    analysisMemoTitle: latestMemo ? `保存した分析 ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "次に活かすこと",
+    analysisMemoTitle: latestMemo ? `保存した分析 ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "次の練習テーマ",
     analysisMemoItems: latestMemo ? [...(latestMemo.quickItems || []), ...(latestMemo.reviewItems || latestMemo.items || [])].slice(0, 4) : [...buildQuickCoachItems(data), ...buildPriorityItems()].slice(0, 4),
     priorityItems: latestMemo ? [...(latestMemo.quickItems || []), ...(latestMemo.reviewItems || latestMemo.items || [])].slice(0, 4) : buildPriorityItems(),
     detailRows: [
@@ -2509,7 +2822,7 @@ function getSummaryImageData() {
       ["第1サービス開始率", data.firstServeRate === null ? "-" : `${data.firstServeRate}%`],
       ["ダブルフォールト", data.ownDoubleFaults],
       ["レシーブミス", data.ownReceiveMisses],
-      ["プレイヤー別S/R", getTopPlayerServeReceiveLabel()],
+      ["選手別S/R", getTopPlayerServeReceiveLabel()],
       ["1ポイント目取得率", openingStats.rate === null ? "-" : `${openingStats.rate}% (${openingStats.own}/${openingStats.total})`],
       ["最長連続得点", formatStreak(streakStats.own)],
       ["最長連続失点", formatStreak(streakStats.opp)],
@@ -2606,7 +2919,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
   const width = 1080;
   const isShareMode = mode === "share";
   const pageHeight = isShareMode ? 1800 : 1500;
-  const pageCount = isShareMode ? 1 : 5;
+  const pageCount = isShareMode ? 1 : 6;
   const height = pageHeight * pageCount;
   const ownColor = "#2563eb";
   const oppColor = "#dc2626";
@@ -2615,15 +2928,21 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
   const mutedColor = "#64748b";
   const lineColor = "#d9e1ea";
   const softLineColor = "#eef2f7";
+  const paperColor = "#fffdf7";
+  const paperStrongColor = "#fff8e8";
+  const appBgColor = "#f4f6f1";
+  const ownSoftColor = "#eff6ff";
+  const oppSoftColor = "#fff1f2";
+  const neutralSoftColor = "#ecfdf5";
   const pageMargin = 56;
   const contentWidth = width - pageMargin * 2;
   canvas.width = width;
   canvas.height = height;
-  ctx.fillStyle = "#f8fafc";
+  ctx.fillStyle = appBgColor;
   ctx.fillRect(0, 0, width, height);
 
   const textColor = (tone) => (tone === "own" ? ownColor : tone === "opp" ? oppColor : tone === "neutral" ? neutralColor : inkColor);
-  const softColor = (tone) => (tone === "own" ? "#eff6ff" : tone === "opp" ? "#fef2f2" : "#f0fdfa");
+  const softColor = (tone) => (tone === "own" ? ownSoftColor : tone === "opp" ? oppSoftColor : neutralSoftColor);
   const setFont = (size, weight = 800) => {
     ctx.font = `${weight} ${size}px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif`;
   };
@@ -2654,12 +2973,15 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
   };
   const pageHeader = (pageIndex, title, subtitle = "") => {
     const base = pageTop(pageIndex);
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = paperColor;
     ctx.fillRect(24, base + 24, width - 48, pageHeight - 48);
     ctx.strokeStyle = lineColor;
     ctx.lineWidth = 2;
     roundedRect(ctx, 24, base + 24, width - 48, pageHeight - 48, 18);
     ctx.stroke();
+    fillRoundedRect(ctx, pageMargin, base + 48, contentWidth, 8, 4, neutralColor);
+    fillRoundedRect(ctx, pageMargin, base + 48, contentWidth * 0.34, 8, 4, ownColor);
+    fillRoundedRect(ctx, pageMargin + contentWidth * 0.68, base + 48, contentWidth * 0.32, 8, 4, oppColor);
     let y = base + 82;
     y = drawText(title, pageMargin, y, { size: 42, weight: 900, lineHeight: 52, after: 4 });
     if (subtitle) y = drawText(subtitle, pageMargin, y, { size: 24, weight: 800, color: mutedColor, lineHeight: 32, after: 8 });
@@ -2694,11 +3016,19 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     return y;
   };
   const drawPanel = (title, note, y, tone = "neutral") => {
-    fillRoundedRect(ctx, pageMargin, y, contentWidth, 116, 12, softColor(tone));
-    strokeRoundedRect(ctx, pageMargin, y, contentWidth, 116, 12, lineColor, 2);
-    drawText(title, pageMargin + 26, y + 40, { size: 29, weight: 900, color: textColor(tone), maxWidth: contentWidth - 52 });
-    drawText(note, pageMargin + 26, y + 78, { size: 23, weight: 800, color: mutedColor, lineHeight: 30, maxWidth: contentWidth - 52, maxLines: 2 });
-    return y + 136;
+    fillRoundedRect(ctx, pageMargin, y, contentWidth, 136, 14, paperColor);
+    strokeRoundedRect(ctx, pageMargin, y, contentWidth, 136, 14, lineColor, 2);
+    fillRoundedRect(ctx, pageMargin + 18, y + 20, 8, 96, 4, textColor(tone));
+    drawText(title, pageMargin + 42, y + 40, { size: 29, weight: 900, color: textColor(tone), maxWidth: contentWidth - 66 });
+    drawText(note, pageMargin + 42, y + 78, { size: 23, weight: 800, color: mutedColor, lineHeight: 30, maxWidth: contentWidth - 66, maxLines: 2 });
+    return y + 158;
+  };
+  const drawActionPlan = (rows, y) => {
+    const actionRows = rows.length ? rows : [["まず記録を増やす", "数ポイント記録すると、確認できる傾向が表示されます", "neutral"]];
+    actionRows.slice(0, 6).forEach(([title, note, tone], index) => {
+      y = drawPanel(`${index + 1}. ${title}`, note, y, tone || "neutral");
+    });
+    return y;
   };
   const drawHorizontalBar = (label, value, total, y, tone = "neutral", note = "") => {
     const safeTotal = Math.max(1, Number(total) || 1);
@@ -2733,15 +3063,18 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
   };
   const drawScoreBoard = (y) => {
     sections.push("試合結果");
-    fillRoundedRect(ctx, pageMargin, y, contentWidth, 210, 14, "#f8fafc");
+    fillRoundedRect(ctx, pageMargin, y, contentWidth, 210, 16, paperStrongColor);
     strokeRoundedRect(ctx, pageMargin, y, contentWidth, 210, 14, lineColor, 2);
-    drawText(summary.teams, pageMargin + 28, y + 42, { size: 29, weight: 900, maxWidth: contentWidth - 56 });
-    drawText(`ゲーム ${summary.gameScore}　ポイント ${summary.currentPointScore}`, pageMargin + 28, y + 92, { size: 42, weight: 900, color: inkColor, maxWidth: contentWidth - 56 });
-    drawText(summary.resultRows.find(([label]) => label === "各ゲーム")?.[1] || "各ゲーム 未記録", pageMargin + 28, y + 146, { size: 24, weight: 800, color: mutedColor, maxWidth: contentWidth - 56, maxLines: 2, lineHeight: 32 });
-    return y + 236;
+    fillRoundedRect(ctx, pageMargin + 22, y + 22, 8, 166, 4, neutralColor);
+    drawText(summary.teams, pageMargin + 44, y + 42, { size: 29, weight: 900, maxWidth: contentWidth - 66 });
+    drawText(`ゲーム ${summary.gameScore}　ポイント ${summary.currentPointScore}`, pageMargin + 44, y + 92, { size: 42, weight: 900, color: inkColor, maxWidth: contentWidth - 66 });
+    drawText(summary.resultRows.find(([label]) => label === "各ゲーム")?.[1] || "各ゲーム 未記録", pageMargin + 44, y + 146, { size: 24, weight: 800, color: mutedColor, maxWidth: contentWidth - 66, maxLines: 2, lineHeight: 32 });
+    return y + 286;
   };
   const drawPlayerImpact = (y) => {
     const playByPlayer = Object.fromEntries((summary.playerPlayRows || []).map(([label, value]) => [label, value]));
+    const reviewByPlayer = Object.fromEntries((summary.playerReviewRows || []).map(([label, value]) => [label, value]));
+    const involvementByPlayer = Object.fromEntries((summary.playerInvolvementRows || []).map(([label, value]) => [label, value]));
     const max = Math.max(1, ...summary.playerPlusMinusRows.map(([, value]) => {
       const plus = Number(String(value).match(/\+(\d+)/)?.[1] || 0);
       const minus = Number(String(value).match(/-(\d+)/)?.[1] || 0);
@@ -2753,9 +3086,10 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
       const labelW = 220;
       const barX = pageMargin + labelW + 28;
       const barW = contentWidth - labelW - 300;
-      fillRoundedRect(ctx, pageMargin, y, contentWidth, 148, 12, "#ffffff");
-      strokeRoundedRect(ctx, pageMargin, y, contentWidth, 148, 12, lineColor, 2);
-      drawText(label, pageMargin + 22, y + 38, { size: 24, weight: 900, maxWidth: labelW });
+      fillRoundedRect(ctx, pageMargin, y, contentWidth, 222, 14, paperColor);
+      strokeRoundedRect(ctx, pageMargin, y, contentWidth, 222, 12, lineColor, 2);
+      fillRoundedRect(ctx, pageMargin + 16, y + 18, 7, 184, 4, textColor(tone));
+      drawText(label, pageMargin + 36, y + 38, { size: 24, weight: 900, maxWidth: labelW - 12 });
       fillRoundedRect(ctx, barX, y + 22, barW, 18, 9, "#e5e7eb");
       fillRoundedRect(ctx, barX, y + 22, Math.max(plus > 0 ? 8 : 0, barW * (plus / max)), 18, 9, ownColor);
       drawText(`+${plus}`, barX + barW + 14, y + 39, { size: 22, weight: 900, color: ownColor, maxWidth: 72 });
@@ -2763,13 +3097,14 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
       fillRoundedRect(ctx, barX, y + 56, Math.max(minus > 0 ? 8 : 0, barW * (minus / max)), 18, 9, oppColor);
       drawText(`-${minus}`, barX + barW + 14, y + 73, { size: 22, weight: 900, color: oppColor, maxWidth: 72 });
       drawText(value, pageMargin + contentWidth - 180, y + 52, { size: 23, weight: 900, color: textColor(tone), maxWidth: 158 });
-      drawText(playByPlayer[label] || "記録なし", pageMargin + 22, y + 104, { size: 19, weight: 800, color: mutedColor, maxWidth: contentWidth - 44, maxLines: 2, lineHeight: 25 });
-      y += 162;
+      drawText(`内容: ${playByPlayer[label] || "記録なし"}`, pageMargin + 36, y + 104, { size: 19, weight: 800, color: mutedColor, maxWidth: contentWidth - 58, maxLines: 2, lineHeight: 25 });
+      drawText(`関わり: ${involvementByPlayer[label] || reviewByPlayer[label] || "まだ傾向は判断しない"}`, pageMargin + 36, y + 154, { size: 19, weight: 900, color: textColor(tone), maxWidth: contentWidth - 58, maxLines: 2, lineHeight: 25 });
+      y += 238;
     });
     return y;
   };
   const drawServeReceiveRow = (title, primary, secondary, tertiary, x, y, w, tone) => {
-    fillRoundedRect(ctx, x + 18, y, w - 36, 64, 12, "rgba(255,255,255,0.84)");
+    fillRoundedRect(ctx, x + 18, y, w - 36, 64, 12, "rgba(255,253,247,0.92)");
     drawText(title, x + 32, y + 26, { size: 18, weight: 900, color: textColor(tone), maxWidth: 92 });
     drawText(primary, x + 124, y + 25, { size: 23, weight: 900, color: inkColor, maxWidth: w - 230 });
     drawText(secondary, x + 124, y + 51, { size: 17, weight: 800, color: mutedColor, maxWidth: w - 230 });
@@ -2778,8 +3113,9 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
   const drawServeReceiveCard = (item, x, y, w) => {
     fillRoundedRect(ctx, x, y, w, 250, 14, softColor(item.tone));
     strokeRoundedRect(ctx, x, y, w, 250, 14, lineColor, 2);
-    drawText(item.label, x + 20, y + 38, { size: 26, weight: 900, color: textColor(item.tone), maxWidth: w - 40 });
-    drawText(`+${item.plus} / -${item.minus} / ${formatPointDiff(item.diff)}`, x + 20, y + 72, { size: 21, weight: 900, color: textColor(item.tone), maxWidth: w - 40 });
+    fillRoundedRect(ctx, x + 16, y + 16, 7, 218, 4, textColor(item.tone));
+    drawText(item.label, x + 34, y + 38, { size: 26, weight: 900, color: textColor(item.tone), maxWidth: w - 52 });
+    drawText(`+${item.plus} / -${item.minus} / ${formatPointDiff(item.diff)}`, x + 34, y + 72, { size: 21, weight: 900, color: textColor(item.tone), maxWidth: w - 52 });
     const firstServe = item.servePoints ? `${item.firstServe}/${item.servePoints}本 (${formatRate(item.firstServeRate)})` : "未記録";
     const receiveKeep = item.receivePoints ? `${item.receiveKeep}/${item.receivePoints}本 (${formatRate(item.receiveKeepRate)})` : "未記録";
     drawServeReceiveRow("サーブ", `第1 ${firstServe}`, `DF ${item.doubleFaults}本`, `得点 ${item.serveScores}本`, x, y + 94, w, item.tone);
@@ -2821,22 +3157,24 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
   };
 
   const drawSocialMetric = (label, value, x, y, w, tone = "neutral") => {
-    fillRoundedRect(ctx, x, y, w, 118, 18, tone === "own" ? "#eef6ff" : tone === "opp" ? "#fff1f2" : "#ecfdf5");
+    fillRoundedRect(ctx, x, y, w, 118, 18, tone === "own" ? ownSoftColor : tone === "opp" ? oppSoftColor : neutralSoftColor);
     strokeRoundedRect(ctx, x, y, w, 118, 18, tone === "own" ? "#bfdbfe" : tone === "opp" ? "#fecdd3" : "#bbf7d0", 2);
-    drawText(label, x + 22, y + 36, { size: 20, weight: 900, color: mutedColor, maxWidth: w - 44 });
-    drawText(value, x + 22, y + 82, { size: 35, weight: 900, color: textColor(tone), maxWidth: w - 44 });
+    fillRoundedRect(ctx, x + 16, y + 18, 7, 82, 4, textColor(tone));
+    drawText(label, x + 34, y + 36, { size: 20, weight: 900, color: mutedColor, maxWidth: w - 54 });
+    drawText(value, x + 34, y + 82, { size: 35, weight: 900, color: textColor(tone), maxWidth: w - 54 });
   };
   const drawSocialPlayerCard = ([label, value, tone], index, y) => {
     const cardW = (contentWidth - 18) / 2;
     const x = pageMargin + (index % 2) * (cardW + 18);
     const rowY = y + Math.floor(index / 2) * 138;
-    fillRoundedRect(ctx, x, rowY, cardW, 122, 16, "rgba(255,255,255,0.92)");
+    fillRoundedRect(ctx, x, rowY, cardW, 122, 16, "rgba(255,253,247,0.94)");
     strokeRoundedRect(ctx, x, rowY, cardW, 122, 16, tone === "own" ? "#bfdbfe" : tone === "opp" ? "#fecdd3" : lineColor, 2);
-    drawText(sharePlayerLabel(label), x + 20, rowY + 36, { size: 22, weight: 900, color: inkColor, maxWidth: cardW - 40 });
-    drawText(value, x + 20, rowY + 78, { size: 31, weight: 900, color: textColor(tone), maxWidth: cardW - 40 });
+    fillRoundedRect(ctx, x + 16, rowY + 18, 7, 86, 4, textColor(tone));
+    drawText(sharePlayerLabel(label), x + 34, rowY + 36, { size: 22, weight: 900, color: inkColor, maxWidth: cardW - 54 });
+    drawText(value, x + 34, rowY + 78, { size: 31, weight: 900, color: textColor(tone), maxWidth: cardW - 54 });
   };
   const drawSocialShareCard = () => {
-    const sections = ["チーム共有サマリー", "試合結果", "見えてきたこと", "次に活かすこと", "主な数字", "役割別 + / -"];
+    const sections = ["チーム共有サマリー", "試合結果", "試合から分かったこと", "次の練習テーマ", "主な数字", "選手別 + / -"];
     const result = rowValue(summary.resultRows, "試合結果", summary.currentPointScore === "終了" ? "試合終了" : "試合中");
     const games = rowValue(summary.resultRows, "ゲームスコア", summary.gameScore);
     const gamePoints = rowValue(summary.resultRows, "各ゲーム", "各ゲーム 未記録");
@@ -2844,35 +3182,39 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     const ownScore = rowValue(summary.summaryRows, "自分たちで取った", "0");
     const opponentMiss = rowValue(summary.summaryRows, "相手ミスで取った", "0");
     const ownMiss = rowValue(summary.summaryRows, "ミスで落とした", "0");
-    const sr = rowValue(summary.detailRows, "プレイヤー別S/R", rowValue(summary.summaryRows, "プレイヤー別S/R", "-"));
+    const sr = rowValue(summary.detailRows, "選手別S/R", rowValue(summary.summaryRows, "選手別S/R", "-"));
     const rallyTrend = rowValue(summary.detailRows, "ラリーの長さ", "-");
     const insightItems = summary.analysisComments.filter(Boolean).slice(0, 2);
     const actionItems = [...summary.quickItems, ...summary.reviewItems].filter(Boolean).slice(0, 2);
 
     const gradient = typeof ctx.createLinearGradient === "function" ? ctx.createLinearGradient(0, 0, width, pageHeight) : null;
     if (gradient) {
-      gradient.addColorStop(0, "#e0f2fe");
-      gradient.addColorStop(0.42, "#f8fafc");
-      gradient.addColorStop(1, "#dcfce7");
+      gradient.addColorStop(0, "#edf4ff");
+      gradient.addColorStop(0.42, appBgColor);
+      gradient.addColorStop(1, "#f7f1e3");
     }
-    ctx.fillStyle = gradient || "#f0fdfa";
+    ctx.fillStyle = gradient || appBgColor;
     ctx.fillRect(0, 0, width, pageHeight);
-    fillRoundedRect(ctx, 34, 34, width - 68, pageHeight - 68, 34, "rgba(255,255,255,0.88)");
-    strokeRoundedRect(ctx, 34, 34, width - 68, pageHeight - 68, 34, "rgba(37,99,235,0.18)", 3);
+    fillRoundedRect(ctx, 34, 34, width - 68, pageHeight - 68, 34, "rgba(255,253,247,0.94)");
+    strokeRoundedRect(ctx, 34, 34, width - 68, pageHeight - 68, 34, "rgba(23,32,51,0.12)", 3);
+    fillRoundedRect(ctx, pageMargin, 54, contentWidth, 8, 4, neutralColor);
+    fillRoundedRect(ctx, pageMargin, 54, contentWidth * 0.34, 8, 4, ownColor);
+    fillRoundedRect(ctx, pageMargin + contentWidth * 0.68, 54, contentWidth * 0.32, 8, 4, oppColor);
 
-    fillRoundedRect(ctx, pageMargin, 72, 238, 44, 22, "#0f766e");
-    drawText("TEAM SHARE", pageMargin + 22, 102, { size: 19, weight: 900, color: "#ffffff", maxWidth: 200 });
+    fillRoundedRect(ctx, pageMargin, 82, 238, 44, 22, neutralColor);
+    drawText("TEAM SHARE", pageMargin + 22, 112, { size: 19, weight: 900, color: "#ffffff", maxWidth: 200 });
     drawText(summary.title, pageMargin, 164, { size: 42, weight: 900, color: inkColor, lineHeight: 52, maxWidth: contentWidth });
     drawText(`${summary.subtitle} / ${shareNameModeLabel}`, pageMargin, 206, { size: 23, weight: 900, color: neutralColor, maxWidth: contentWidth });
     drawText(getTeamShareTitle(), pageMargin, 260, { size: 30, weight: 900, color: inkColor, maxWidth: contentWidth, lineHeight: 38, maxLines: 2 });
 
-    fillRoundedRect(ctx, pageMargin, 300, contentWidth, 218, 24, "#172554");
-    drawText(shareSafeText(result), pageMargin + 30, 354, { size: 31, weight: 900, color: "#ffffff", maxWidth: contentWidth - 60 });
-    drawText(`ゲーム ${games}`, pageMargin + 30, 424, { size: 58, weight: 900, color: "#ffffff", maxWidth: contentWidth - 60 });
-    drawText(gamePoints, pageMargin + 30, 478, { size: 22, weight: 800, color: "#dbeafe", maxWidth: contentWidth - 60, maxLines: 2, lineHeight: 30 });
+    fillRoundedRect(ctx, pageMargin, 300, contentWidth, 218, 24, "#1f2937");
+    fillRoundedRect(ctx, pageMargin + 22, 324, 8, 170, 4, neutralColor);
+    drawText(shareSafeText(result), pageMargin + 44, 354, { size: 31, weight: 900, color: "#ffffff", maxWidth: contentWidth - 72 });
+    drawText(`ゲーム ${games}`, pageMargin + 44, 424, { size: 58, weight: 900, color: "#ffffff", maxWidth: contentWidth - 72 });
+    drawText(gamePoints, pageMargin + 44, 478, { size: 22, weight: 800, color: "#e2e8f0", maxWidth: contentWidth - 72, maxLines: 2, lineHeight: 30 });
 
     let y = 568;
-    y = heading("見えてきたこと", y);
+    y = heading("試合から分かったこと", y);
     if (insightItems.length === 0) {
       y = bullet("記録を続けると、試合の傾向が表示されます", y, "neutral", 1);
     } else {
@@ -2881,7 +3223,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
       });
     }
 
-    y = heading("次に活かすこと", y + 6);
+    y = heading("次の練習テーマ", y + 6);
     if (actionItems.length === 0) {
       y = bullet("まずはサービス・レシーブとミスの本数を確認", y, "neutral", 1);
     } else {
@@ -2898,11 +3240,12 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     drawSocialMetric("ミスで落とした", `${ownMiss}本`, pageMargin + (contentWidth + 22) / 2, y + 138, (contentWidth - 22) / 2, "opp");
     y += 286;
 
-    y = heading("役割別 + / -", y);
+    y = heading("選手別 + / -", y);
     summary.playerPlusMinusRows.slice(0, 4).forEach((row, index) => drawSocialPlayerCard(row, index, y));
     y += Math.ceil(Math.min(summary.playerPlusMinusRows.length, 4) / 2) * 138 + 12;
 
-    fillRoundedRect(ctx, pageMargin, y, contentWidth, 108, 18, "#f0fdfa");
+    fillRoundedRect(ctx, pageMargin, y, contentWidth, 108, 18, paperStrongColor);
+    strokeRoundedRect(ctx, pageMargin, y, contentWidth, 108, 18, lineColor, 2);
     drawText(`サーブ・レシーブ: ${shareSafeText(sr)}`, pageMargin + 24, y + 42, { size: 23, weight: 900, color: neutralColor, maxWidth: contentWidth - 48 });
     drawText(`ラリー: ${rallyTrend}`, pageMargin + 24, y + 76, { size: 23, weight: 900, color: neutralColor, maxWidth: contentWidth - 48 });
     y += 124;
@@ -2918,41 +3261,47 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     rows.forEach(([label, value, tone, note], index) => {
       const x = pageMargin + index * (contentWidth / rows.length);
       const w = contentWidth / rows.length - 12;
-      fillRoundedRect(ctx, x, y, w, 138, 14, softColor(tone));
-      strokeRoundedRect(ctx, x, y, w, 138, 14, lineColor, 2);
+      fillRoundedRect(ctx, x, y, w, 160, 14, softColor(tone));
+      strokeRoundedRect(ctx, x, y, w, 160, 14, lineColor, 2);
       fillRoundedRect(ctx, x + 18, y + 22, Math.max(12, (w - 36) * ((Number(value) || 0) / max)), 14, 7, textColor(tone));
       drawText(label, x + 18, y + 66, { size: 18, weight: 900, color: textColor(tone), maxWidth: w - 36, maxLines: 2, lineHeight: 24 });
-      drawText(note, x + 18, y + 108, { size: 18, weight: 800, color: mutedColor, maxWidth: w - 36, maxLines: 2, lineHeight: 23 });
+      drawText(note, x + 18, y + 112, { size: 17, weight: 800, color: mutedColor, maxWidth: w - 36, maxLines: 2, lineHeight: 24 });
     });
-    return y + 164;
+    return y + 188;
   };
 
   if (isShareMode) return drawSocialShareCard();
 
   let y = pageHeader(0, "試合後の振り返りノート", `${summary.title} / ${summary.subtitle}`);
   y = drawScoreBoard(y);
-  y = heading("見えてきたこと", y);
+  y = heading("試合から分かったこと", y);
   y = paragraph("数字から見えた試合の流れを、親子・コーチで同じ画面を見ながら確認します。", y, "neutral");
   y = drawItems(summary.analysisComments, y, ANALYSIS_COMMENT_RULES.detailSummaryComments, 2);
   y += 8;
   y = heading("次の練習テーマ", y);
-  y = drawItems([...summary.quickItems, ...summary.reviewItems], y, ANALYSIS_COMMENT_RULES.detailNextItems, 2);
+  y = drawItems(summary.actionPlanRows.map(([title, note]) => `${title}: ${note}`), y, 3, 2);
   pageFooter(0);
 
-  y = pageHeader(1, "個人別の振り返り", "誰のどのプレーを次に変えるかを見る");
-  y = heading("プレイヤー別 + / -", y);
-  y = paragraph("+は得点につながったプレー、-はミスとして記録されたプレーです。結果ではなく、次に変える材料として見ます。", y, "neutral");
-  y = drawPlayerImpact(y);
+  y = pageHeader(1, "次の練習テーマ", "数字から練習テーマへ整理する");
+  y = heading("優先して練習すること", y);
+  y = paragraph("記録から優先度順に整理した確認項目です。画面の分析ページと同じ考え方で見返します。", y, "neutral");
+  y = drawActionPlan(summary.actionPlanRows, y);
   pageFooter(1);
 
-  y = pageHeader(2, "サーブ・レシーブ", "何本中何本できたかを先に確認する");
-  y = heading("プレイヤー別 サーブ/レシーブ", y);
-  y = paragraph("選手ごとにサーブとレシーブを分け、成功・得点・ミスを確認します。", y, "neutral");
-  y = drawServeReceiveGrid(y);
+  y = pageHeader(2, "選手別の関わり", "役割を決めつけず、記録された事実から見る");
+  y = heading("選手別の関わり", y);
+  y = paragraph("+は得点として記録されたプレー、-はミスとして記録されたプレーです。後衛・前衛の良し悪しは決めつけず、関与本数と結果を確認します。", y, "neutral");
+  y = drawPlayerImpact(y);
   pageFooter(2);
 
+  y = pageHeader(3, "サーブ・レシーブ", "何本中何本できたかを先に確認する");
+  y = heading("選手別 サーブ/レシーブ", y);
+  y = paragraph("選手ごとにサーブとレシーブを分け、成功・得点・ミスを確認します。", y, "neutral");
+  y = drawServeReceiveGrid(y);
+  pageFooter(3);
+
   if (!isShareMode) {
-    y = pageHeader(3, "試合の流れと得点内訳", "流れと点の中身を練習テーマへつなげる");
+    y = pageHeader(4, "試合の流れと得点内訳", "流れと点の中身を練習テーマへつなげる");
     y = heading("流れと勝負所", y);
     y = paragraph("試合の入り、連続得点・連続失点、ゲームポイント/マッチポイントの逸失を確認します。", y, "neutral");
     y = drawFlowTimeline(summary.flowRows, y);
@@ -2960,9 +3309,9 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     y = heading("得点と失点の内訳", y);
     y = drawPanel("どの点で試合が動いたか", "青は自チームの得点要素、赤は自チームのミス失点。次の練習テーマを決める材料です。", y, "neutral");
     y = drawStackedBar(summary.pointBreakdownRows, y);
-    pageFooter(3);
+    pageFooter(4);
 
-    y = pageHeader(4, "基本情報と根拠データ", "あとで同じ日の試合と混ざらないように残す");
+    y = pageHeader(5, "基本情報と根拠データ", "あとで同じ日の試合と混ざらないように残す");
     y = heading("基本情報", y);
     y = bullet(summary.teams, y, "neutral", 1);
     summary.playerRows.forEach(([label, value]) => {
@@ -2976,15 +3325,15 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     y = drawRows(
       [...summary.summaryRows, ...summary.detailRows, ...summary.phaseRows].filter(([label]) => label !== "記録ポイント").slice(0, 14),
       y,
-      { maxLinesByLabel: { "プレイヤー別S/R": 2, 最長連続得点: 2, 最長連続失点: 2 } }
+      { maxLinesByLabel: { "選手別S/R": 2, 最長連続得点: 2, 最長連続失点: 2 } }
     );
-    pageFooter(4);
+    pageFooter(5);
   } else {
-    y = pageHeader(2, "次に活かすこと", "短く共有しやすい形で、見えてきたことと基本情報を残す");
-    y = heading("見えてきたこと", y);
+    y = pageHeader(2, "次の練習テーマ", "短く共有しやすい形で、試合から分かったことと練習テーマを残す");
+    y = heading("試合から分かったこと", y);
     y = drawItems(summary.analysisComments, y, ANALYSIS_COMMENT_RULES.shareSummaryComments, 2);
     y += 8;
-    y = heading("次に活かすこと", y);
+    y = heading("次の練習テーマ", y);
     y = drawItems([...summary.quickItems, ...summary.reviewItems], y, ANALYSIS_COMMENT_RULES.shareNextItems, 2);
     y += 10;
     y = heading("基本情報", y);
@@ -3029,6 +3378,7 @@ function setSummaryPreviewMode(mode) {
   elements.summaryModeControl?.querySelectorAll?.("[data-summary-mode]").forEach((button) => {
     button.classList.toggle("active", button.dataset.summaryMode === summaryPreviewMode);
   });
+  elements.summaryPreviewFrame?.scrollTo?.({ top: 0, left: 0 });
   const showNameMode = summaryPreviewMode === "share";
   if (elements.summaryNameModeControl) elements.summaryNameModeControl.hidden = !showNameMode;
   if (elements.summaryNameModeNote) elements.summaryNameModeNote.hidden = !showNameMode;
@@ -3039,6 +3389,7 @@ function previewSummaryImage(matchState = state) {
   summaryPreviewState = normalizeState(structuredClone(matchState));
   summaryPreviewMode = "share";
   summaryPreviewNameMode = "role";
+  elements.summaryPreviewFrame?.scrollTo?.({ top: 0, left: 0 });
   setSummaryPreviewNameMode(summaryPreviewNameMode);
   setSummaryPreviewMode(summaryPreviewMode);
   elements.summaryImageDialog.showModal();
@@ -3110,9 +3461,9 @@ function renderArchivedMatches() {
               <strong>${escapeHtml(entry.title || "保存済み試合")}</strong>
               <span>${escapeHtml(savedAt)}保存 / ${escapeHtml(status)} / ${entry.pointCount || 0}点</span>
               <div>
-                <button class="action-button action-preview" data-archive-action="summary" data-archive-id="${escapeHtml(entry.id)}" type="button">サマリー</button>
-                <button class="secondary action-button action-edit" data-archive-action="restore" data-archive-id="${escapeHtml(entry.id)}" type="button">開く</button>
-                <button class="secondary action-button action-delete" data-archive-action="delete" data-archive-id="${escapeHtml(entry.id)}" type="button">削除</button>
+                <button class="action-button action-preview" data-archive-action="summary" data-archive-id="${escapeHtml(entry.id)}" type="button" aria-label="${escapeHtml(entry.title || "保存済み試合")}のサマリー画像を見る">画像</button>
+                <button class="secondary action-button action-edit" data-archive-action="restore" data-archive-id="${escapeHtml(entry.id)}" type="button" aria-label="${escapeHtml(entry.title || "保存済み試合")}を開く">開く</button>
+                <button class="secondary action-button action-delete" data-archive-action="delete" data-archive-id="${escapeHtml(entry.id)}" type="button" aria-label="${escapeHtml(entry.title || "保存済み試合")}を削除">削除</button>
               </div>
             </article>
           `;
@@ -3361,13 +3712,6 @@ elements.previewSummaryImageButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
   previewSummaryImage();
 });
-elements.saveCurrentMatchButton.addEventListener("click", () => {
-  const saved = archiveCurrentMatch("manual");
-  elements.saveCurrentMatchButton.textContent = saved ? "保存しました" : "保存する記録がありません";
-  setTimeout(() => {
-    elements.saveCurrentMatchButton.textContent = "今の試合を保存";
-  }, 1400);
-});
 elements.openArchiveButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
   openArchivedMatches();
@@ -3394,6 +3738,7 @@ elements.archivedMatchList.addEventListener("click", (event) => {
   }
   archiveCurrentMatch("before-restore");
   state = normalizeState(structuredClone(archived.state));
+  state.archiveId = archived.id;
   saveState();
   elements.archivedMatchesDialog.close();
   render();
@@ -3410,6 +3755,7 @@ elements.summaryNameModeControl.addEventListener("click", (event) => {
   if (!button) return;
   setSummaryPreviewNameMode(button.dataset.summaryNameMode);
 });
+
 elements.resetMatchDialogButton.addEventListener("click", resetMatchDialogFields);
 elements.exportCsvButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
@@ -3455,14 +3801,23 @@ function updateMatchTypeFields() {
 
 elements.teamAName.addEventListener("input", () => {
   state.teams.A = elements.teamAName.value;
+  syncCurrentArchive("auto-info");
   saveState();
   renderScore();
 });
 
 elements.teamBName.addEventListener("input", () => {
   state.teams.B = elements.teamBName.value;
+  syncCurrentArchive("auto-info");
   saveState();
   renderScore();
+});
+
+elements.analysisModeControl?.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-analysis-mode]");
+  if (!button) return;
+  analysisViewMode = button.dataset.analysisMode === "detail" ? "detail" : "standard";
+  renderAnalysisViewMode();
 });
 
 elements.historyFilterSelect.addEventListener("change", renderHistory);

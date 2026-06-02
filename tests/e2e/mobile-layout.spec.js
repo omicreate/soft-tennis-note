@@ -96,16 +96,23 @@ function buildDenseMatchState() {
 test.describe("mobile layout", () => {
   test("record, analysis, history, archive and summary screens fit mobile widths", async ({ page }, testInfo) => {
     test.setTimeout(45000);
-    await page.goto("/index.html?v=185");
+    await page.goto("/index.html?v=204");
 
     await expect(page.getByText("ソフトテニス試合ノート").first()).toBeVisible();
-    await expect(page.getByText("v185・2026-06-02").first()).toBeVisible();
+    await expect(page.getByText("v204・2026-06-03").first()).toBeVisible();
     await expectNoHorizontalOverflow(page, "record screen");
 
     await page.getByRole("button", { name: "分析" }).click();
-    await expect(page.locator("#analysisSummary")).toBeVisible();
-    await expect(page.getByText("次に活かすこと").first()).toBeVisible();
-    await expect(page.getByText("見えてきたこと").first()).toBeVisible();
+    await expect(page.locator("#standardGrowthBoard").getByText("育成ノート")).toBeVisible();
+    await expect(page.locator("#standardGrowthBoard").getByText("試合から分かったこと")).toBeVisible();
+    await expect(page.locator("#analysisModeControl").getByText("標準")).toBeVisible();
+    await expect(page.locator("#analysisModeControl").getByText("詳細")).toBeVisible();
+    await expect(page.locator("#standardGrowthBoard").getByText("選手別の関わり")).toBeVisible();
+    await expect(page.locator("#standardGrowthBoard").getByText("後衛・前衛の評価を決めつけず")).toBeVisible();
+    await expect(page.locator("#standardGrowthBoard").getByText("次の練習テーマ")).toBeVisible();
+    await page.locator("#analysisModeControl").getByRole("button", { name: "詳細" }).click();
+    await expect(page.locator("#opponentView").getByText("試合から分かったこと")).toBeVisible();
+    await expect(page.locator("#actionPlan").getByText("次の練習テーマ")).toBeVisible();
     await expectNoHorizontalOverflow(page, "analysis screen");
 
     await page.getByRole("button", { name: "履歴" }).click();
@@ -128,17 +135,18 @@ test.describe("mobile layout", () => {
     await page.getByRole("button", { name: "閉じる" }).click();
 
     await page.getByRole("button", { name: "メニュー" }).click();
-    await page.getByText("引き継ぎ・共有", { exact: true }).click();
+    await page.getByText("端末引き継ぎ", { exact: true }).click();
     await expect(page.getByRole("button", { name: "引き継ぎ用データを保存" })).toBeVisible();
     await expect(page.getByRole("button", { name: "受け取ったデータを読み込む" })).toBeVisible();
     await expectNoHorizontalOverflow(page, "transfer menu");
-    await page.getByText("管理用", { exact: true }).click();
+    await page.getByText("管理用出力", { exact: true }).click();
     await expect(page.getByRole("button", { name: "今の試合CSVを出力" })).toBeVisible();
     await page.getByRole("button", { name: "閉じる" }).click();
 
     await page.getByRole("button", { name: "メニュー" }).click();
-    await page.getByRole("button", { name: "サマリー画像を表示" }).click();
+    await page.getByRole("button", { name: "サマリー画像を見る" }).click();
     await expect(page.locator("#summaryPreviewImage")).toBeVisible();
+    await expect(page.getByRole("button", { name: "拡大して確認" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "チーム共有用" })).toBeVisible();
     await expect(page.getByRole("button", { name: "振り返り用" })).toBeVisible();
     await expect(page.getByRole("button", { name: "役割のみ" })).toBeVisible();
@@ -162,11 +170,12 @@ test.describe("mobile layout", () => {
       localStorage.setItem("soft-tennis-logger-state-v1", JSON.stringify(state));
     }, buildDenseMatchState());
 
-    await page.goto("/index.html?v=185");
+    await page.goto("/index.html?v=204");
     await page.getByRole("button", { name: "メニュー" }).click();
-    await page.getByRole("button", { name: "サマリー画像を表示" }).click();
+    await page.getByRole("button", { name: "サマリー画像を見る" }).click();
 
     await expect(page.locator("#summaryPreviewImage")).toBeVisible();
+    await expect(page.getByRole("button", { name: "拡大して確認" })).toHaveCount(0);
     await expect(page.locator("#shareSummaryImageButton")).toBeVisible();
     await expect(page.getByRole("button", { name: "画像を保存" })).toBeVisible();
     await expect(page.getByRole("button", { name: "閉じる" })).toBeVisible();
@@ -185,7 +194,12 @@ test.describe("mobile layout", () => {
       const closeRect = close.getBoundingClientRect();
       return {
         dialogWidth: dialogRect.width,
+        dialogHeight: dialogRect.height,
+        viewportHeight: window.innerHeight,
         imageHeight: imageRect.height,
+        frameHeight: document.querySelector("#summaryPreviewFrame").getBoundingClientRect().height,
+        frameScrollableX: document.querySelector("#summaryPreviewFrame").scrollWidth > document.querySelector("#summaryPreviewFrame").clientWidth,
+        frameScrollableY: document.querySelector("#summaryPreviewFrame").scrollHeight > document.querySelector("#summaryPreviewFrame").clientHeight,
         imageNaturalWidth: image.naturalWidth,
         imageNaturalHeight: image.naturalHeight,
         shareTop: Math.round(shareRect.top),
@@ -200,12 +214,18 @@ test.describe("mobile layout", () => {
 
     expect(layout.imageNaturalWidth).toBeGreaterThan(0);
     expect(layout.imageNaturalHeight).toBeGreaterThan(0);
-    expect(layout.imageHeight).toBeGreaterThan(280);
+    expect(layout.dialogHeight).toBeGreaterThan(layout.viewportHeight * 0.92);
+    expect(layout.frameHeight).toBeGreaterThan(240);
     expect(layout.shareTop).toBe(layout.saveTop);
     expect(layout.closeTop).toBeGreaterThan(layout.shareTop);
     expect(layout.closeWidth).toBeGreaterThan(layout.dialogWidth * 0.82);
 
     await page.getByRole("button", { name: "振り返り用" }).click();
+    const detailScroll = await page.evaluate(() => {
+      const frame = document.querySelector("#summaryPreviewFrame");
+      return frame.scrollHeight > frame.clientHeight;
+    });
+    expect(detailScroll).toBe(true);
     const detailMetrics = await page.evaluate(() => {
       const canvas = document.createElement("canvas");
       return window.drawSummaryImage(canvas, window.getSummaryImageData(), "detail");

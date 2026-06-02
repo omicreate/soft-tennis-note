@@ -61,6 +61,7 @@
 | `csv-spec.md` | CSV出力仕様。通常CSVと保存済み試合一括CSVの列順、用途、注意点 |
 | `ux-improvement-backlog.md` | 今後のユーザビリティ改善候補。親、学生、コーチそれぞれの使いやすさを優先度付きで整理 |
 | `research/google-drive-data-review.md` | Google Drive保存データの調査メモ。個人情報を持ち込まず、参考にできる構造だけ整理 |
+| `testing/test-strategy.md` | 開発時、UI確認時、リリース前でテスト実行を使い分けるための運用メモ |
 
 ## 更新ルール
 

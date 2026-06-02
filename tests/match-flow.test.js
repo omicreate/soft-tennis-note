@@ -303,6 +303,27 @@ const scenarioCode = `
   undoPoint();
   assert.equal(JSON.stringify(state.games), JSON.stringify({ A: 0, B: 0 }), "空履歴の取り消しは安全");
 
+  saveArchivedMatches([]);
+  state = structuredClone(defaultState);
+  testElements.get("#shotSelect").value = "ストローク";
+  testElements.get("#rallyInput").value = "1";
+  addPoint("A");
+  let autoArchived = loadArchivedMatches();
+  assert.equal(autoArchived.length, 1, "1ポイント記録時に保存済み試合へ自動保存");
+  assert.equal(autoArchived[0].pointCount, 1, "自動保存にポイント数を反映");
+  const autoArchiveId = autoArchived[0].id;
+  addPoint("B");
+  autoArchived = loadArchivedMatches();
+  assert.equal(autoArchived.length, 1, "同じ試合は保存済み試合で重複させず更新");
+  assert.equal(autoArchived[0].id, autoArchiveId, "同じ保存IDを維持");
+  assert.equal(autoArchived[0].pointCount, 2, "2ポイント目も同じ保存済み試合へ反映");
+  undoPoint();
+  autoArchived = loadArchivedMatches();
+  assert.equal(autoArchived.length, 1, "取り消し後も同じ保存済み試合を更新");
+  assert.equal(autoArchived[0].pointCount, 1, "取り消し後のポイント数を反映");
+  undoPoint();
+  assert.equal(loadArchivedMatches().length, 0, "記録がなくなった試合は保存済み試合から外す");
+
   setElement("#matchTypeSelect", "doubles");
   setElement("#dialogTeamA", "   ");
   setElement("#dialogTeamB", "");
@@ -486,6 +507,7 @@ const scenarioCode = `
   assert.deepEqual(frontStats.shots, [["ストローク", 1], ["スマッシュ", 1], ["ボレー", 1]], "プレイヤー別でショット種別を集計する");
   renderPlayerPlusMinus();
   assert.match(testElements.get("#playerBars").innerHTML, /自チーム[\\s\\S]*相手/, "プレイヤー別分析は自チームと相手を分けて表示する");
+  assert.match(testElements.get("#playerBars").innerHTML, /記録から分かること/, "プレイヤー別分析に客観的な記録コメントを表示する");
 
   state.players.ARear = "同名";
   state.players.BRear = "同名";

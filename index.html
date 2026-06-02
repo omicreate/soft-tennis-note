@@ -6,10 +6,10 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=185" />
-    <link rel="stylesheet" href="styles.css?v=185" />
+    <link rel="manifest" href="manifest.webmanifest?v=204" />
+    <link rel="stylesheet" href="styles.css?v=204" />
   </head>
-  <body>
+  <body class="analysis-standard-mode">
     <main class="app-shell">
       <header class="topbar">
         <div>
@@ -34,7 +34,7 @@
       <details class="trial-guide">
         <summary id="trialGuideSummary">テスト利用の説明（記録）</summary>
         <div>
-          <p id="trialGuideLead">記録ページは、試合を見ている人がポイント後すぐに残す画面です。選手本人が試合中に入力する想定ではありません。</p>
+          <p id="trialGuideLead">記録ページは、試合を見ている人がポイント後すぐに残す画面です。プレー中の選手が入力する想定ではありません。</p>
           <ol id="trialGuideList">
             <li>サービス開始（1st/2nd/DF）を確認する</li>
             <li>ポイント内容、プレイヤー、得点側を選ぶ</li>
@@ -344,69 +344,60 @@
       </section>
 
       <section class="panel" id="analysisPanel">
-        <div class="opponent-view" id="opponentView"></div>
-        <div class="coach-notes" id="coachNotes"></div>
-        <div class="analysis-summary" id="analysisSummary"></div>
-        <div class="score-quality" id="scoreQuality"></div>
-        <div class="chart-block emphasis rally-analysis-block">
+        <div class="analysis-view-switch segmented" id="analysisModeControl" aria-label="分析表示の切り替え">
+          <button class="active" data-analysis-mode="standard" type="button">標準</button>
+          <button data-analysis-mode="detail" type="button">詳細</button>
+        </div>
+        <p class="analysis-view-note" id="analysisViewNote">記録者が選手へ見せやすい内容を中心に表示します。</p>
+        <div class="standard-growth-board analysis-standard-only" id="standardGrowthBoard"></div>
+        <div class="opponent-view analysis-detail-only" id="opponentView"></div>
+        <div class="action-plan analysis-detail-only" id="actionPlan"></div>
+        <div class="analysis-summary analysis-detail-only" id="analysisSummary"></div>
+        <div class="chart-block emphasis player-impact-block analysis-detail-only">
+          <h2>選手別 成長メモ</h2>
+          <p class="chart-note">選手ごとの + / - と、記録したプレー種別から次の練習材料を見ます。</p>
+          <div id="playerBars" class="bars"></div>
+        </div>
+        <div class="chart-block emphasis serve-receive-block analysis-detail-only">
+          <h2>選手別 サーブ/レシーブ</h2>
+          <p class="chart-note">サービス順と初期設定をもとに、担当者を自動判定します。</p>
+          <div id="serveReceiveBars" class="serve-receive-cards"></div>
+        </div>
+        <div class="score-quality analysis-detail-only" id="scoreQuality"></div>
+        <div class="chart-block emphasis scoring-situation-block analysis-detail-only">
+          <h2>得点しやすい場面</h2>
+          <p class="chart-note">自チームの得点形と、相手のミスで取れた場面を分けて確認します。</p>
+          <div id="scoringSituationBars" class="bars"></div>
+        </div>
+        <div class="chart-block emphasis losing-situation-block analysis-detail-only">
+          <h2>失点しやすい場面</h2>
+          <p class="chart-note">自チームのミス失点と、相手に取られた形を分けて確認します。</p>
+          <div id="phaseBars" class="bars"></div>
+        </div>
+        <div class="chart-block emphasis rally-analysis-block analysis-detail-only">
           <h2>ラリーの長さ</h2>
           <p class="chart-note">サーブを1本目として、3本以内か4本以上かを確認します。</p>
           <div id="rallyLengthBars" class="bars"></div>
         </div>
-        <div class="chart-block emphasis player-impact-block">
-          <h2>プレイヤー別 プレー内容</h2>
-          <p class="chart-note">選手ごとの + / - と、記録したプレー種別を確認できます。</p>
-          <div id="playerBars" class="bars"></div>
-        </div>
-        <div class="chart-block emphasis serve-receive-block">
-          <h2>プレイヤー別 サーブ/レシーブ</h2>
-          <p class="chart-note">サービス順と初期設定をもとに、担当者を自動判定します。</p>
-          <div id="serveReceiveBars" class="serve-receive-cards"></div>
-        </div>
-        <div class="chart-block emphasis">
-          <h2>次に攻めたい相手ミス</h2>
-          <div id="opponentErrorBars" class="bars"></div>
-        </div>
-        <div class="chart-block emphasis">
-          <h2>失点しやすい場面</h2>
-          <div id="phaseBars" class="bars"></div>
-        </div>
         <div class="analysis-save">
-          <button class="action-button action-save" id="saveAnalysisMemoButton" type="button">この分析を保存</button>
-          <p class="analysis-save-note">今表示しているアドバイスを、時刻・スコア付きで残します。サマリー画像にも反映されます。</p>
+          <button class="action-button action-save" id="saveAnalysisMemoButton" type="button">この振り返りを保存</button>
+          <p class="analysis-save-note">今表示している練習テーマを、時刻・スコア付きで残します。サマリー画像にも反映されます。</p>
           <div id="analysisMemoList" class="analysis-memo-list"></div>
         </div>
-        <details class="detail-panel analysis-details">
+        <details class="detail-panel analysis-details analysis-detail-only">
           <summary>試合後に詳しく見る</summary>
           <div class="chart-block">
-            <h2>どうやって取ったか</h2>
+            <h2>得点の内訳</h2>
             <div id="scoringBars" class="bars"></div>
           </div>
           <div class="chart-block">
-            <h2>どうやって失点したか</h2>
+            <h2>失点の内訳</h2>
             <div id="errorBars" class="bars"></div>
           </div>
           <div class="chart-block momentum-block">
             <h2>流れと勝負どころ</h2>
-            <p class="chart-note">ゲームの入り、連続得点、ゲームポイントなど、次の試合で修正しやすい場面を確認します。</p>
+            <p class="chart-note">ゲームの入り、連続得点、ゲームポイントを、発生したゲームとカウント付きで確認します。</p>
             <div id="momentumBars" class="bars"></div>
-          </div>
-          <div class="chart-block stat-guide-block">
-            <h2>数字の見方</h2>
-            <p class="chart-note">前半で流れを作れたか、自分たちの形で点を取れたかを確認します。</p>
-            <div class="stats-grid" id="statsGrid"></div>
-          </div>
-          <div class="chart-block">
-            <h2>ボールの到達位置</h2>
-            <div id="courseBars" class="bars"></div>
-          </div>
-          <div class="chart-block">
-            <h2>フォア/バックの傾向</h2>
-            <div id="handBars" class="bars"></div>
-          </div>
-          <div class="chart-block detail-analysis">
-            <h2>ネット/アウトの内訳</h2>
-            <div id="resultBars" class="bars"></div>
           </div>
         </details>
       </section>
@@ -432,7 +423,7 @@
       </section>
 
       <footer class="app-footer">
-        <span class="app-version">v185・2026-06-02</span>
+        <span class="app-version">v204・2026-06-03</span>
         <span>© 2026 OmiCreate</span>
         <span>無断転載・再配布・改変利用を禁じます</span>
       </footer>
@@ -545,33 +536,34 @@
     <dialog id="actionMenuDialog">
       <form method="dialog" class="dialog-content menu-dialog">
         <h2>メニュー</h2>
+        <p class="menu-note">記録した試合は自動保存されます。見返す時は保存済み試合を開きます。</p>
         <button class="action-button action-new" id="openNewMatchButton" type="button">新規試合</button>
+        <button class="action-button action-history action-menu-main" id="openArchiveButton" type="button">保存済み試合</button>
+        <button class="action-button action-preview" id="previewSummaryImageButton" type="button">サマリー画像を見る</button>
         <button class="action-button action-edit" id="editMatchInfoButton" type="button">試合情報を編集</button>
-        <button class="action-button action-preview" id="previewSummaryImageButton" type="button">サマリー画像を表示</button>
-        <button class="action-button action-archive" id="saveCurrentMatchButton" type="button">今の試合を保存</button>
-        <button class="action-button action-archive" id="openArchiveButton" type="button">保存済み試合</button>
         <details class="version-menu">
           <summary>バージョン情報</summary>
           <dl>
             <div>
               <dt>現在の版</dt>
-              <dd>v185・2026-06-02</dd>
+              <dd>v204・2026-06-03</dd>
             </div>
             <div>
               <dt>更新内容</dt>
-              <dd>分析画面とサマリー画像の順番・文言を整理。</dd>
+              <dd>提示しやすい文言と全体デザインに調整。</dd>
             </div>
           </dl>
         </details>
         <details class="transfer-menu">
-          <summary>引き継ぎ・共有</summary>
+          <summary>端末引き継ぎ</summary>
           <button class="action-button action-backup" id="exportBackupButton" type="button">引き継ぎ用データを保存</button>
           <button class="action-button action-restore" id="importBackupButton" type="button">受け取ったデータを読み込む</button>
-          <p class="admin-help">別端末へ渡す時は、保存したファイルをLINEなどで送ります。CSVではなく、このデータを使うとアプリに読み込めます。</p>
+          <p class="admin-help">別のスマホで続きを見る時だけ使います。保存したファイルをLINEなどで送り、受け取った端末で読み込みます。</p>
           <input id="backupFileInput" type="file" accept="application/json,.json" hidden />
         </details>
         <details class="admin-menu">
-          <summary>管理用</summary>
+          <summary>管理用出力</summary>
+          <p class="admin-help">CSVはコーチ・管理者向けです。通常の振り返りはサマリー画像と保存済み試合を使います。</p>
           <button class="action-button action-export" id="exportCsvButton" type="button">今の試合CSVを出力</button>
           <button class="action-button action-export" id="exportArchivedCsvButton" type="button">保存した試合CSVを一括出力</button>
         </details>
@@ -593,7 +585,9 @@
           <button data-summary-name-mode="full" type="button">名前あり</button>
         </div>
         <p class="summary-name-note" id="summaryNameModeNote">チーム共有用は、共有前に名前の出し方を選べます。迷ったら役割のみが安全です。</p>
-        <img id="summaryPreviewImage" alt="試合サマリー画像のプレビュー" />
+        <div class="summary-preview-frame" id="summaryPreviewFrame">
+          <img id="summaryPreviewImage" alt="試合サマリー画像のプレビュー" />
+        </div>
         <div class="dialog-actions">
           <button class="action-button action-share" id="shareSummaryImageButton" type="button">共有</button>
           <button class="action-button action-save" id="downloadSummaryImageButton" type="button">画像を保存</button>
@@ -605,7 +599,7 @@
     <dialog id="archivedMatchesDialog">
       <form method="dialog" class="dialog-content archive-dialog">
         <h2>保存済み試合</h2>
-        <p>「今の試合を保存」を押した時、または新規試合を作る前に、記録済みの試合データをこの端末内へ保存します。必要な時に開き直したり、サマリー画像を作れます。</p>
+        <p>記録した試合は、この端末内の保存済み試合へ自動で残ります。必要な時に開き直したり、サマリー画像を作れます。</p>
         <div class="archive-toolbar">
           <label>
             試合を探す
@@ -876,10 +870,10 @@
       </form>
     </dialog>
 
-    <script src="app-config.js?v=185" defer></script>
-    <script src="app-analysis.js?v=185" defer></script>
-    <script src="app-storage.js?v=185" defer></script>
-    <script src="app-rules.js?v=185" defer></script>
-    <script src="app.js?v=185" defer></script>
+    <script src="app-config.js?v=204" defer></script>
+    <script src="app-analysis.js?v=204" defer></script>
+    <script src="app-storage.js?v=204" defer></script>
+    <script src="app-rules.js?v=204" defer></script>
+    <script src="app.js?v=204" defer></script>
   </body>
 </html>

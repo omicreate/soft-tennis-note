@@ -141,12 +141,13 @@ const testCode = `
   assert.deepEqual(data.topError, ["なし", 0], "失点内訳に相手のミスを混ぜない");
   assert.deepEqual(countByOutcomeType("error", state.points.filter((p) => p.winner === "B")), {}, "失点グラフに相手ミスを混ぜない");
   renderStats();
-  assert.match(elements.opponentErrorBars.innerHTML, /レシーブミス/, "相手ミスパターンには相手のミスを表示する");
+  assert.match(elements.scoringSituationBars.innerHTML, /相手ミスで得点/, "相手ミスは得点しやすい場面に含める");
   assert.match(elements.errorBars.innerHTML, /まだ記録がありません/, "相手ミスを自チーム失点バーに表示しない");
-  assert.match(elements.coachNotes.innerHTML, /次に活かすこと/, "次に活かすことを表示する");
-  assert.match(elements.opponentView.innerHTML, /見えてきたこと/, "見えてきたことを表示する");
-  assert.match(elements.opponentView.innerHTML, /レシーブミス/, "次に狙いたい相手ミスを表示する");
-  assert.doesNotMatch(buildPriorityItems().join("\\n"), /。$/, "次に活かすことの文末には句点を付けない");
+  assert.match(elements.opponentView.innerHTML, /試合から分かったこと/, "試合から分かったことを表示する");
+  assert.match(elements.opponentView.innerHTML, /自チーム/, "試合から分かったことに自チーム側を表示する");
+  assert.match(elements.opponentView.innerHTML, /相手/, "試合から分かったことに相手側を表示する");
+  assert.doesNotMatch(elements.opponentView.innerHTML, /短く見るポイント/, "短く見るポイントは表示しない");
+  assert.doesNotMatch(buildPriorityItems().join("\\n"), /。$/, "次の練習テーマの文末には句点を付けない");
 
   setPoints([
     point({ winner: "B", server: "B", outcome: "レシーブミス" })
@@ -192,8 +193,13 @@ const testCode = `
   assert.match(elements.playerBars.innerHTML, /相手後衛/, "個人別に相手後衛を0件でも表示する");
   assert.match(elements.playerBars.innerHTML, /相手前衛/, "個人別に相手前衛を表示する");
   assert.match(elements.playerBars.innerHTML, /\\+0/, "未記録選手は0で表示する");
+  assert.match(elements.playerBars.innerHTML, /pm-total-badge/, "個人別+/-の合計値を強調表示する");
   assert.match(elements.playerBars.innerHTML, /ストローク得点/, "プレイヤー別に記録した得点内容を表示する");
   assert.match(elements.playerBars.innerHTML, /ボレーミス/, "プレイヤー別に記録したミス内容を表示する");
+  renderStandardGrowthBoard();
+  assert.match(elements.standardGrowthBoard.innerHTML, /選手別の関わり/, "標準ノートに選手別の関わりを表示する");
+  assert.match(elements.standardGrowthBoard.innerHTML, /自後衛[\\s\\S]*関与 1本/, "標準ノートに個人別+/-から関与本数を表示する");
+  assert.match(elements.standardGrowthBoard.innerHTML, /後衛・前衛の評価を決めつけず/, "標準ノートで役割評価を決めつけない説明を表示する");
 
   setPoints([
     point({ winner: "A", outcome: "ストローク得点", player: "A後衛" }),
@@ -233,10 +239,10 @@ const testCode = `
   ]);
   data = getAnalysisData();
   const linkedComments = buildSummaryComments(data).join("\\n");
-  assert.match(linkedComments, /1ポイント目/, "見えてきたことにゲーム1ポイント目の根拠を出す");
-  assert.match(linkedComments, /最長連続失点/, "見えてきたことに連続失点の根拠を出す");
-  assert.match(linkedComments, /ゲームポイント逸失/, "見えてきたことに勝負所の根拠を出す");
-  assert.match(buildQuickCoachItems(data).join("\\n"), /連続失点/, "次に活かすことにも詳細数字からの注意を出す");
+  assert.match(linkedComments, /1ポイント目/, "試合から分かったことにゲーム1ポイント目の根拠を出す");
+  assert.match(linkedComments, /最長連続失点/, "試合から分かったことに連続失点の根拠を出す");
+  assert.match(linkedComments, /ゲームポイント逸失/, "試合から分かったことに勝負所の根拠を出す");
+  assert.match(buildQuickCoachItems(data).join("\\n"), /連続失点/, "次の練習テーマにも詳細数字からの注意を出す");
 
   setPoints([
     point({ winner: "B", outcome: "ストロークミス", player: "A後衛", scoreBefore: score({ A: 0, B: 0 }) }),
@@ -259,9 +265,12 @@ const testCode = `
   assert.equal(summaryImage.playerPlusMinusRows.length, 4, "詳細サマリーに個人別+/-を全員分含める");
   assert.equal(summaryImage.playerPlayRows.length, 4, "詳細サマリーにプレイヤー別プレー内容を全員分含める");
   assert.equal(summaryImage.playerPlayRows.some(([, value]) => String(value).includes("ストローク得点")), true, "詳細サマリーにプレイヤー別プレー内容を含める");
+  assert.equal(summaryImage.playerInvolvementRows.length, 4, "サマリーに選手別の関わりを全員分含める");
+  assert.equal(summaryImage.playerInvolvementRows.some(([, value]) => String(value).includes("関与")), true, "サマリーの選手別関わりに関与本数を含める");
   assert.equal(summaryImage.playerServeReceiveStats.length, 4, "サマリーに個人別S/Rを全員分含める");
   assert.equal(summaryImage.playerServeReceiveStats.every((item) => Number.isInteger(item.serveScores) && Number.isInteger(item.receiveScores)), true, "サマリー個人別S/Rにサーブ得点・レシーブ得点を含める");
   assert.equal(summaryImage.pointBreakdownRows.length >= 3, true, "サマリーに得点と失点の図解用データを含める");
+  assert.equal(summaryImage.actionPlanRows.length >= 1, true, "振り返り用サマリーに次へつなげる練習テーマを含める");
   assert.equal(summaryImage.detailRows.some(([label]) => label === "1ポイント目取得率"), true, "詳細サマリーに1ポイント目取得率を含める");
   assert.equal(getRallyLengthStats([point({ rally: "3" }), point({ rally: "4" }), point({ rally: "10+" })]).short, 1, "3本以内のラリーを集計する");
   assert.equal(getRallyLengthStats([point({ rally: "3" }), point({ rally: "4" }), point({ rally: "10+" })]).long, 2, "4本以上のラリーを集計する");
@@ -299,20 +308,21 @@ const testCode = `
   assert.equal(shareLayout.height < detailLayout.height, true, "チーム共有用は振り返り用より短い画像にする");
   assert.deepEqual(
     shareLayout.sections.slice(0, 6),
-    ["チーム共有サマリー", "試合結果", "見えてきたこと", "次に活かすこと", "主な数字", "役割別 + / -"],
-    "チーム共有用サマリーは結果、見えてきたこと、次に活かすこと、主な数字の順に表示する"
+    ["チーム共有サマリー", "試合結果", "試合から分かったこと", "次の練習テーマ", "主な数字", "選手別 + / -"],
+    "チーム共有用サマリーは結果、試合から分かったこと、次の練習テーマ、主な数字の順に表示する"
   );
   assert.equal(summaryImageTexts.some((text) => /TEAM SHARE/.test(String(text))), true, "チーム共有用サマリーはチーム共有向けの見出しを表示する");
   assert.equal(summaryImageTexts.some((text) => String(text).includes("佐藤")), false, "役割のみでは選手名を表示しない");
   assert.equal(summaryImageTexts.some((text) => String(text).includes("自チーム後衛")), true, "役割のみでは役割名を表示する");
   assert.equal(fullNameTexts.some((text) => String(text).includes("佐藤")), true, "名前ありでは選手名を表示する");
   assert.deepEqual(
-    detailLayout.sections.slice(0, 7),
-    ["試合結果", "見えてきたこと", "次の練習テーマ", "プレイヤー別 + / -", "プレイヤー別 サーブ/レシーブ", "流れと勝負所", "得点と失点の内訳"],
-    "振り返り用サマリーは見えてきたこと、次の練習テーマ、個人別、サーブ/レシーブの順に表示する"
+    detailLayout.sections.slice(0, 8),
+    ["試合結果", "試合から分かったこと", "次の練習テーマ", "優先して練習すること", "選手別の関わり", "選手別 サーブ/レシーブ", "流れと勝負所", "得点と失点の内訳"],
+    "振り返り用サマリーは試合から分かったこと、練習テーマ、選手別の関わり、サーブ/レシーブの順に表示する"
   );
   assert.equal(shareLayout.pageCount, 1, "チーム共有用サマリーは1枚画像にする");
-  assert.equal(detailLayout.pageCount, 5, "振り返り用サマリーは詳細データを含む複数ページにする");
+  assert.equal(detailLayout.pageCount, 6, "振り返り用サマリーは練習テーマを含む複数ページにする");
+  assert.equal(detailLayout.footerTop - detailLayout.contentBottom > 24, true, "振り返り用サマリーは枠と文字が重ならない余白を残す");
   saveAnalysisMemo();
   const summaryImageWithMemo = getSummaryImageData();
   assert.match(summaryImageWithMemo.analysisMemoTitle, /保存した分析/, "画像サマリーに保存した分析の見出しを含める");
@@ -349,11 +359,11 @@ const testCode = `
   renderMomentumRows(elements.momentumBars, getMomentumRows());
   assert.match(elements.momentumBars.innerHTML, /1ポイント目取得/, "流れと勝負どころを表示する");
   assert.match(elements.momentumBars.innerHTML, /momentum-card/, "流れと勝負どころは読みやすいカードで表示する");
+  assert.match(elements.momentumBars.innerHTML, /1G 0-0|3G 3-2/, "流れと勝負どころにゲームとカウントを表示する");
   renderStats();
   assert.match(elements.rallyLengthBars.innerHTML, /3本以内|4本以上/, "分析画面にラリーの長さを表示する");
-  assert.match(elements.statsGrid.innerHTML, /前半で取れたゲーム/, "前半ゲームは使い方が分かる表現で表示する");
-  assert.match(elements.statsGrid.innerHTML, /自分たちで取った点/, "得点パターンは意味が分かる表現で表示する");
-  assert.match(elements.statsGrid.innerHTML, /次も再現したい形/, "詳細数字に活用方法を表示する");
+  assert.match(buildSummaryComments(getAnalysisData()).join("\\n"), /4本以上/, "分析コメントにラリーの傾向を反映する");
+  assert.match(buildPriorityItems().join("\\n"), /4本以上/, "次の練習テーマにラリー傾向を反映する");
   renderServeReceiveCards();
   assert.match(elements.serveReceiveBars.innerHTML, /第1サービス/, "サーブ\/レシーブ傾向を表示する");
   setPoints([
@@ -435,9 +445,9 @@ const testCode = `
   assert.equal(recordStart.focused, true, "記録後は次の入力欄へフォーカスする");
 
   saveAnalysisMemo();
-  assert.equal(state.analysisMemos.length, 1, "分析を保存する");
+  assert.equal(state.analysisMemos.length, 1, "振り返りを保存する");
   assert.match(elements.analysisMemoList.innerHTML, /点時点/, "保存した分析を表示する");
-  assert.match(elements.analysisMemoList.innerHTML, /次に活かすこと/, "保存した分析に次に活かすことを含める");
+  assert.match(elements.analysisMemoList.innerHTML, /次の練習テーマ/, "保存した分析に次の練習テーマを含める");
 `;
 
 context.assert = assert;

@@ -45,6 +45,8 @@ function buildQuickCoachItemsFromData(data) {
   if (data.openingPointRate !== null && data.openingPointRate < analysisRules.openingRateLow) notes.push(analysisMessages.quickOpeningLow);
   if (data.longestOppStreak >= analysisRules.longLostStreakAlert) notes.push(analysisMessages.quickStopStreak);
   if (data.ownGamePointMissed >= analysisRules.clutchMissAlert || data.ownMatchPointMissed >= analysisRules.clutchMissAlert) notes.push(analysisMessages.quickClutchMiss);
+  if (data.rallyRecorded >= analysisRules.rallyRecordedMin && data.rallyShortRate >= analysisRules.shortRallyRateHigh) notes.push(analysisMessages.quickShortRallyHigh);
+  if (data.rallyRecorded >= analysisRules.rallyRecordedMin && data.rallyLongRate >= analysisRules.longRallyRateHigh) notes.push(analysisMessages.quickLongRallyHigh);
   if (data.firstServeRate !== null && data.firstServeRate < analysisRules.firstServeLow) notes.push(analysisMessages.quickFirstServeLow);
   if (data.ownScoredByPattern < data.ownPointsByOpponentError) notes.push(analysisMessages.quickOpponentErrorMore);
   if (data.topScore[1] > 0) notes.push(formatAnalysisMessage(analysisMessages.quickTopScore, { topScore: data.topScore[0] }));
@@ -101,6 +103,13 @@ function buildSummaryCommentsFromData(data, formatPointDiff) {
 
   if (data.ownDoubleFaults > 0 || data.ownReceiveMisses > 0) {
     comments.push(formatAnalysisMessage(analysisMessages.summaryServeReceive, data));
+  }
+  if (data.rallyRecorded >= analysisRules.rallyRecordedMin) {
+    if (data.rallyShortRate >= analysisRules.shortRallyRateHigh) {
+      comments.push(formatAnalysisMessage(analysisMessages.summaryShortRallyHigh, data));
+    } else if (data.rallyLongRate >= analysisRules.longRallyRateHigh) {
+      comments.push(formatAnalysisMessage(analysisMessages.summaryLongRallyHigh, data));
+    }
   }
   if (data.ownEarlyLost >= analysisRules.earlyLostAlert) {
     comments.push(formatAnalysisMessage(analysisMessages.summaryEarlyLost, data));

@@ -236,7 +236,7 @@ assert.equal(summary.flowRows.find(([label]) => label === "1ポイント目取�
 const shareLayout = vm.runInContext("drawSummaryImage(document.createElement('canvas'), getSummaryImageData(), 'share')", context);
 const detailLayout = vm.runInContext("drawSummaryImage(document.createElement('canvas'), getSummaryImageData(), 'detail')", context);
 assert.equal(shareLayout.pageCount, 1, "fixtureでもチーム共有用サマリーは1枚画像で生成する");
-assert.equal(detailLayout.pageCount, 5, "fixtureでも振り返り用サマリーは5ページ相当で生成する");
+assert.equal(detailLayout.pageCount, 6, "fixtureでも振り返り用サマリーは6ページ相当で生成する");
 assert.ok(detailLayout.contentBottom < detailLayout.footerTop, "fixtureの振り返り用サマリー本文がフッターに重ならない");
 const corpusExpected = JSON.parse(fs.readFileSync(path.join("tests", "fixtures", "practice-match-corpus-expected.json"), "utf8"));
 corpusExpected.fixtures.forEach((fixture) => {

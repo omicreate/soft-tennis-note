@@ -1,8 +1,8 @@
 # 実機確認結果
 
-最終更新: 2026-06-01
-対象バージョン: v153
-公開URL: https://omicreate.github.io/soft-tennis-note-preview/?v=153
+最終更新: 2026-06-03
+対象バージョン: v204
+公開URL: https://omicreate.github.io/soft-tennis-note/?v=204
 
 ## 1. 記入ルール
 
@@ -27,12 +27,12 @@
 URL:
 
 ```text
-https://omicreate.github.io/soft-tennis-note-preview/?v=153
+https://omicreate.github.io/soft-tennis-note/?v=204
 ```
 
 確認すること:
 
-- 画面下部またはメニュー内に `v153・2026-06-01` が表示される
+- 画面下部またはメニュー内に `v204・2026-06-03` が表示される
 - スコアボードが画面幅に収まる
 - 下部タブが押せる
 - 横スクロールが発生しない
@@ -61,7 +61,7 @@ https://omicreate.github.io/soft-tennis-note-preview/?v=153
 
 確認すること:
 
-- `今の試合を保存` で保存できる
+- ポイント記録後に保存済み試合へ自動保存される
 - `保存済み試合` に表示される
 - 日付、種目、状態で絞り込みできる
 - 保存済み試合を開き直せる
@@ -71,7 +71,7 @@ https://omicreate.github.io/soft-tennis-note-preview/?v=153
 
 確認すること:
 
-- サマリー画像を表示できる
+- サマリー画像を見るできる
 - 共有用、詳細保存用を切り替えられる
 - 画像を保存できる
 - 共有ボタンを押した時にOSの共有画面が出る、または画像保存に切り替わる

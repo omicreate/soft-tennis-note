@@ -1,5 +1,5 @@
 const SOFT_TENNIS_CONFIG = {
-  APP_VERSION: "v185",
+  APP_VERSION: "v204",
   STORAGE_KEY: "soft-tennis-logger-state-v1",
   ARCHIVE_STORAGE_KEY: "soft-tennis-logger-archive-v1",
   MAX_ARCHIVED_MATCHES: 30,
@@ -14,6 +14,9 @@ const SOFT_TENNIS_CONFIG = {
     earlyLostAlert: 3,
     longLostStreakAlert: 3,
     clutchMissAlert: 1,
+    rallyRecordedMin: 3,
+    shortRallyRateHigh: 65,
+    longRallyRateHigh: 60,
     quickLimit: 3,
     priorityLimit: 4,
     summaryLimit: 5,
@@ -37,10 +40,12 @@ const SOFT_TENNIS_CONFIG = {
     quickEarlyLost: "最初の2本はまず返す。入りで簡単に落とさない。",
     quickFirstServeLow: "第1サービスは確率重視。入れてから展開する。",
     quickOpponentErrorMore: "相手ミス得点が多め。自チームで取る形を1つ作る。",
-    quickTopScore: "良い形は「{topScore}」。次も同じ形を使う。",
+    quickTopScore: "得点が多い形は「{topScore}」。再現できた場面を確認する。",
     quickOpeningLow: "ゲームの1ポイント目は、サービス/レシーブの入りを丁寧にする。",
     quickStopStreak: "連続失点は早めに止める。まず返して流れを切る。",
     quickClutchMiss: "ゲームポイントでは決め急がず、先に安全な形を作る。",
+    quickShortRallyHigh: "3本以内が多め。サービス・レシーブ直後を丁寧に入る。",
+    quickLongRallyHigh: "4本以上で続けられている。粘った後の決め方を確認する。",
     quickBalanced: "大きな偏りは少なめ。今のリズムを崩さず、先にミスしない。",
     summaryNoRecord: "まだ記録が少ないため、数ポイント記録して傾向を見る",
     summaryPointDiffPositive: "合計ポイントは{pointDiff}。ゲーム結果だけでなく内容でも押せている",
@@ -57,38 +62,41 @@ const SOFT_TENNIS_CONFIG = {
     summaryFirstHalfAhead: "前半で取れたゲームは{firstHalfGamesText}。序盤で流れを作れている",
     summaryLostStreak: "最長連続失点は{longestOppStreakText}。連続失点を止めるプレーを決めたい",
     summaryClutchMiss: "ゲームポイント逸失{ownGamePointMissed}回、マッチポイント逸失{ownMatchPointMissed}回。勝負所は安全に形を作る",
+    summaryShortRallyHigh: "3本以内が{rallyShort}/{rallyRecorded}本。短いポイントで試合が動いているため、サービス・レシーブ直後を確認",
+    summaryLongRallyHigh: "4本以上が{rallyLong}/{rallyRecorded}本。ラリーで粘れているため、最後に取り切る形を確認",
     summaryTopScore: "主な得点は「{topScore}」{topScoreCount}本。練習でも同じ形を確認"
   },
   TRIAL_GUIDES: {
     record: {
       summary: "テスト利用の説明（記録）",
-      lead: "記録ページは、試合を見ている人がポイント後すぐに残す画面です。選手本人が試合中に入力する想定ではありません。",
+      lead: "記録ページは、ポイントが終わった直後に短く残す画面です。親、選手、コーチの誰が入力しても同じ形で残せます。",
       items: [
-        "かんたん入力は、画面の入力順にサービス、選手、内容、ラリーの長さ、得点側を選ぶ",
-        "試合中は入力順に押して、まず1ポイントを残す",
-        "細かいコースや打球面は、あとで履歴から補足できる"
+        "まずサービス、誰のプレー、何が起きたか、得点側を残す",
+        "迷った項目は不明のままでよく、あとで履歴から補足できる",
+        "部内戦でも相手側を同じ粒度で記録すると、全員の振り返りに使える"
       ]
     },
     analysis: {
       summary: "テスト利用の説明（分析）",
-      lead: "分析ページは、試合中の短い確認と、試合後の振り返りに使う画面です。",
+      lead: "分析ページは、記録した数字から次の練習材料を整理する画面です。記録者が選手へ見せながら、味方と相手を同じ基準で確認できます。",
       items: [
-        "上から順に、今の状況で気になる点を確認する",
-        "自分たちで取った点、相手ミス、ミス失点を分けて見る",
-        "残したい内容は「この分析を保存」で保存する"
+        "上から、試合から分かったこと、次の練習テーマ、選手別の記録を確認する",
+        "選手別は + / -、プレー内容、サーブ/レシーブを同じ粒度で見る",
+        "残したい内容は「この振り返りを保存」で時刻とスコア付きで残せる"
       ]
     },
     history: {
       summary: "テスト利用の説明（履歴）",
-      lead: "履歴ページは、入力ミスの確認と、試合後に1点ずつ振り返るための画面です。",
+      lead: "履歴ページは、1点ごとの内容を確認し、必要なところだけ後から補足する画面です。",
       items: [
-        "直近のポイントから順に、得点側・内容・プレイヤーを確認する",
-        "スコア推移を見て、どの場面で流れが変わったか確認する",
-        "直前の入力を直したい時は、記録ページの「前のポイントに戻す」を使う"
+        "ゲームごとに得点側、内容、プレイヤー、スコア推移を確認する",
+        "不足している内容は各ポイントの「詳細を補足」から直せる",
+        "直前の入力を取り消す時は、記録ページの「前のポイントに戻す」を使う"
       ]
     }
   },
   defaultState: {
+    archiveId: "",
     matchType: "doubles",
     teams: { A: "自チーム", B: "相手ペア" },
     players: {
