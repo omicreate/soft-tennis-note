@@ -250,6 +250,7 @@ const testCode = `
   const summaryImage = getSummaryImageData();
   assert.match(summaryImage.title, /ソフトテニス試合ノート/, "画像サマリー用のタイトルを作る");
   assert.equal(summaryImage.summaryRows.some(([label]) => label === "ミスで落とした"), true, "画像サマリーに重要指標を含める");
+  assert.equal(summaryImage.detailRows.some(([label]) => label === "ラリーの長さ"), true, "画像サマリーにラリーの長さを含める");
   assert.equal(Array.isArray(summaryImage.priorityItems), true, "画像サマリーにあとで確認することを含める");
   assert.equal(summaryImage.conditionRows.some(([label]) => label === "日時"), true, "画像サマリーに試合条件を含める");
   assert.deepEqual(summaryImage.playerRows.map(([label]) => label), ["自チーム後衛", "自チーム前衛", "相手後衛", "相手前衛"], "画像サマリーに全プレイヤー名を含める");
@@ -262,6 +263,17 @@ const testCode = `
   assert.equal(summaryImage.playerServeReceiveStats.every((item) => Number.isInteger(item.serveScores) && Number.isInteger(item.receiveScores)), true, "サマリー個人別S/Rにサーブ得点・レシーブ得点を含める");
   assert.equal(summaryImage.pointBreakdownRows.length >= 3, true, "サマリーに得点と失点の図解用データを含める");
   assert.equal(summaryImage.detailRows.some(([label]) => label === "1ポイント目取得率"), true, "詳細サマリーに1ポイント目取得率を含める");
+  assert.equal(getRallyLengthStats([point({ rally: "3" }), point({ rally: "4" }), point({ rally: "10+" })]).short, 1, "3本以内のラリーを集計する");
+  assert.equal(getRallyLengthStats([point({ rally: "3" }), point({ rally: "4" }), point({ rally: "10+" })]).long, 2, "4本以上のラリーを集計する");
+  state.selectedServe = "ダブルフォールト";
+  state.selectedOutcome = "ダブルフォールト";
+  state.selectedRallyLength = "auto";
+  assert.equal(getRallyValueForSave(), "1", "DFは自動で短いポイントにする");
+  state.selectedServe = "第1サービスで開始";
+  state.selectedOutcome = "ストローク得点";
+  assert.equal(getRallyValueForSave(), "4", "ストロークは自動で4本以上にする");
+  state.selectedRallyLength = "short";
+  assert.equal(getRallyValueForSave(), "3", "手動の3本以内を優先する");
   state.finished = true;
   state.games = { A: 4, B: 2 };
   const finishedSummaryImage = getSummaryImageData();
@@ -320,11 +332,11 @@ const testCode = `
   assert.equal(phases["サービス/レシーブ失点"], 1, "サービス/レシーブ失点を別枠でも数える");
 
   setPoints([
-    point({ winner: "A", scoreBefore: score({ A: 0, B: 0 }) }),
-    point({ winner: "A", scoreBefore: score({ A: 1, B: 0 }) }),
-    point({ winner: "B", outcome: "ストロークミス", scoreBefore: score({ A: 2, B: 0 }) }),
-    point({ winner: "B", scoreBefore: score({ A: 3, B: 2 }) }),
-    point({ winner: "B", scoreBefore: { games: { A: 3, B: 2 }, points: { A: 3, B: 2 } } })
+    point({ winner: "A", rally: "3", scoreBefore: score({ A: 0, B: 0 }) }),
+    point({ winner: "A", rally: "4", scoreBefore: score({ A: 1, B: 0 }) }),
+    point({ winner: "B", rally: "4", outcome: "ストロークミス", scoreBefore: score({ A: 2, B: 0 }) }),
+    point({ winner: "B", rally: "3", scoreBefore: score({ A: 3, B: 2 }) }),
+    point({ winner: "B", rally: "4", scoreBefore: { games: { A: 3, B: 2 }, points: { A: 3, B: 2 } } })
   ]);
   const opening = getGameOpeningStats();
   assert.equal(opening.rate, 100, "ゲームの1ポイント目取得率を集計する");
@@ -338,6 +350,7 @@ const testCode = `
   assert.match(elements.momentumBars.innerHTML, /1ポイント目取得/, "流れと勝負どころを表示する");
   assert.match(elements.momentumBars.innerHTML, /momentum-card/, "流れと勝負どころは読みやすいカードで表示する");
   renderStats();
+  assert.match(elements.rallyLengthBars.innerHTML, /3本以内|4本以上/, "分析画面にラリーの長さを表示する");
   assert.match(elements.statsGrid.innerHTML, /前半で取れたゲーム/, "前半ゲームは使い方が分かる表現で表示する");
   assert.match(elements.statsGrid.innerHTML, /自分たちで取った点/, "得点パターンは意味が分かる表現で表示する");
   assert.match(elements.statsGrid.innerHTML, /次も再現したい形/, "詳細数字に活用方法を表示する");

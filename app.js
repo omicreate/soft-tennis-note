@@ -123,6 +123,7 @@ const elements = {
   courtModeLabel: $("#courtModeLabel"),
   shotSelect: $("#shotSelect"),
   rallyInput: $("#rallyInput"),
+  rallyAutoPreview: $("#rallyAutoPreview"),
   memoInput: $("#memoInput"),
   playerSavePreview: $("#playerSavePreview"),
   analysisSummary: $("#analysisSummary"),
@@ -140,6 +141,7 @@ const elements = {
   handBars: $("#handBars"),
   playerBars: $("#playerBars"),
   momentumBars: $("#momentumBars"),
+  rallyLengthBars: $("#rallyLengthBars"),
   serveReceiveBars: $("#serveReceiveBars"),
   courseBars: $("#courseBars"),
   pointList: $("#pointList"),
@@ -710,7 +712,7 @@ function addPoint(winner) {
     hand: state.selectedHand,
     player: resolvePointPlayerForSave(winner),
     shot: elements.shotSelect.value,
-    rally: elements.rallyInput.value || "0",
+    rally: getRallyValueForSave(),
     firstServeIn: state.selectedServe === "第1サービスで開始",
     memo: elements.memoInput.value.trim(),
     phase: getPhaseLabel(state.gamePoints),
@@ -878,6 +880,7 @@ function renderScore() {
   setActiveButton("#handControl", "hand", state.selectedHand);
   setActiveButton("#playerControl", "player", state.selectedPlayer);
   renderPlayerSavePreview();
+  renderRallyLengthControl();
   $$(".half-court button").forEach((button) => {
     button.classList.toggle("active", button.dataset.course === state.selectedCourse);
   });
@@ -891,7 +894,7 @@ function renderRecordMode() {
   state.recordMode = "simple";
   document.body.classList.toggle("simple-record-mode", true);
   document.body.classList.toggle("detail-record-mode", false);
-  elements.screenGuide.textContent = "番号順に押して、選手ごとの結果まで残せます";
+  elements.screenGuide.textContent = "入力順に押して、選手ごとの結果まで残せます";
 }
 
 function setSimpleOutcome(outcome) {
@@ -1090,12 +1093,12 @@ function renderScreenGuide() {
   const matchPointTeams = getMatchPointTeams();
   if (matchPointTeams.length) {
     elements.nextStep.textContent = `マッチポイント: ${matchPointTeams.map(displayName).join("・")}`;
-    elements.screenGuide.textContent = "次の1ポイントで試合が決まります。番号順に確認して得点側を保存";
+    elements.screenGuide.textContent = "次の1ポイントで試合が決まります。入力順に確認して得点側を保存";
     renderTrialGuide();
     return;
   }
   elements.nextStep.textContent = getNextStepText();
-  elements.screenGuide.textContent = "ポイント後に、画面の番号順に確認して得点側を保存";
+  elements.screenGuide.textContent = "ポイント後に、画面の入力順に確認して得点側を保存";
   renderTrialGuide();
 }
 
@@ -1117,7 +1120,7 @@ function summarize() {
   const servePoints = state.points.filter((point) => point.server === "A");
   const firstServeStarts = servePoints.filter((point) => point.serveStart === "第1サービスで開始").length;
   const secondServeStarts = servePoints.filter((point) => point.serveStart === "第2サービスで開始").length;
-  const avgRally = state.points.reduce((sum, point) => sum + rallyValue(point.rally), 0) / total;
+  const rallyStats = getRallyLengthStats();
   const ownLost = state.points.filter((point) => point.winner === "B");
   const ownScoredByPattern = state.points.filter((point) => point.winner === "A" && isScoringOutcome(point.outcome)).length;
   const ownEarlyLost = ownLost.filter(isOpeningPointLoss).length;
@@ -1135,7 +1138,8 @@ function summarize() {
     ["第2サービスから始まった点", secondServeStarts, "第1サービスが入らず不利に始まった点。攻める前の安定度を見る"],
     ["レシーブミス", ownReceiveMisses, "相手サービスで返せず失った点。多い時は返球コースと構えを確認"],
     ["第1サービスで始められた割合", servePoints.length ? `${Math.round((firstServeStarts / servePoints.length) * 100)}%` : "-", "自チームサービスの入り。低い時は威力より確率を優先"],
-    ["平均ラリー本数", avgRally.toFixed(1), "短い失点が多いか、ラリーで粘れているかを見る"]
+    ["3本以内のポイント", rallyStats.recorded ? `${rallyStats.short}/${rallyStats.recorded}本` : "-", "サーブを1本目として、早く終わったポイントを見る"],
+    ["4本以上のポイント", rallyStats.recorded ? `${rallyStats.long}/${rallyStats.recorded}本` : "-", "ラリーになった時に粘れているかを見る"]
   ];
 }
 
@@ -1182,6 +1186,7 @@ function getAnalysisData() {
     longestOwnStreakText: formatStreak(streaks.own),
     longestOppStreak: streaks.opp?.count || 0,
     longestOppStreakText: formatStreak(streaks.opp),
+    rallyStats: getRallyLengthStats(),
     ownGamePointMissed: clutch.ownGamePointMissed,
     ownMatchPointMissed: clutch.ownMatchPointMissed,
     topError: topEntry(countByOutcomeType("error", ownLost)),
@@ -1237,6 +1242,14 @@ function renderScoreQuality() {
       <span>相手ミスで取った ${data.ownPointsByOpponentError}本</span>
     </div>
   `;
+}
+
+function renderRallyLengthAnalysis() {
+  const stats = getRallyLengthStats();
+  renderBars(elements.rallyLengthBars, {
+    "3本以内": stats.short,
+    "4本以上": stats.long
+  });
 }
 
 function buildQuickCoachItems(data = getAnalysisData()) {
@@ -1341,6 +1354,53 @@ function rallyValue(rally) {
   if (rally === "6-9") return 7.5;
   if (rally === "10+") return 10;
   return Number(rally || 0);
+}
+
+function rallyBucket(rally) {
+  const value = rallyValue(rally);
+  if (!value) return "unknown";
+  return value <= 3 ? "short" : "long";
+}
+
+function getRallyLengthStats(points = state.points) {
+  return points.reduce((acc, point) => {
+    const bucket = rallyBucket(point.rally);
+    if (bucket === "short") acc.short += 1;
+    else if (bucket === "long") acc.long += 1;
+    else acc.unknown += 1;
+    acc.recorded = acc.short + acc.long;
+    return acc;
+  }, { short: 0, long: 0, unknown: 0, recorded: 0 });
+}
+
+function inferRallyValueForCurrentPoint() {
+  const outcome = state.selectedOutcome;
+  if (state.selectedServe === "ダブルフォールト" || outcome === "ダブルフォールト") return "1";
+  if (outcome === "サービス得点") return "1";
+  if (outcome === "レシーブ得点" || outcome === "レシーブミス") return "2";
+  return "4";
+}
+
+function getRallyValueForSave() {
+  const mode = state.selectedRallyLength || "auto";
+  if (mode === "short") return "3";
+  if (mode === "long") return "4";
+  return inferRallyValueForCurrentPoint();
+}
+
+function getRallyLengthLabel() {
+  const value = getRallyValueForSave();
+  return rallyBucket(value) === "short" ? "3本以内" : "4本以上";
+}
+
+function renderRallyLengthControl() {
+  state.selectedRallyLength = state.selectedRallyLength || "auto";
+  setActiveButton("#rallyLengthControl", "rallyLength", state.selectedRallyLength);
+  if (elements.rallyInput) elements.rallyInput.value = getRallyValueForSave();
+  if (elements.rallyAutoPreview) {
+    const prefix = state.selectedRallyLength === "auto" ? "自動判定" : "手動選択";
+    elements.rallyAutoPreview.textContent = `保存されるラリー: ${prefix} / ${getRallyLengthLabel()}`;
+  }
 }
 
 function getFirstHalfGames() {
@@ -1711,6 +1771,7 @@ function renderStats() {
   const ownLost = state.points.filter((point) => point.winner === "B");
   renderAnalysisSummary();
   renderScoreQuality();
+  renderRallyLengthAnalysis();
   renderCoachNotes();
   renderOpponentView();
   elements.statsGrid.innerHTML = summarize()
@@ -2378,6 +2439,9 @@ function getSummaryImageData() {
   ];
   const openingTone = openingStats.total ? (openingStats.own >= openingStats.opp ? "own" : "opp") : "neutral";
   const openingMetric = openingStats.total ? `${openingStats.own}/${openingStats.total}本` : "未記録";
+  const rallyStats = getRallyLengthStats();
+  const rallyTotal = Math.max(1, rallyStats.recorded);
+  const rallyTrendText = rallyStats.recorded ? `3本以内 ${rallyStats.short}/${rallyStats.recorded}本・4本以上 ${rallyStats.long}/${rallyStats.recorded}本` : "未記録";
   const flowRows = [
     ["1ポイント目取得率", openingStats.rate === null ? 0 : openingStats.rate, "own", openingStats.rate === null ? "記録なし" : `${openingStats.own}/${openingStats.total}`],
     ["最長連続得点", streakStats.own?.count || 0, "own", formatStreak(streakStats.own)],
@@ -2420,7 +2484,9 @@ function getSummaryImageData() {
       ["プレイヤー別 + / -", getTopPlayerPlusMinusLabel(), "neutral"],
       ["プレイヤー別S/R", getTopPlayerServeReceiveLabel(), "neutral"],
       ["最長連続得点", streakStats.own ? `${streakStats.own.count}本` : "0本", "own"],
-      ["最長連続失点", streakStats.opp ? `${streakStats.opp.count}本` : "0本", "opp"]
+      ["最長連続失点", streakStats.opp ? `${streakStats.opp.count}本` : "0本", "opp"],
+      ["3本以内", rallyStats.recorded ? `${rallyStats.short}/${rallyStats.recorded}本` : "未記録", "neutral"],
+      ["4本以上", rallyStats.recorded ? `${rallyStats.long}/${rallyStats.recorded}本` : "未記録", "neutral"]
     ],
     resultRows: [
       ["試合結果", matchResultLabel],
@@ -2449,6 +2515,8 @@ function getSummaryImageData() {
       ["最長連続失点", formatStreak(streakStats.opp)],
       ["ゲームポイント逸失", `${clutchStats.ownGamePointMissed}回`],
       ["マッチポイント逸失", `${clutchStats.ownMatchPointMissed}回`],
+      ["ラリーの長さ", rallyTrendText],
+      ["3本以内率", rallyStats.recorded ? `${Math.round((rallyStats.short / rallyTotal) * 100)}% (${rallyStats.short}/${rallyStats.recorded})` : "-"],
       ["最初の2本で失点", data.ownEarlyLost]
     ],
     phaseRows: Object.entries(phaseCounts).filter(([, value]) => value > 0)
@@ -2777,6 +2845,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     const opponentMiss = rowValue(summary.summaryRows, "相手ミスで取った", "0");
     const ownMiss = rowValue(summary.summaryRows, "ミスで落とした", "0");
     const sr = rowValue(summary.detailRows, "プレイヤー別S/R", rowValue(summary.summaryRows, "プレイヤー別S/R", "-"));
+    const rallyTrend = rowValue(summary.detailRows, "ラリーの長さ", "-");
     const insightItems = summary.analysisComments.filter(Boolean).slice(0, 2);
     const actionItems = [...summary.quickItems, ...summary.reviewItems].filter(Boolean).slice(0, 2);
 
@@ -2833,9 +2902,10 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     summary.playerPlusMinusRows.slice(0, 4).forEach((row, index) => drawSocialPlayerCard(row, index, y));
     y += Math.ceil(Math.min(summary.playerPlusMinusRows.length, 4) / 2) * 138 + 12;
 
-    fillRoundedRect(ctx, pageMargin, y, contentWidth, 76, 18, "#f0fdfa");
-    drawText(`サーブ・レシーブ: ${shareSafeText(sr)}`, pageMargin + 24, y + 48, { size: 24, weight: 900, color: neutralColor, maxWidth: contentWidth - 48 });
-    y += 92;
+    fillRoundedRect(ctx, pageMargin, y, contentWidth, 108, 18, "#f0fdfa");
+    drawText(`サーブ・レシーブ: ${shareSafeText(sr)}`, pageMargin + 24, y + 42, { size: 23, weight: 900, color: neutralColor, maxWidth: contentWidth - 48 });
+    drawText(`ラリー: ${rallyTrend}`, pageMargin + 24, y + 76, { size: 23, weight: 900, color: neutralColor, maxWidth: contentWidth - 48 });
+    y += 124;
 
     ctx.fillStyle = mutedColor;
     setFont(20, 800);
@@ -2904,7 +2974,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     y += 8;
     y = heading("根拠データ", y);
     y = drawRows(
-      [...summary.summaryRows, ...summary.detailRows, ...summary.phaseRows].filter(([label]) => label !== "記録ポイント").slice(0, 12),
+      [...summary.summaryRows, ...summary.detailRows, ...summary.phaseRows].filter(([label]) => label !== "記録ポイント").slice(0, 14),
       y,
       { maxLinesByLabel: { "プレイヤー別S/R": 2, 最長連続得点: 2, 最長連続失点: 2 } }
     );
@@ -3430,6 +3500,14 @@ $("#simpleOutcomeControl").addEventListener("click", (event) => {
   renderScore();
 });
 
+$("#rallyLengthControl").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-rally-length]");
+  if (!button) return;
+  state.selectedRallyLength = button.dataset.rallyLength;
+  saveState();
+  renderScore();
+});
+
 $("#serverControl").addEventListener("click", (event) => {
   const button = event.target.closest("button[data-server]");
   if (!button) return;
@@ -3467,6 +3545,12 @@ $("#serveControl").addEventListener("click", (event) => {
     elements.shotSelect.value = "サービス";
     state.selectedResult = "不明";
   }
+  saveState();
+  renderScore();
+});
+
+elements.rallyInput.addEventListener("change", () => {
+  state.selectedRallyLength = rallyBucket(elements.rallyInput.value) === "short" ? "short" : "long";
   saveState();
   renderScore();
 });

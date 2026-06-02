@@ -1,5 +1,5 @@
 const SOFT_TENNIS_CONFIG = {
-  APP_VERSION: "v184",
+  APP_VERSION: "v185",
   STORAGE_KEY: "soft-tennis-logger-state-v1",
   ARCHIVE_STORAGE_KEY: "soft-tennis-logger-archive-v1",
   MAX_ARCHIVED_MATCHES: 30,
@@ -64,8 +64,8 @@ const SOFT_TENNIS_CONFIG = {
       summary: "テスト利用の説明（記録）",
       lead: "記録ページは、試合を見ている人がポイント後すぐに残す画面です。選手本人が試合中に入力する想定ではありません。",
       items: [
-        "かんたん入力は、画面の番号順にサービス、選手、内容、得点側を選ぶ",
-        "試合中は番号順に押して、まず1ポイントを残す",
+        "かんたん入力は、画面の入力順にサービス、選手、内容、ラリーの長さ、得点側を選ぶ",
+        "試合中は入力順に押して、まず1ポイントを残す",
         "細かいコースや打球面は、あとで履歴から補足できる"
       ]
     },
@@ -121,6 +121,7 @@ const SOFT_TENNIS_CONFIG = {
     selectedCourse: "未記録",
     selectedOutcome: "ストローク得点",
     selectedResult: "不明",
+    selectedRallyLength: "auto",
     selectedServe: "第1サービスで開始",
     selectedServerPlayer: "不明",
     selectedReceiverPlayer: "不明",

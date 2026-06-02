@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=184" />
-    <link rel="stylesheet" href="styles.css?v=184" />
+    <link rel="manifest" href="manifest.webmanifest?v=185" />
+    <link rel="stylesheet" href="styles.css?v=185" />
   </head>
   <body>
     <main class="app-shell">
@@ -105,7 +105,7 @@
         <div class="record-flow" id="recordStart" tabindex="-1">
           <div class="record-top-grid">
             <div class="control-group">
-              <span>1 サービス側</span>
+              <span>入力1 サービス側</span>
               <div class="segmented" id="serverControl">
                 <button class="active" data-server="A" type="button">自</button>
                 <button data-server="B" type="button">相手</button>
@@ -113,7 +113,7 @@
             </div>
 
             <div class="control-group">
-              <span>2 サービス結果</span>
+              <span>入力2 サービス結果</span>
               <div class="chips compact" id="serveControl">
                 <button class="active" data-serve="第1サービスで開始" type="button" title="第1サービスで開始">1st</button>
                 <button data-serve="第2サービスで開始" type="button" title="第2サービスで開始">2nd</button>
@@ -123,7 +123,7 @@
           </div>
 
           <div class="control-group player-record-group">
-            <span>3 誰のプレー</span>
+            <span>入力3 誰のプレー</span>
             <div class="chips compact" id="playerControl">
               <button data-player="A後衛" type="button" id="playerARearButton">自後衛</button>
               <button data-player="A前衛" type="button" id="playerAFrontButton">自前衛</button>
@@ -161,7 +161,7 @@
           </details>
 
           <div class="control-group simple-record-group">
-            <span>4 ポイントの決まり方</span>
+            <span>入力4 ポイントの決まり方</span>
             <div class="simple-outcome-control" id="simpleOutcomeControl">
               <div class="simple-outcome-section outcome-score-section">
                 <strong>得点になったプレー</strong>
@@ -184,6 +184,17 @@
                 </div>
               </div>
             </div>
+          </div>
+
+          <div class="control-group rally-record-group">
+            <span>入力5 ラリーの長さ</span>
+            <p class="rally-note">サーブを1本目として、短いポイントか長いポイントかだけ残します。</p>
+            <div class="segmented rally-length-control" id="rallyLengthControl">
+              <button class="active" data-rally-length="auto" type="button">自動</button>
+              <button data-rally-length="short" type="button">3本以内</button>
+              <button data-rally-length="long" type="button">4本以上</button>
+            </div>
+            <p class="rally-auto-preview" id="rallyAutoPreview">保存されるラリー: 自動判定</p>
           </div>
 
           <div class="control-group advanced-record">
@@ -215,7 +226,7 @@
           </div>
 
           <div class="save-point-section">
-            <strong>5 得点した側を押して保存</strong>
+            <strong>入力6 得点した側を押して保存</strong>
             <p class="winner-note">相手のミスなら「自チーム」、自分たちのミスなら「相手」を押します。</p>
             <div class="winner-grid">
               <button class="point-button own" data-winner="A" type="button">自チーム<br />1ポイント</button>
@@ -292,7 +303,7 @@
               </select>
             </label>
             <label>
-              ラリー数
+              ラリー数（サーブを1本目）
               <select id="rallyInput">
                 <option value="0">0 本</option>
                 <option value="1">1 本</option>
@@ -337,6 +348,11 @@
         <div class="coach-notes" id="coachNotes"></div>
         <div class="analysis-summary" id="analysisSummary"></div>
         <div class="score-quality" id="scoreQuality"></div>
+        <div class="chart-block emphasis rally-analysis-block">
+          <h2>ラリーの長さ</h2>
+          <p class="chart-note">サーブを1本目として、3本以内か4本以上かを確認します。</p>
+          <div id="rallyLengthBars" class="bars"></div>
+        </div>
         <div class="chart-block emphasis player-impact-block">
           <h2>プレイヤー別 プレー内容</h2>
           <p class="chart-note">選手ごとの + / - と、記録したプレー種別を確認できます。</p>
@@ -416,7 +432,7 @@
       </section>
 
       <footer class="app-footer">
-        <span class="app-version">v184・2026-06-02</span>
+        <span class="app-version">v185・2026-06-02</span>
         <span>© 2026 OmiCreate</span>
         <span>無断転載・再配布・改変利用を禁じます</span>
       </footer>
@@ -464,7 +480,7 @@
             </select>
           </label>
           <label>
-            ラリー数
+            ラリー数（サーブを1本目）
             <select id="pointEditRallySelect">
               <option value="0">0 本</option>
               <option value="1">1 本</option>
@@ -539,7 +555,7 @@
           <dl>
             <div>
               <dt>現在の版</dt>
-              <dd>v184・2026-06-02</dd>
+              <dd>v185・2026-06-02</dd>
             </div>
             <div>
               <dt>更新内容</dt>
@@ -860,10 +876,10 @@
       </form>
     </dialog>
 
-    <script src="app-config.js?v=184" defer></script>
-    <script src="app-analysis.js?v=184" defer></script>
-    <script src="app-storage.js?v=184" defer></script>
-    <script src="app-rules.js?v=184" defer></script>
-    <script src="app.js?v=184" defer></script>
+    <script src="app-config.js?v=185" defer></script>
+    <script src="app-analysis.js?v=185" defer></script>
+    <script src="app-storage.js?v=185" defer></script>
+    <script src="app-rules.js?v=185" defer></script>
+    <script src="app.js?v=185" defer></script>
   </body>
 </html>
