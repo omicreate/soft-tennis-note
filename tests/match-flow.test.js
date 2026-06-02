@@ -177,6 +177,46 @@ const scenarioCode = `
     }
   }
 
+
+  function switchSideForExpected(side) {
+    return side === "A" ? "B" : "A";
+  }
+
+  function expectedServiceActors(matchType, before) {
+    const receiverSide = switchSideForExpected(before.server);
+    if (matchType === "singles") {
+      return {
+        serverPlayer: before.server === "A" ? "A選手" : "B選手",
+        receiverPlayer: receiverSide === "A" ? "A選手" : "B選手"
+      };
+    }
+
+    const total = before.points.A + before.points.B;
+    const blockIndex = Math.floor(total / 2);
+    const finalBefore = before.games.A === 3 && before.games.B === 3;
+
+    function sideForBlock(initialServer, block) {
+      return block % 2 === 0 ? initialServer : switchSideForExpected(initialServer);
+    }
+
+    function roleFor(side, action) {
+      if (!finalBefore) return blockIndex % 2 === 0 ? "後衛" : "前衛";
+      const initialServer = blockIndex % 2 === 0 ? before.server : switchSideForExpected(before.server);
+      let count = 0;
+      for (let block = 0; block <= blockIndex; block += 1) {
+        const serverSide = sideForBlock(initialServer, block);
+        const targetSide = action === "receive" ? switchSideForExpected(serverSide) : serverSide;
+        if (targetSide === side) count += 1;
+      }
+      return (count - 1) % 2 === 0 ? "後衛" : "前衛";
+    }
+
+    return {
+      serverPlayer: before.server + roleFor(before.server, "serve"),
+      receiverPlayer: receiverSide + roleFor(receiverSide, "receive")
+    };
+  }
+
   function runSevenGameFinalScenario(matchType) {
     prepareNewMatch(matchType);
     assert.equal(state.matchType, matchType, "match type");
@@ -216,6 +256,9 @@ const scenarioCode = `
       applyExpected(expected, winner);
       assertScore(expected, matchType + " point " + (index + 1));
       const point = state.points[index];
+      const expectedActors = expectedServiceActors(matchType, before);
+      assert.equal(point.serverPlayer, expectedActors.serverPlayer, "auto server player point " + (index + 1));
+      assert.equal(point.receiverPlayer, expectedActors.receiverPlayer, "auto receiver player point " + (index + 1));
       assert.equal(JSON.stringify(point.scoreBefore.games), JSON.stringify(before.games), "scoreBefore games point " + (index + 1));
       assert.equal(JSON.stringify(point.scoreBefore.points), JSON.stringify(before.points), "scoreBefore points point " + (index + 1));
       assert.equal(JSON.stringify(point.scoreAfter.games), JSON.stringify(expected.games), "scoreAfter games point " + (index + 1));
@@ -391,6 +434,75 @@ const scenarioCode = `
     true,
     "CSVファイル名に年月日時分秒を含める"
   );
+
+  state = structuredClone(defaultState);
+  state.matchType = "doubles";
+  testElements.get("#shotSelect").value = "ストローク";
+  testElements.get("#rallyInput").value = "1";
+  render();
+  setSimpleOutcome("ボレー得点");
+  addPoint("A");
+  assert.equal(state.points[0].player, "不明", "ボレー得点でも未選択なら勝手に前衛へ寄せない");
+
+  state = structuredClone(defaultState);
+  state.matchType = "doubles";
+  testElements.get("#shotSelect").value = "ストローク";
+  testElements.get("#rallyInput").value = "1";
+  render();
+  setSimpleOutcome("スマッシュミス");
+  addPoint("A");
+  assert.equal(state.points[0].player, "不明", "スマッシュミスでも未選択なら勝手に前衛へ寄せない");
+
+  state = structuredClone(defaultState);
+  state.matchType = "doubles";
+  state.selectedPlayer = "A後衛";
+  testElements.get("#shotSelect").value = "ストローク";
+  testElements.get("#rallyInput").value = "1";
+  render();
+  setSimpleOutcome("ボレー得点");
+  addPoint("A");
+  assert.equal(state.points[0].player, "A後衛", "手動で選んだ選手はボレー・スマッシュでも上書きしない");
+  renderPlayerSavePreview();
+  assert.match(testElements.get("#playerSavePreview").textContent, /保存される選手: 自後衛/, "手動選択時は保存される選手を表示する");
+
+  state = structuredClone(defaultState);
+  state.matchType = "doubles";
+  testElements.get("#shotSelect").value = "ストローク";
+  testElements.get("#rallyInput").value = "1";
+  render();
+  setSimpleOutcome("ボレー得点");
+  renderPlayerSavePreview();
+  assert.match(testElements.get("#playerSavePreview").textContent, /選手を選ぶと、個人別の \\+ \\/ - に反映されます/, "未選択時は前衛への自動補助を出さない");
+
+  state = structuredClone(defaultState);
+  state.points = [
+    { winner: "A", player: "A前衛", outcome: "ボレー得点", shot: "ボレー" },
+    { winner: "B", player: "A前衛", outcome: "スマッシュミス", shot: "スマッシュ" },
+    { winner: "A", player: "A前衛", outcome: "ストローク得点", shot: "ストローク" }
+  ];
+  const plusMinusStats = getPlayerPlusMinus();
+  const frontStats = plusMinusStats.find((entry) => entry.key === "A前衛");
+  assert.equal(frontStats.side, "A", "プレイヤー別集計は自チーム側を持つ");
+  assert.deepEqual(frontStats.shots, [["ストローク", 1], ["スマッシュ", 1], ["ボレー", 1]], "プレイヤー別でショット種別を集計する");
+  renderPlayerPlusMinus();
+  assert.match(testElements.get("#playerBars").innerHTML, /自チーム[\\s\\S]*相手/, "プレイヤー別分析は自チームと相手を分けて表示する");
+
+  state.players.ARear = "同名";
+  state.players.BRear = "同名";
+  state.points = [
+    { server: "A", winner: "A", serverPlayer: "A後衛", receiverPlayer: "B後衛", serveStart: "第1サービスで開始", outcome: "サービス得点", player: "A後衛" },
+    { server: "B", winner: "A", serverPlayer: "B後衛", receiverPlayer: "A後衛", serveStart: "第2サービスで開始", outcome: "レシーブ得点", player: "A後衛" }
+  ];
+  const srStats = getPlayerServeReceiveStats();
+  const ownSameName = srStats.find((entry) => entry.player === "A後衛");
+  const oppSameName = srStats.find((entry) => entry.player === "B後衛");
+  assert.equal(ownSameName.label, "同名", "同名の自チーム選手を表示できる");
+  assert.equal(oppSameName.label, "同名", "同名の相手選手を表示できる");
+  assert.equal(ownSameName.side, "A", "S/R集計は自チーム側を持つ");
+  assert.equal(oppSameName.side, "B", "S/R集計は相手側を持つ");
+  renderServeReceiveCards();
+  assert.match(testElements.get("#serveReceiveBars").innerHTML, /自チーム[\\s\\S]*相手/, "S/R分析は自チームと相手を分けて表示する");
+
   assert.equal(CSV_SCHEMA_VERSION, "point-csv-v2/archive-csv-v1", "CSV仕様バージョンを固定する");
   assert.deepEqual(
     buildPointCsvRows(state)[0].slice(18, 22),

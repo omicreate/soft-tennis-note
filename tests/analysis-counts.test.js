@@ -143,10 +143,10 @@ const testCode = `
   renderStats();
   assert.match(elements.opponentErrorBars.innerHTML, /レシーブミス/, "相手ミスパターンには相手のミスを表示する");
   assert.match(elements.errorBars.innerHTML, /まだ記録がありません/, "相手ミスを自チーム失点バーに表示しない");
-  assert.match(elements.coachNotes.innerHTML, /次に見ること/, "次に見ることを表示する");
-  assert.match(elements.opponentView.innerHTML, /全体の傾向/, "全体の傾向を表示する");
+  assert.match(elements.coachNotes.innerHTML, /次に活かすこと/, "次に活かすことを表示する");
+  assert.match(elements.opponentView.innerHTML, /見えてきたこと/, "見えてきたことを表示する");
   assert.match(elements.opponentView.innerHTML, /レシーブミス/, "次に狙いたい相手ミスを表示する");
-  assert.doesNotMatch(buildPriorityItems().join("\\n"), /。$/, "次に見ることの文末には句点を付けない");
+  assert.doesNotMatch(buildPriorityItems().join("\\n"), /。$/, "次に活かすことの文末には句点を付けない");
 
   setPoints([
     point({ winner: "B", server: "B", outcome: "レシーブミス" })
@@ -216,6 +216,10 @@ const testCode = `
   assert.equal(typeof SOFT_TENNIS_ANALYSIS.buildSummaryCommentsFromData, "function", "分析コメント生成を分離ファイルで管理する");
   assert.equal(typeof SOFT_TENNIS_RULES.applyPointToScore, "function", "スコア進行を分離ファイルで管理する");
   assert.equal(SOFT_TENNIS_RULES.pointLabel({ matchFormat: "7", gamesToWin: 4, games: { A: 0, B: 0 }, gamePoints: { A: 4, B: 4 } }, "A"), "4 D", "デュース表示をルールファイルで判定する");
+  state.players.ARear = "佐藤";
+  state.players.AFront = "鈴木";
+  state.players.BRear = "高橋";
+  state.players.BFront = "田中";
   const summaryImage = getSummaryImageData();
   assert.match(summaryImage.title, /ソフトテニス試合ノート/, "画像サマリー用のタイトルを作る");
   assert.equal(summaryImage.summaryRows.some(([label]) => label === "ミスで落とした"), true, "画像サマリーに重要指標を含める");
@@ -241,28 +245,35 @@ const testCode = `
     true,
     "画像ファイル名に用途と年月日時分秒を含める"
   );
-  assert.match(getSummaryImageFileName(new Date("2026-05-27T13:45:06"), "detail"), /soft-tennis-summary-detail-20260527134506-/, "詳細保存用のファイル名を作る");
+  assert.match(getSummaryImageFileName(new Date("2026-05-27T13:45:06"), "detail"), /soft-tennis-summary-detail-20260527134506-/, "振り返り用のファイル名を作る");
   const shareCanvas = document.createElement("canvas");
   const shareLayout = drawSummaryImage(shareCanvas, summaryImage, "share");
+  const fullNameCanvas = document.createElement("canvas");
+  drawSummaryImage(fullNameCanvas, summaryImage, "share", "full");
   const detailLayout = drawSummaryImage(document.createElement("canvas"), summaryImage, "detail");
   const summaryImageTexts = shareCanvas.getContext("2d").calls.filter((call) => call.type === "fillText").map((call) => call.text);
+  const fullNameTexts = fullNameCanvas.getContext("2d").calls.filter((call) => call.type === "fillText").map((call) => call.text);
   assert.equal(summaryImageTexts.some((text) => /^(#|>|- )/.test(text)), false, "一般ユーザ向け画像にMarkdown記号を表示しない");
   assert.equal(summaryImageTexts.some((text) => String(text).includes("undefined")), false, "画像サマリーにundefinedを表示しない");
-  assert.ok(shareLayout.contentBottom < shareLayout.footerTop, "共有用サマリー画像の本文がフッターに重ならない");
-  assert.ok(detailLayout.contentBottom < detailLayout.footerTop, "詳細保存用サマリー画像の本文がフッターに重ならない");
-  assert.equal(shareLayout.height < detailLayout.height, true, "共有用は詳細保存用より短い画像にする");
+  assert.ok(shareLayout.contentBottom < shareLayout.footerTop, "チーム共有用サマリー画像の本文がフッターに重ならない");
+  assert.ok(detailLayout.contentBottom < detailLayout.footerTop, "振り返り用サマリー画像の本文がフッターに重ならない");
+  assert.equal(shareLayout.height < detailLayout.height, true, "チーム共有用は振り返り用より短い画像にする");
   assert.deepEqual(
-    shareLayout.sections.slice(0, 5),
-    ["試合結果", "プレイヤー別 + / -", "流れと勝負所", "プレイヤー別 サーブ/レシーブ", "得点と失点の内訳"],
-    "共有用サマリーは結果、個人別、流れ、サーブ/レシーブを先に表示する"
+    shareLayout.sections.slice(0, 6),
+    ["チーム共有サマリー", "試合結果", "見えてきたこと", "次に活かすこと", "主な数字", "役割別 + / -"],
+    "チーム共有用サマリーは結果、見えてきたこと、次に活かすこと、主な数字の順に表示する"
   );
+  assert.equal(summaryImageTexts.some((text) => /TEAM SHARE/.test(String(text))), true, "チーム共有用サマリーはチーム共有向けの見出しを表示する");
+  assert.equal(summaryImageTexts.some((text) => String(text).includes("佐藤")), false, "役割のみでは選手名を表示しない");
+  assert.equal(summaryImageTexts.some((text) => String(text).includes("自チーム後衛")), true, "役割のみでは役割名を表示する");
+  assert.equal(fullNameTexts.some((text) => String(text).includes("佐藤")), true, "名前ありでは選手名を表示する");
   assert.deepEqual(
     detailLayout.sections.slice(0, 7),
-    ["試合結果", "プレイヤー別 + / -", "流れと勝負所", "プレイヤー別 サーブ/レシーブ", "得点と失点の内訳", "分析コメント", "次に見ること"],
-    "詳細保存用サマリーは個人別、サーブ/レシーブ、分析コメントの順に表示する"
+    ["試合結果", "見えてきたこと", "次の練習テーマ", "プレイヤー別 + / -", "プレイヤー別 サーブ/レシーブ", "流れと勝負所", "得点と失点の内訳"],
+    "振り返り用サマリーは見えてきたこと、次の練習テーマ、個人別、サーブ/レシーブの順に表示する"
   );
-  assert.equal(shareLayout.pageCount, 3, "共有用サマリーはページ区切り付きで表示する");
-  assert.equal(detailLayout.pageCount, 5, "詳細保存用サマリーは詳細データを含む複数ページにする");
+  assert.equal(shareLayout.pageCount, 1, "チーム共有用サマリーは1枚画像にする");
+  assert.equal(detailLayout.pageCount, 5, "振り返り用サマリーは詳細データを含む複数ページにする");
   saveAnalysisMemo();
   const summaryImageWithMemo = getSummaryImageData();
   assert.match(summaryImageWithMemo.analysisMemoTitle, /保存した分析/, "画像サマリーに保存した分析の見出しを含める");
@@ -381,7 +392,7 @@ const testCode = `
   saveAnalysisMemo();
   assert.equal(state.analysisMemos.length, 1, "分析を保存する");
   assert.match(elements.analysisMemoList.innerHTML, /点時点/, "保存した分析を表示する");
-  assert.match(elements.analysisMemoList.innerHTML, /次に見ること/, "保存した分析に次に見ることを含める");
+  assert.match(elements.analysisMemoList.innerHTML, /次に活かすこと/, "保存した分析に次に活かすことを含める");
 `;
 
 context.assert = assert;

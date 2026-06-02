@@ -96,16 +96,16 @@ function buildDenseMatchState() {
 test.describe("mobile layout", () => {
   test("record, analysis, history, archive and summary screens fit mobile widths", async ({ page }, testInfo) => {
     test.setTimeout(45000);
-    await page.goto("/index.html?v=166");
+    await page.goto("/index.html?v=182");
 
     await expect(page.getByText("ソフトテニス試合ノート").first()).toBeVisible();
-    await expect(page.getByText("v166・2026-06-01").first()).toBeVisible();
+    await expect(page.getByText("v182・2026-06-02").first()).toBeVisible();
     await expectNoHorizontalOverflow(page, "record screen");
 
     await page.getByRole("button", { name: "分析" }).click();
     await expect(page.locator("#analysisSummary")).toBeVisible();
-    await expect(page.getByText("次に見ること").first()).toBeVisible();
-    await expect(page.getByText("全体の傾向").first()).toBeVisible();
+    await expect(page.getByText("次に活かすこと").first()).toBeVisible();
+    await expect(page.getByText("見えてきたこと").first()).toBeVisible();
     await expectNoHorizontalOverflow(page, "analysis screen");
 
     await page.getByRole("button", { name: "履歴" }).click();
@@ -139,10 +139,16 @@ test.describe("mobile layout", () => {
     await page.getByRole("button", { name: "メニュー" }).click();
     await page.getByRole("button", { name: "サマリー画像を表示" }).click();
     await expect(page.locator("#summaryPreviewImage")).toBeVisible();
-    await expect(page.getByRole("button", { name: "共有用" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "詳細保存用" })).toBeVisible();
-    await page.getByRole("button", { name: "詳細保存用" }).click();
-    await expect(page.getByRole("button", { name: "詳細保存用" })).toHaveClass(/active/);
+    await expect(page.getByRole("button", { name: "チーム共有用" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "振り返り用" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "役割のみ" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "チーム名あり" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "名前あり" })).toBeVisible();
+    await page.getByRole("button", { name: "名前あり" }).click();
+    await expect(page.getByRole("button", { name: "名前あり" })).toHaveClass(/active/);
+    await page.getByRole("button", { name: "振り返り用" }).click();
+    await expect(page.getByRole("button", { name: "振り返り用" })).toHaveClass(/active/);
+    await expect(page.getByRole("button", { name: "役割のみ" })).toBeHidden();
     await expect(page.locator("#shareSummaryImageButton")).toBeVisible();
     await expect(page.getByRole("button", { name: "画像を保存" })).toBeVisible();
     await expectNoHorizontalOverflow(page, "summary dialog");
@@ -156,7 +162,7 @@ test.describe("mobile layout", () => {
       localStorage.setItem("soft-tennis-logger-state-v1", JSON.stringify(state));
     }, buildDenseMatchState());
 
-    await page.goto("/index.html?v=166");
+    await page.goto("/index.html?v=182");
     await page.getByRole("button", { name: "メニュー" }).click();
     await page.getByRole("button", { name: "サマリー画像を表示" }).click();
 
@@ -199,7 +205,7 @@ test.describe("mobile layout", () => {
     expect(layout.closeTop).toBeGreaterThan(layout.shareTop);
     expect(layout.closeWidth).toBeGreaterThan(layout.dialogWidth * 0.82);
 
-    await page.getByRole("button", { name: "詳細保存用" }).click();
+    await page.getByRole("button", { name: "振り返り用" }).click();
     const detailMetrics = await page.evaluate(() => {
       const canvas = document.createElement("canvas");
       return window.drawSummaryImage(canvas, window.getSummaryImageData(), "detail");

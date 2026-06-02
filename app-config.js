@@ -1,5 +1,5 @@
 const SOFT_TENNIS_CONFIG = {
-  APP_VERSION: "v166",
+  APP_VERSION: "v182",
   STORAGE_KEY: "soft-tennis-logger-state-v1",
   ARCHIVE_STORAGE_KEY: "soft-tennis-logger-archive-v1",
   MAX_ARCHIVED_MATCHES: 30,
@@ -111,6 +111,7 @@ const SOFT_TENNIS_CONFIG = {
     selectedServe: "第1サービスで開始",
     selectedServerPlayer: "不明",
     selectedReceiverPlayer: "不明",
+    serviceSelectionKey: "",
     selectedHand: "不明",
     selectedPlayer: "不明",
     analysisMemos: [],

@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=166" />
-    <link rel="stylesheet" href="styles.css?v=166" />
+    <link rel="manifest" href="manifest.webmanifest?v=182" />
+    <link rel="stylesheet" href="styles.css?v=182" />
   </head>
   <body>
     <main class="app-shell">
@@ -103,43 +103,27 @@
         </div>
 
         <div class="record-flow" id="recordStart" tabindex="-1">
-          <div class="control-group">
-            <span>1 サービス側</span>
-            <div class="segmented" id="serverControl">
-              <button class="active" data-server="A" type="button">自</button>
-              <button data-server="B" type="button">相手</button>
+          <div class="record-top-grid">
+            <div class="control-group">
+              <span>1 サービス側</span>
+              <div class="segmented" id="serverControl">
+                <button class="active" data-server="A" type="button">自</button>
+                <button data-server="B" type="button">相手</button>
+              </div>
             </div>
-          </div>
 
-          <div class="control-group">
-            <span>2 サービス結果</span>
-            <div class="chips compact" id="serveControl">
-              <button class="active" data-serve="第1サービスで開始" type="button" title="第1サービスで開始">1st</button>
-              <button data-serve="第2サービスで開始" type="button" title="第2サービスで開始">2nd</button>
-              <button data-serve="ダブルフォールト" type="button" title="ダブルフォールト">DF</button>
-            </div>
-          </div>
-
-          <div class="control-group service-player-group">
-            <span>3 サーブした人</span>
-            <div class="chips compact player-mini-control" id="serverPlayerControl">
-              <button class="active player-unknown" data-service-player="不明" type="button">不明</button>
-              <button data-service-player="A後衛" type="button" id="serverPlayerRearButton">後衛</button>
-              <button data-service-player="A前衛" type="button" id="serverPlayerFrontButton">前衛</button>
-            </div>
-          </div>
-
-          <div class="control-group service-player-group">
-            <span>4 レシーブした人</span>
-            <div class="chips compact player-mini-control" id="receiverPlayerControl">
-              <button class="active player-unknown" data-receive-player="不明" type="button">不明</button>
-              <button data-receive-player="B後衛" type="button" id="receiverPlayerRearButton">後衛</button>
-              <button data-receive-player="B前衛" type="button" id="receiverPlayerFrontButton">前衛</button>
+            <div class="control-group">
+              <span>2 サービス結果</span>
+              <div class="chips compact" id="serveControl">
+                <button class="active" data-serve="第1サービスで開始" type="button" title="第1サービスで開始">1st</button>
+                <button data-serve="第2サービスで開始" type="button" title="第2サービスで開始">2nd</button>
+                <button data-serve="ダブルフォールト" type="button" title="ダブルフォールト">DF</button>
+              </div>
             </div>
           </div>
 
           <div class="control-group player-record-group">
-            <span>5 誰のプレー</span>
+            <span>3 誰のプレー</span>
             <div class="chips compact" id="playerControl">
               <button data-player="A後衛" type="button" id="playerARearButton">自後衛</button>
               <button data-player="A前衛" type="button" id="playerAFrontButton">自前衛</button>
@@ -149,25 +133,54 @@
               <button data-player="B選手" type="button" id="playerBSinglesButton" hidden>相手</button>
               <button class="active player-unknown" data-player="不明" type="button">不明</button>
             </div>
+            <p class="player-save-preview" id="playerSavePreview">保存される選手: 不明</p>
           </div>
 
+          <details class="record-extra">
+            <summary>自動判定（必要なら修正）</summary>
+            <div class="record-extra-body">
+              <p class="record-auto-note">サービスは2ポイントごとの順番、レシーブは初期設定から自動で選ばれます。</p>
+              <div class="control-group service-player-group">
+                <span>サーブした人</span>
+                <div class="chips compact player-mini-control" id="serverPlayerControl">
+                  <button class="active player-unknown" data-service-player="不明" type="button">不明</button>
+                  <button data-service-player="A後衛" type="button" id="serverPlayerRearButton">後衛</button>
+                  <button data-service-player="A前衛" type="button" id="serverPlayerFrontButton">前衛</button>
+                </div>
+              </div>
+
+              <div class="control-group service-player-group">
+                <span>レシーブした人</span>
+                <div class="chips compact player-mini-control" id="receiverPlayerControl">
+                  <button class="active player-unknown" data-receive-player="不明" type="button">不明</button>
+                  <button data-receive-player="B後衛" type="button" id="receiverPlayerRearButton">後衛</button>
+                  <button data-receive-player="B前衛" type="button" id="receiverPlayerFrontButton">前衛</button>
+                </div>
+              </div>
+            </div>
+          </details>
+
           <div class="control-group simple-record-group">
-            <span>6 何が起きた？</span>
+            <span>4 ポイントの決まり方</span>
             <div class="simple-outcome-control" id="simpleOutcomeControl">
               <div class="simple-outcome-section outcome-score-section">
-                <strong>得点</strong>
+                <strong>得点になったプレー</strong>
                 <div>
-                  <button class="active outcome-score" data-simple-outcome="ストローク得点" type="button"><span>ラリー</span><small>で取った</small></button>
-                  <button class="outcome-score" data-simple-outcome="サービス得点" type="button"><span>サーブ</span><small>で取った</small></button>
-                  <button class="outcome-score" data-simple-outcome="レシーブ得点" type="button"><span>レシーブ</span><small>で取った</small></button>
+                  <button class="outcome-score" data-simple-outcome="サービス得点" type="button"><span>サーブ</span><small>サービス</small></button>
+                  <button class="outcome-score" data-simple-outcome="レシーブ得点" type="button"><span>レシーブ</span><small>得点</small></button>
+                  <button class="active outcome-score" data-simple-outcome="ストローク得点" type="button"><span>ストローク</span><small>打ち合い</small></button>
+                  <button class="outcome-score" data-simple-outcome="ボレー得点" type="button"><span>ボレー</span><small>得点</small></button>
+                  <button class="outcome-score" data-simple-outcome="スマッシュ得点" type="button"><span>スマッシュ</span><small>得点</small></button>
                 </div>
               </div>
               <div class="simple-outcome-section outcome-miss-section">
-                <strong>ミス</strong>
+                <strong>ミスになったプレー</strong>
                 <div>
                   <button class="outcome-miss" data-simple-outcome="ダブルフォールト" type="button"><span>DF</span><small>2本ミス</small></button>
                   <button class="outcome-miss" data-simple-outcome="レシーブミス" type="button"><span>レシーブ</span><small>ミス</small></button>
-                  <button class="outcome-miss" data-simple-outcome="ストロークミス" type="button"><span>ラリー</span><small>ミス</small></button>
+                  <button class="outcome-miss" data-simple-outcome="ストロークミス" type="button"><span>ストローク</span><small>ミス</small></button>
+                  <button class="outcome-miss" data-simple-outcome="ボレーミス" type="button"><span>ボレー</span><small>ミス</small></button>
+                  <button class="outcome-miss" data-simple-outcome="スマッシュミス" type="button"><span>スマッシュ</span><small>ミス</small></button>
                 </div>
               </div>
             </div>
@@ -202,7 +215,8 @@
           </div>
 
           <div class="save-point-section">
-            <strong>7 得点した側を押して保存</strong>
+            <strong>5 得点した側を押して保存</strong>
+            <p class="winner-note">相手のミスなら「自チーム」、自分たちのミスなら「相手」を押します。</p>
             <div class="winner-grid">
               <button class="point-button own" data-winner="A" type="button">自チーム<br />1ポイント</button>
               <button class="point-button opp" data-winner="B" type="button">相手<br />1ポイント</button>
@@ -319,15 +333,18 @@
       </section>
 
       <section class="panel" id="analysisPanel">
-        <div class="analysis-summary" id="analysisSummary"></div>
+        <div class="opponent-view" id="opponentView"></div>
         <div class="coach-notes" id="coachNotes"></div>
+        <div class="analysis-summary" id="analysisSummary"></div>
         <div class="score-quality" id="scoreQuality"></div>
         <div class="chart-block emphasis player-impact-block">
           <h2>プレイヤー別 プレー内容</h2>
+          <p class="chart-note">選手ごとの + / - と、記録したプレー種別を確認できます。</p>
           <div id="playerBars" class="bars"></div>
         </div>
         <div class="chart-block emphasis serve-receive-block">
           <h2>プレイヤー別 サーブ/レシーブ</h2>
+          <p class="chart-note">サービス順と初期設定をもとに、担当者を自動判定します。</p>
           <div id="serveReceiveBars" class="serve-receive-cards"></div>
         </div>
         <div class="chart-block emphasis">
@@ -338,7 +355,6 @@
           <h2>失点しやすい場面</h2>
           <div id="phaseBars" class="bars"></div>
         </div>
-        <div class="opponent-view" id="opponentView"></div>
         <div class="analysis-save">
           <button class="action-button action-save" id="saveAnalysisMemoButton" type="button">この分析を保存</button>
           <p class="analysis-save-note">今表示しているアドバイスを、時刻・スコア付きで残します。サマリー画像にも反映されます。</p>
@@ -395,7 +411,7 @@
       </section>
 
       <footer class="app-footer">
-        <span class="app-version">v166・2026-06-01</span>
+        <span class="app-version">v182・2026-06-02</span>
         <span>© 2026 OmiCreate</span>
         <span>無断転載・再配布・改変利用を禁じます</span>
       </footer>
@@ -518,11 +534,11 @@
           <dl>
             <div>
               <dt>現在の版</dt>
-              <dd>v166・2026-06-01</dd>
+              <dd>v182・2026-06-02</dd>
             </div>
             <div>
               <dt>更新内容</dt>
-              <dd>プレイヤー別のプレー内容を最大5件表示。</dd>
+              <dd>分析画面とサマリー画像の順番・文言を整理。</dd>
             </div>
           </dl>
         </details>
@@ -545,11 +561,17 @@
     <dialog id="summaryImageDialog">
       <form method="dialog" class="dialog-content summary-dialog">
         <h2>サマリー画像</h2>
-        <p>分析コメント、グラフ、個人別の数字をページ区切り付きで確認してから保存できます。画像はこの端末内で作成され、開発者や管理者へ送られることはありません。</p>
+        <p>チーム共有用は名前を出しすぎず短く共有できます。振り返り用は試合後に詳しく確認するための画像です。画像はこの端末内で作成され、開発者や管理者へ送られることはありません。</p>
         <div class="summary-mode segmented" id="summaryModeControl" aria-label="サマリー画像の種類">
-          <button class="active" data-summary-mode="share" type="button">共有用</button>
-          <button data-summary-mode="detail" type="button">詳細保存用</button>
+          <button class="active" data-summary-mode="share" type="button">チーム共有用</button>
+          <button data-summary-mode="detail" type="button">振り返り用</button>
         </div>
+        <div class="summary-name-mode segmented" id="summaryNameModeControl" aria-label="チーム共有用の表示名">
+          <button class="active" data-summary-name-mode="role" type="button">役割のみ</button>
+          <button data-summary-name-mode="team" type="button">チーム名あり</button>
+          <button data-summary-name-mode="full" type="button">名前あり</button>
+        </div>
+        <p class="summary-name-note" id="summaryNameModeNote">チーム共有用は、共有前に名前の出し方を選べます。迷ったら役割のみが安全です。</p>
         <img id="summaryPreviewImage" alt="試合サマリー画像のプレビュー" />
         <div class="dialog-actions">
           <button class="action-button action-share" id="shareSummaryImageButton" type="button">共有</button>
@@ -833,10 +855,10 @@
       </form>
     </dialog>
 
-    <script src="app-config.js?v=166" defer></script>
-    <script src="app-analysis.js?v=166" defer></script>
-    <script src="app-storage.js?v=166" defer></script>
-    <script src="app-rules.js?v=166" defer></script>
-    <script src="app.js?v=166" defer></script>
+    <script src="app-config.js?v=182" defer></script>
+    <script src="app-analysis.js?v=182" defer></script>
+    <script src="app-storage.js?v=182" defer></script>
+    <script src="app-rules.js?v=182" defer></script>
+    <script src="app.js?v=182" defer></script>
   </body>
 </html>
