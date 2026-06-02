@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=182" />
-    <link rel="stylesheet" href="styles.css?v=182" />
+    <link rel="manifest" href="manifest.webmanifest?v=184" />
+    <link rel="stylesheet" href="styles.css?v=184" />
   </head>
   <body>
     <main class="app-shell">
@@ -370,11 +370,16 @@
             <h2>どうやって失点したか</h2>
             <div id="errorBars" class="bars"></div>
           </div>
-          <div class="chart-block">
-            <h2>流れと勝負所</h2>
+          <div class="chart-block momentum-block">
+            <h2>流れと勝負どころ</h2>
+            <p class="chart-note">ゲームの入り、連続得点、ゲームポイントなど、次の試合で修正しやすい場面を確認します。</p>
             <div id="momentumBars" class="bars"></div>
           </div>
-          <div class="stats-grid" id="statsGrid"></div>
+          <div class="chart-block stat-guide-block">
+            <h2>数字の見方</h2>
+            <p class="chart-note">前半で流れを作れたか、自分たちの形で点を取れたかを確認します。</p>
+            <div class="stats-grid" id="statsGrid"></div>
+          </div>
           <div class="chart-block">
             <h2>ボールの到達位置</h2>
             <div id="courseBars" class="bars"></div>
@@ -411,7 +416,7 @@
       </section>
 
       <footer class="app-footer">
-        <span class="app-version">v182・2026-06-02</span>
+        <span class="app-version">v184・2026-06-02</span>
         <span>© 2026 OmiCreate</span>
         <span>無断転載・再配布・改変利用を禁じます</span>
       </footer>
@@ -534,7 +539,7 @@
           <dl>
             <div>
               <dt>現在の版</dt>
-              <dd>v182・2026-06-02</dd>
+              <dd>v184・2026-06-02</dd>
             </div>
             <div>
               <dt>更新内容</dt>
@@ -855,10 +860,10 @@
       </form>
     </dialog>
 
-    <script src="app-config.js?v=182" defer></script>
-    <script src="app-analysis.js?v=182" defer></script>
-    <script src="app-storage.js?v=182" defer></script>
-    <script src="app-rules.js?v=182" defer></script>
-    <script src="app.js?v=182" defer></script>
+    <script src="app-config.js?v=184" defer></script>
+    <script src="app-analysis.js?v=184" defer></script>
+    <script src="app-storage.js?v=184" defer></script>
+    <script src="app-rules.js?v=184" defer></script>
+    <script src="app.js?v=184" defer></script>
   </body>
 </html>

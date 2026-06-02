@@ -42,6 +42,9 @@ function buildQuickCoachItemsFromData(data) {
   if (data.ownDoubleFaults > 0) notes.push(analysisMessages.quickDoubleFault);
   if (data.ownReceiveMisses > 0) notes.push(analysisMessages.quickReceiveMiss);
   if (data.ownEarlyLost >= analysisRules.earlyLostAlert) notes.push(analysisMessages.quickEarlyLost);
+  if (data.openingPointRate !== null && data.openingPointRate < analysisRules.openingRateLow) notes.push(analysisMessages.quickOpeningLow);
+  if (data.longestOppStreak >= analysisRules.longLostStreakAlert) notes.push(analysisMessages.quickStopStreak);
+  if (data.ownGamePointMissed >= analysisRules.clutchMissAlert || data.ownMatchPointMissed >= analysisRules.clutchMissAlert) notes.push(analysisMessages.quickClutchMiss);
   if (data.firstServeRate !== null && data.firstServeRate < analysisRules.firstServeLow) notes.push(analysisMessages.quickFirstServeLow);
   if (data.ownScoredByPattern < data.ownPointsByOpponentError) notes.push(analysisMessages.quickOpponentErrorMore);
   if (data.topScore[1] > 0) notes.push(formatAnalysisMessage(analysisMessages.quickTopScore, { topScore: data.topScore[0] }));
@@ -63,6 +66,29 @@ function buildSummaryCommentsFromData(data, formatPointDiff) {
     comments.push(formatAnalysisMessage(analysisMessages.summaryPointDiffNegative, { pointDiff }));
   } else {
     comments.push(formatAnalysisMessage(analysisMessages.summaryPointDiffEven, { pointDiff }));
+  }
+
+  if ((data.firstHalfOwnGames || 0) + (data.firstHalfOpponentGames || 0) > 0) {
+    if (data.firstHalfOwnGames < data.firstHalfOpponentGames) {
+      comments.push(formatAnalysisMessage(analysisMessages.summaryFirstHalfBehind, data));
+    } else if (data.firstHalfOwnGames > data.firstHalfOpponentGames) {
+      comments.push(formatAnalysisMessage(analysisMessages.summaryFirstHalfAhead, data));
+    }
+  }
+
+  if (data.openingPointRate !== null && data.openingPointTotal >= 2) {
+    if (data.openingPointRate < analysisRules.openingRateLow) {
+      comments.push(formatAnalysisMessage(analysisMessages.summaryOpeningLow, data));
+    } else if (data.openingPointRate >= analysisRules.openingRateHigh) {
+      comments.push(formatAnalysisMessage(analysisMessages.summaryOpeningHigh, data));
+    }
+  }
+
+  if (data.longestOppStreak >= analysisRules.longLostStreakAlert) {
+    comments.push(formatAnalysisMessage(analysisMessages.summaryLostStreak, data));
+  }
+  if (data.ownGamePointMissed >= analysisRules.clutchMissAlert || data.ownMatchPointMissed >= analysisRules.clutchMissAlert) {
+    comments.push(formatAnalysisMessage(analysisMessages.summaryClutchMiss, data));
   }
 
   if (data.ownLostByOwnError > data.ownScoredByPattern) {

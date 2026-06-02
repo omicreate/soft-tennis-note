@@ -33,9 +33,9 @@ assert.match(html, /class="winner-note"[\s\S]*相手のミスなら「自チー�
 assert.match(css, /\.save-point-section\s*\{[\s\S]*position:\s*sticky/, "得点保存ボタンが押しやすい位置に残る");
 assert.match(css, /\.summary-dialog \.dialog-actions\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/, "サマリー画像画面の主要ボタンはスマホで2列表示になる");
 assert.match(css, /\.summary-dialog \.dialog-actions \.action-close\s*\{[\s\S]*grid-column:\s*1 \/ -1/, "サマリー画像画面の閉じるボタンは下段全幅になる");
-assert.match(html, /app-config\.js\?v=182[\s\S]*app-analysis\.js\?v=182[\s\S]*app-storage\.js\?v=182[\s\S]*app-rules\.js\?v=182[\s\S]*app\.js\?v=182/, "設定、分析、保存、ルール、本体の順に読み込む");
-assert.match(html, /styles\.css\?v=182/, "styles.cssのキャッシュ更新バージョンが最新");
-assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v182/, "Service Workerのキャッシュ名が最新");
+assert.match(html, /app-config\.js\?v=184[\s\S]*app-analysis\.js\?v=184[\s\S]*app-storage\.js\?v=184[\s\S]*app-rules\.js\?v=184[\s\S]*app\.js\?v=184/, "設定、分析、保存、ルール、本体の順に読み込む");
+assert.match(html, /styles\.css\?v=184/, "styles.cssのキャッシュ更新バージョンが最新");
+assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v184/, "Service Workerのキャッシュ名が最新");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-config\.js/, "Service Workerのキャッシュ対象に設定ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-analysis\.js/, "Service Workerのキャッシュ対象に分析ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-storage\.js/, "Service Workerのキャッシュ対象に保存ファイルがある");
@@ -68,6 +68,10 @@ assert.match(css, /\.player-save-preview/, "保存される選手の補助表示
 assert.match(html, /プレイヤー別 プレー内容[\s\S]*選手ごとの \+ \/ - と、記録したプレー種別/, "プレイヤー別分析でプレー種別を見る意図を説明する");
 assert.match(css, /\.pm-side-group[\s\S]*\.own-side[\s\S]*\.opp-side/, "プレイヤー別分析は自チームと相手を視覚的に分ける");
 assert.match(css, /\.pm-detail-grid/, "プレイヤー別カードで決まり方とプレー別を分けて表示する");
+assert.match(html, /流れと勝負どころ[\s\S]*ゲームの入り、連続得点、ゲームポイント/, "流れと勝負どころに活用説明がある");
+assert.match(html, /数字の見方[\s\S]*前半で流れを作れたか/, "詳細数字に見方の説明がある");
+assert.match(css, /\.momentum-list[\s\S]*\.momentum-card/, "流れと勝負どころはカード表示CSSがある");
+assert.match(css, /\.stat small/, "詳細数字に説明文を表示するCSSがある");
 assert.doesNotMatch(html, /class="control-group advanced-record"[\s\S]{0,80}<span>誰のプレー<\/span>/, "誰のプレーは詳細専用にしない");
 
 console.log("responsive-static: ok");

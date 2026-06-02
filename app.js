@@ -1126,16 +1126,16 @@ function summarize() {
   const firstHalf = getFirstHalfGames();
 
   return [
-    ["記録したポイント", state.points.length],
-    ["取れたポイントの割合", `${Math.round((ownPoints / total) * 100)}%`],
-    ["前半のゲーム", `${firstHalf.A}-${firstHalf.B}`],
-    ["得点パターン", ownScoredByPattern],
-    ["最初の2本で落とした点", ownEarlyLost],
-    ["ダブルフォールト", ownDoubleFaults],
-    ["第2サービスから始まった点", secondServeStarts],
-    ["レシーブミス", ownReceiveMisses],
-    ["第1サービスで始められた割合", servePoints.length ? `${Math.round((firstServeStarts / servePoints.length) * 100)}%` : "-"],
-    ["平均ラリー本数", avgRally.toFixed(1)]
+    ["記録したポイント", state.points.length, "分析のもとになる入力数。少ない時は傾向ではなく参考値として見る"],
+    ["取れたポイントの割合", `${Math.round((ownPoints / total) * 100)}%`, "全体の中で自チームが取れた割合。試合の流れを大きく見る"],
+    ["前半で取れたゲーム", `${firstHalf.A}-${firstHalf.B}`, "序盤で流れを作れたかを見る。少ない時は1ゲーム目の入り方とサービス/レシーブを確認"],
+    ["自分たちで取った点", ownScoredByPattern, "相手ミスではなく、自分たちのプレーで取れた点。次も再現したい形を探す"],
+    ["最初の2本で落とした点", ownEarlyLost, "サービス、レシーブ、その次の1本で落とした点。試合中に直しやすい"],
+    ["ダブルフォールト", ownDoubleFaults, "自チームのサービスで相手に渡した点。多い時は2ndの安全度を優先"],
+    ["第2サービスから始まった点", secondServeStarts, "第1サービスが入らず不利に始まった点。攻める前の安定度を見る"],
+    ["レシーブミス", ownReceiveMisses, "相手サービスで返せず失った点。多い時は返球コースと構えを確認"],
+    ["第1サービスで始められた割合", servePoints.length ? `${Math.round((firstServeStarts / servePoints.length) * 100)}%` : "-", "自チームサービスの入り。低い時は威力より確率を優先"],
+    ["平均ラリー本数", avgRally.toFixed(1), "短い失点が多いか、ラリーで粘れているかを見る"]
   ];
 }
 
@@ -1153,6 +1153,10 @@ function getAnalysisData() {
   const ownDoubleFaults = ownLost.filter((point) => point.outcome === "ダブルフォールト" && point.server === "A").length;
   const ownReceiveMisses = ownLost.filter((point) => point.outcome === "レシーブミス" && point.server === "B").length;
   const ownEarlyLost = ownLost.filter(isOpeningPointLoss).length;
+  const firstHalf = getFirstHalfGames();
+  const opening = getGameOpeningStats();
+  const streaks = getStreakDetails();
+  const clutch = getClutchStats();
   return {
     total,
     ownPoints,
@@ -1167,6 +1171,19 @@ function getAnalysisData() {
     ownDoubleFaults,
     ownReceiveMisses,
     ownEarlyLost,
+    firstHalfOwnGames: firstHalf.A,
+    firstHalfOpponentGames: firstHalf.B,
+    firstHalfGamesText: `${firstHalf.A}-${firstHalf.B}`,
+    openingPointOwn: opening.own,
+    openingPointOpponent: opening.opp,
+    openingPointTotal: opening.total,
+    openingPointRate: opening.rate,
+    longestOwnStreak: streaks.own?.count || 0,
+    longestOwnStreakText: formatStreak(streaks.own),
+    longestOppStreak: streaks.opp?.count || 0,
+    longestOppStreakText: formatStreak(streaks.opp),
+    ownGamePointMissed: clutch.ownGamePointMissed,
+    ownMatchPointMissed: clutch.ownMatchPointMissed,
     topError: topEntry(countByOutcomeType("error", ownLost)),
     topScore: topEntry(countByOutcomeType("score", ownWon)),
     topResult: topEntry(countBy("result")),
@@ -1265,7 +1282,7 @@ function renderOpponentView() {
 
   elements.opponentView.innerHTML = `
     <strong>見えてきたこと</strong>
-    <ul>${uniqueAdviceItems(comments).slice(0, 3).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    <ul>${uniqueAdviceItems(comments).slice(0, 4).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
     <div class="trend-grid">${trendRows.map(([label, value]) => `<span><b>${escapeHtml(value)}</b>${escapeHtml(label)}</span>`).join("")}</div>
   `;
 }
@@ -1591,11 +1608,11 @@ function getMomentumRows() {
   const streaks = getStreakDetails();
   const clutch = getClutchStats();
   return [
-    ["1ポイント目取得率", opening.rate === null ? "-" : `${opening.rate}% (${opening.own}/${opening.total})`, "own"],
-    ["最長連続得点", formatStreak(streaks.own), "own"],
-    ["最長連続失点", formatStreak(streaks.opp), "opp"],
-    ["ゲームポイント逸失", `${clutch.ownGamePointMissed}回`, clutch.ownGamePointMissed ? "opp" : "neutral"],
-    ["マッチポイント逸失", `${clutch.ownMatchPointMissed}回`, clutch.ownMatchPointMissed ? "opp" : "neutral"]
+    ["1ポイント目取得", opening.rate === null ? "-" : `${opening.own}/${opening.total}本 (${opening.rate}%)`, "own", "各ゲームの入り。低い時は最初のサービス/レシーブの約束事を決める"],
+    ["最長連続得点", formatStreak(streaks.own), "own", "良い流れを作れた場面。内容を次の試合でも再現する"],
+    ["最長連続失点", formatStreak(streaks.opp), "opp", "止めるべき流れ。どのプレーで切るかを決める"],
+    ["ゲームポイントを逃した数", `${clutch.ownGamePointMissed}回`, clutch.ownGamePointMissed ? "opp" : "neutral", "ゲームを取れる場面で落とした数。決め急ぎやレシーブミスを確認"],
+    ["マッチポイントを逃した数", `${clutch.ownMatchPointMissed}回`, clutch.ownMatchPointMissed ? "opp" : "neutral", "試合を終わらせる場面で落とした数。次は先に安全な形を作る"]
   ];
 }
 
@@ -1677,9 +1694,15 @@ function getTopPlayerServeReceiveLabel() {
   return recorded.slice(0, 2).map(([label, value]) => `${label}: ${value}`).join(" / ");
 }
 
-function renderSimpleRows(container, rows) {
+function renderMomentumRows(container, rows) {
   container.innerHTML = rows.length
-    ? rows.map(([label, value, tone]) => `<div class="bar-row ${escapeHtml(tone || "")}"><span>${escapeHtml(label)}</span><div class="bar-track text-track">${escapeHtml(value)}</div><b></b></div>`).join("")
+    ? `<div class="momentum-list">${rows.map(([label, value, tone, note]) => `
+      <article class="momentum-card ${escapeHtml(tone || "neutral")}">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+        <p>${escapeHtml(note || "")}</p>
+      </article>
+    `).join("")}</div>`
     : `<p class="empty">まだ記録がありません</p>`;
 }
 
@@ -1691,7 +1714,7 @@ function renderStats() {
   renderCoachNotes();
   renderOpponentView();
   elements.statsGrid.innerHTML = summarize()
-    .map(([label, value]) => `<article class="stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`)
+    .map(([label, value, note]) => `<article class="stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(note || "")}</small></article>`)
     .join("");
 
   renderBars(elements.phaseBars, getPhaseCounts(), "opp");
@@ -1701,7 +1724,7 @@ function renderStats() {
   renderBars(elements.resultBars, countBy("result"));
   renderBars(elements.handBars, countBy("hand", ownLost));
   renderPlayerPlusMinus();
-  renderSimpleRows(elements.momentumBars, getMomentumRows());
+  renderMomentumRows(elements.momentumBars, getMomentumRows());
   renderServeReceiveCards();
   renderBars(elements.courseBars, countBy("course"));
   renderAnalysisMemos();

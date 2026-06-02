@@ -1915,6 +1915,67 @@ textarea {
   font-size: 1.45rem;
 }
 
+.stat small {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.stat-guide-block .stats-grid {
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+.momentum-list {
+  display: grid;
+  gap: 10px;
+}
+
+.momentum-card {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-left: 5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: var(--panel);
+}
+
+.momentum-card.own {
+  border-left-color: var(--own);
+}
+
+.momentum-card.opp {
+  border-left-color: var(--opp);
+}
+
+.momentum-card span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.momentum-card strong {
+  color: var(--ink);
+  font-size: 1.12rem;
+  font-weight: 950;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.momentum-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+
 .chart-block {
   padding: 12px;
   margin-top: 10px;
