@@ -25,6 +25,9 @@ function createElement(selector = "") {
     click() {},
     closest() {
       return null;
+    },
+    querySelectorAll() {
+      return [];
     }
   };
 }
@@ -196,10 +199,10 @@ const testCode = `
   assert.match(elements.playerBars.innerHTML, /pm-total-badge/, "個人別+/-の合計値を強調表示する");
   assert.match(elements.playerBars.innerHTML, /ストローク得点/, "プレイヤー別に記録した得点内容を表示する");
   assert.match(elements.playerBars.innerHTML, /ボレーミス/, "プレイヤー別に記録したミス内容を表示する");
-  renderStandardGrowthBoard();
-  assert.match(elements.standardGrowthBoard.innerHTML, /選手別の関わり/, "標準ノートに選手別の関わりを表示する");
-  assert.match(elements.standardGrowthBoard.innerHTML, /自後衛[\\s\\S]*関与 1本/, "標準ノートに個人別+/-から関与本数を表示する");
-  assert.match(elements.standardGrowthBoard.innerHTML, /後衛・前衛の評価を決めつけず/, "標準ノートで役割評価を決めつけない説明を表示する");
+  const involvementItems = getPlayerInvolvementItems();
+  assert.equal(involvementItems.length, 4, "個人別分析に全選手の関与を表示する");
+  assert.match(involvementItems.find((item) => item.label === "自後衛").comment, /関与 1本/, "個人別分析に関与本数を表示する");
+  assert.match(involvementItems.find((item) => item.label === "自前衛").comment, /記録なし/, "未記録選手は判断しないコメントにする");
 
   setPoints([
     point({ winner: "A", outcome: "ストローク得点", player: "A後衛" }),
@@ -276,13 +279,15 @@ const testCode = `
   assert.equal(getRallyLengthStats([point({ rally: "3" }), point({ rally: "4" }), point({ rally: "10+" })]).long, 2, "4本以上のラリーを集計する");
   state.selectedServe = "ダブルフォールト";
   state.selectedOutcome = "ダブルフォールト";
-  state.selectedRallyLength = "auto";
-  assert.equal(getRallyValueForSave(), "1", "DFは自動で短いポイントにする");
+  state.selectedRallyLength = "short";
+  assert.equal(getRallyValueForSave(), "3", "DFは3本以内として保存する");
   state.selectedServe = "第1サービスで開始";
   state.selectedOutcome = "ストローク得点";
-  assert.equal(getRallyValueForSave(), "4", "ストロークは自動で4本以上にする");
-  state.selectedRallyLength = "short";
-  assert.equal(getRallyValueForSave(), "3", "手動の3本以内を優先する");
+  syncRallyLengthFromOutcome(state.selectedOutcome);
+  assert.equal(getRallyValueForSave(), "4", "ストロークは4本以上として保存する");
+  state.selectedOutcome = "レシーブミス";
+  syncRallyLengthFromOutcome(state.selectedOutcome);
+  assert.equal(getRallyValueForSave(), "3", "レシーブで終わるポイントは3本以内として保存する");
   state.finished = true;
   state.games = { A: 4, B: 2 };
   const finishedSummaryImage = getSummaryImageData();

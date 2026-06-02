@@ -1,7 +1,7 @@
 # ソフトテニス試合ノート 要件・設計書
 
 最終更新: 2026-05-27
-対象バージョン: v204
+対象バージョン: v205
 対象ファイル: `index.html`, `app-config.js`, `app-analysis.js`, `app-storage.js`, `app-rules.js`, `styles.css`, `app.js`, `sw.js`
 
 ## 0. この文書の位置づけ
@@ -612,7 +612,7 @@ CSV出力時は `escapeCsvCell()` を使い、CSV注入やカンマ・ダブル�
 サービスワーカー登録も `sw.js?v数字` 相当で行い、新しいサービスワーカーは `skipWaiting()` と `clients.claim()` で早めに有効化する。
 
 ```js
-soft-tennis-logger-v204
+soft-tennis-logger-v205
 ```
 
 ## 14. テスト

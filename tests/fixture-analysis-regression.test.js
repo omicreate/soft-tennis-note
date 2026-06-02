@@ -20,7 +20,8 @@ function createElement(selector = "") {
     showModal() {},
     close() {},
     click() {},
-    closest() { return null; }
+    closest() { return null; },
+    querySelectorAll() { return []; }
   };
 }
 

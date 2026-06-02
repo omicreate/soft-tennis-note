@@ -29,7 +29,7 @@ let matchDialogMode = "new";
 let summaryPreviewState = null;
 let summaryPreviewMode = "share";
 let summaryPreviewNameMode = "role";
-let analysisViewMode = "standard";
+let analysisSectionMode = "overall";
 let editingPointIndex = null;
 
 const $ = (selector) => document.querySelector(selector);
@@ -127,9 +127,8 @@ const elements = {
   rallyAutoPreview: $("#rallyAutoPreview"),
   memoInput: $("#memoInput"),
   playerSavePreview: $("#playerSavePreview"),
-  analysisModeControl: $("#analysisModeControl"),
-  analysisViewNote: $("#analysisViewNote"),
-  standardGrowthBoard: $("#standardGrowthBoard"),
+  analysisSectionControl: $("#analysisSectionControl"),
+  analysisSectionNote: $("#analysisSectionNote"),
   analysisSummary: $("#analysisSummary"),
   scoreQuality: $("#scoreQuality"),
   actionPlan: $("#actionPlan"),
@@ -894,6 +893,7 @@ function renderScore() {
 
   renderScreenGuide();
   renderRecordMode();
+  renderAnalysisSectionMode();
   elements.ruleNote.textContent = getRuleNoteText();
 
   setActiveButton("#recordModeControl", "recordMode", state.recordMode);
@@ -924,9 +924,19 @@ function renderRecordMode() {
   elements.screenGuide.textContent = "入力順に押して、選手ごとの結果まで残せます";
 }
 
+function rallyLengthModeForOutcome(outcome) {
+  if (["ダブルフォールト", "サービス得点", "レシーブ得点", "レシーブミス"].includes(outcome)) return "short";
+  return "long";
+}
+
+function syncRallyLengthFromOutcome(outcome) {
+  state.selectedRallyLength = rallyLengthModeForOutcome(outcome);
+}
+
 function setSimpleOutcome(outcome) {
   state.selectedOutcome = outcome;
   applyOutcomePreset(outcome);
+  syncRallyLengthFromOutcome(outcome);
 }
 
 function renderWinnerState(winner = getWinnerTeam()) {
@@ -1250,60 +1260,6 @@ function pointDiffTone(diff) {
 }
 
 
-function buildStandardGrowthHighlight(data) {
-  if (!data.total) return ["まず記録を増やす", "1ゲーム分を目安に残すと、練習テーマが見え始めます", "neutral"];
-  if (data.topScore[1] > 0) return ["今日よかった形", `${data.topScore[0]} ${data.topScore[1]}本。練習でも同じ入り方を再現します`, "own"];
-  if (data.ownPointsByOpponentError > 0) return ["相手ミスを誘えた", `${data.ownPointsByOpponentError}本。相手が崩れた配球を見返します`, "own"];
-  if (data.ownLostByOwnError > 0) return ["先に減らすミス", `${data.ownLostByOwnError}本。まず安全に返す形を決めます`, "opp"];
-  return ["まだ判断しない", "記録を増やして、良い形と修正点を分けて見ます", "neutral"];
-}
-
-function renderStandardGrowthBoard() {
-  const data = getAnalysisData();
-  const openingStats = getGameOpeningStats();
-  const actionRows = buildActionPlanRows(data, { limit: 3 });
-  const [highlightTitle, highlightNote, highlightTone] = buildStandardGrowthHighlight(data);
-  const comments = uniqueAdviceItems(buildSummaryComments(data)).slice(0, 2);
-  const openingText = openingStats.total ? `${openingStats.own}/${openingStats.total}本` : "未記録";
-  const playerText = getTopPlayerPlusMinusLabel();
-  const serveReceiveText = getTopPlayerServeReceiveLabel();
-  const involvementItems = getPlayerInvolvementItems();
-
-  elements.standardGrowthBoard.innerHTML = `
-    <article class="growth-hero ${escapeHtml(highlightTone)}">
-      <span>育成ノート</span>
-      <strong>${escapeHtml(highlightTitle)}</strong>
-      <p>${escapeHtml(highlightNote)}</p>
-    </article>
-    <div class="growth-card-grid">
-      <article><span>ゲーム最初の1本</span><strong>${escapeHtml(openingText)}</strong><small>入り方を見る</small></article>
-      <article><span>選手別 + / -</span><strong>${escapeHtml(playerText)}</strong><small>本人の振り返り</small></article>
-      <article><span>サーブ/レシーブ</span><strong>${escapeHtml(serveReceiveText)}</strong><small>最初の2本を見る</small></article>
-    </div>
-    <section class="growth-note-section">
-      <h2>試合から分かったこと</h2>
-      <ul>${(comments.length ? comments : ["まだ記録が少ないため、数ポイント記録して傾向を見る"]).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
-    </section>
-    <section class="growth-note-section player-involvement-section">
-      <h2>選手別の関わり</h2>
-      <p>後衛・前衛の評価を決めつけず、記録された関与本数と + / - で見ます。</p>
-      <div>${involvementItems.map((item) => `
-        <article class="${escapeHtml(item.tone)}">
-          <strong>${escapeHtml(item.label)}</strong>
-          <span>${escapeHtml(formatPointDiff(item.diff))}</span>
-          <small>${escapeHtml(item.comment)}</small>
-        </article>
-      `).join("")}</div>
-    </section>
-    <section class="growth-note-section practice-theme">
-      <h2>次の練習テーマ</h2>
-      <ol>${actionRows.map(([title, note, tone], index) => `
-        <li class="${escapeHtml(tone || "neutral")}"><span>${escapeHtml(index + 1)}</span><div><b>${escapeHtml(title)}</b><small>${escapeHtml(note)}</small></div></li>
-      `).join("")}</ol>
-    </section>
-  `;
-}
-
 function renderAnalysisSummary() {
   const data = getAnalysisData();
   const openingStats = getGameOpeningStats();
@@ -1343,17 +1299,17 @@ function renderRallyLengthAnalysis() {
   });
 }
 
-function renderAnalysisViewMode() {
-  const detailMode = analysisViewMode === "detail";
-  document.body.classList.toggle("analysis-standard-mode", !detailMode);
-  document.body.classList.toggle("analysis-detail-mode", detailMode);
-  elements.analysisModeControl?.querySelectorAll("[data-analysis-mode]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.analysisMode === analysisViewMode);
+function renderAnalysisSectionMode() {
+  const playerMode = analysisSectionMode === "players";
+  document.body.classList.toggle("analysis-overall-mode", !playerMode);
+  document.body.classList.toggle("analysis-player-mode", playerMode);
+  elements.analysisSectionControl?.querySelectorAll("[data-analysis-section]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.analysisSection === analysisSectionMode);
   });
-  if (elements.analysisViewNote) {
-    elements.analysisViewNote.textContent = detailMode
-      ? "得点場面、失点場面、ラリー、試合後の深掘りまで表示します。"
-      : "記録者が選手へ見せやすい内容を中心に表示します。";
+  if (elements.analysisSectionNote) {
+    elements.analysisSectionNote.textContent = playerMode
+      ? "選手ごとの + / -、関わったプレー、サーブ/レシーブを表示します。"
+      : "試合全体の流れ、得点・失点の傾向、次につなげる材料を表示します。";
   }
 }
 
@@ -1546,7 +1502,7 @@ function inferRallyValueForCurrentPoint() {
 }
 
 function getRallyValueForSave() {
-  const mode = state.selectedRallyLength || "auto";
+  const mode = state.selectedRallyLength || rallyLengthModeForOutcome(state.selectedOutcome);
   if (mode === "short") return "3";
   if (mode === "long") return "4";
   return inferRallyValueForCurrentPoint();
@@ -1558,12 +1514,13 @@ function getRallyLengthLabel() {
 }
 
 function renderRallyLengthControl() {
-  state.selectedRallyLength = state.selectedRallyLength || "auto";
+  if (!["short", "long"].includes(state.selectedRallyLength)) {
+    state.selectedRallyLength = rallyLengthModeForOutcome(state.selectedOutcome);
+  }
   setActiveButton("#rallyLengthControl", "rallyLength", state.selectedRallyLength);
   if (elements.rallyInput) elements.rallyInput.value = getRallyValueForSave();
   if (elements.rallyAutoPreview) {
-    const prefix = state.selectedRallyLength === "auto" ? "自動判定" : "手動選択";
-    elements.rallyAutoPreview.textContent = `保存されるラリー: ${prefix} / ${getRallyLengthLabel()}`;
+    elements.rallyAutoPreview.textContent = `保存されるラリー: ${getRallyLengthLabel()}`;
   }
 }
 
@@ -1995,7 +1952,6 @@ function renderMomentumRows(container, rows) {
 function renderStats() {
   const ownWon = state.points.filter((point) => point.winner === "A");
   const ownLost = state.points.filter((point) => point.winner === "B");
-  renderStandardGrowthBoard();
   renderAnalysisSummary();
   renderScoreQuality();
   renderRallyLengthAnalysis();
@@ -3813,11 +3769,11 @@ elements.teamBName.addEventListener("input", () => {
   renderScore();
 });
 
-elements.analysisModeControl?.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-analysis-mode]");
+elements.analysisSectionControl?.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-analysis-section]");
   if (!button) return;
-  analysisViewMode = button.dataset.analysisMode === "detail" ? "detail" : "standard";
-  renderAnalysisViewMode();
+  analysisSectionMode = button.dataset.analysisSection === "players" ? "players" : "overall";
+  renderAnalysisSectionMode();
 });
 
 elements.historyFilterSelect.addEventListener("change", renderHistory);
@@ -3897,6 +3853,7 @@ $("#serveControl").addEventListener("click", (event) => {
   state.selectedServe = button.dataset.serve;
   if (state.selectedServe === "ダブルフォールト") {
     state.selectedOutcome = "ダブルフォールト";
+    syncRallyLengthFromOutcome("ダブルフォールト");
     elements.shotSelect.value = "サービス";
     state.selectedResult = "不明";
   }
@@ -3915,6 +3872,7 @@ $("#outcomeControl").addEventListener("click", (event) => {
   if (!button) return;
   state.selectedOutcome = button.dataset.outcome;
   applyOutcomePreset(state.selectedOutcome);
+  syncRallyLengthFromOutcome(state.selectedOutcome);
   saveState();
   renderScore();
 });

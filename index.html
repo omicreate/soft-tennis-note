@@ -6,10 +6,10 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=204" />
-    <link rel="stylesheet" href="styles.css?v=204" />
+    <link rel="manifest" href="manifest.webmanifest?v=205" />
+    <link rel="stylesheet" href="styles.css?v=205" />
   </head>
-  <body class="analysis-standard-mode">
+  <body class="analysis-overall-mode">
     <main class="app-shell">
       <header class="topbar">
         <div>
@@ -190,11 +190,10 @@
             <span>入力5 ラリーの長さ</span>
             <p class="rally-note">サーブを1本目として、短いポイントか長いポイントかだけ残します。</p>
             <div class="segmented rally-length-control" id="rallyLengthControl">
-              <button class="active" data-rally-length="auto" type="button">自動</button>
               <button data-rally-length="short" type="button">3本以内</button>
-              <button data-rally-length="long" type="button">4本以上</button>
+              <button class="active" data-rally-length="long" type="button">4本以上</button>
             </div>
-            <p class="rally-auto-preview" id="rallyAutoPreview">保存されるラリー: 自動判定</p>
+            <p class="rally-auto-preview" id="rallyAutoPreview">保存されるラリー: 4本以上</p>
           </div>
 
           <div class="control-group advanced-record">
@@ -344,62 +343,68 @@
       </section>
 
       <section class="panel" id="analysisPanel">
-        <div class="analysis-view-switch segmented" id="analysisModeControl" aria-label="分析表示の切り替え">
-          <button class="active" data-analysis-mode="standard" type="button">標準</button>
-          <button data-analysis-mode="detail" type="button">詳細</button>
+        <div class="analysis-view-switch segmented" id="analysisSectionControl" aria-label="分析表示の切り替え">
+          <button class="active" data-analysis-section="overall" type="button">全体分析</button>
+          <button data-analysis-section="players" type="button">個人別分析</button>
         </div>
-        <p class="analysis-view-note" id="analysisViewNote">記録者が選手へ見せやすい内容を中心に表示します。</p>
-        <div class="standard-growth-board analysis-standard-only" id="standardGrowthBoard"></div>
-        <div class="opponent-view analysis-detail-only" id="opponentView"></div>
-        <div class="action-plan analysis-detail-only" id="actionPlan"></div>
-        <div class="analysis-summary analysis-detail-only" id="analysisSummary"></div>
-        <div class="chart-block emphasis player-impact-block analysis-detail-only">
-          <h2>選手別 成長メモ</h2>
-          <p class="chart-note">選手ごとの + / - と、記録したプレー種別から次の練習材料を見ます。</p>
-          <div id="playerBars" class="bars"></div>
+        <p class="analysis-view-note" id="analysisSectionNote">試合全体の流れ、得点・失点の傾向、次につなげる材料を表示します。</p>
+
+        <div class="analysis-section analysis-overall-section">
+          <div class="opponent-view" id="opponentView"></div>
+          <div class="action-plan" id="actionPlan"></div>
+          <div class="analysis-summary" id="analysisSummary"></div>
+          <div class="score-quality" id="scoreQuality"></div>
+          <div class="chart-block emphasis scoring-situation-block">
+            <h2>得点しやすい場面</h2>
+            <p class="chart-note">自チームの得点形と、相手のミスで取れた場面を分けて確認します。</p>
+            <div id="scoringSituationBars" class="bars"></div>
+          </div>
+          <div class="chart-block emphasis losing-situation-block">
+            <h2>失点しやすい場面</h2>
+            <p class="chart-note">自チームのミス失点と、相手に取られた形を分けて確認します。</p>
+            <div id="phaseBars" class="bars"></div>
+          </div>
+          <div class="chart-block emphasis rally-analysis-block">
+            <h2>ラリーの長さ</h2>
+            <p class="chart-note">サーブを1本目として、3本以内か4本以上かを確認します。</p>
+            <div id="rallyLengthBars" class="bars"></div>
+          </div>
+          <details class="detail-panel analysis-details">
+            <summary>試合後に詳しく見る</summary>
+            <div class="chart-block">
+              <h2>得点の内訳</h2>
+              <div id="scoringBars" class="bars"></div>
+            </div>
+            <div class="chart-block">
+              <h2>失点の内訳</h2>
+              <div id="errorBars" class="bars"></div>
+            </div>
+            <div class="chart-block momentum-block">
+              <h2>流れと勝負どころ</h2>
+              <p class="chart-note">ゲームの入り、連続得点、ゲームポイントを、発生したゲームとカウント付きで確認します。</p>
+              <div id="momentumBars" class="bars"></div>
+            </div>
+          </details>
         </div>
-        <div class="chart-block emphasis serve-receive-block analysis-detail-only">
-          <h2>選手別 サーブ/レシーブ</h2>
-          <p class="chart-note">サービス順と初期設定をもとに、担当者を自動判定します。</p>
-          <div id="serveReceiveBars" class="serve-receive-cards"></div>
+
+        <div class="analysis-section analysis-player-section">
+          <div class="chart-block emphasis player-impact-block">
+            <h2>選手別 成長メモ</h2>
+            <p class="chart-note">選手ごとの + / - と、記録したプレー種別から次の練習材料を見ます。</p>
+            <div id="playerBars" class="bars"></div>
+          </div>
+          <div class="chart-block emphasis serve-receive-block">
+            <h2>選手別 サーブ/レシーブ</h2>
+            <p class="chart-note">サービス順と初期設定をもとに、担当者を自動判定します。</p>
+            <div id="serveReceiveBars" class="serve-receive-cards"></div>
+          </div>
         </div>
-        <div class="score-quality analysis-detail-only" id="scoreQuality"></div>
-        <div class="chart-block emphasis scoring-situation-block analysis-detail-only">
-          <h2>得点しやすい場面</h2>
-          <p class="chart-note">自チームの得点形と、相手のミスで取れた場面を分けて確認します。</p>
-          <div id="scoringSituationBars" class="bars"></div>
-        </div>
-        <div class="chart-block emphasis losing-situation-block analysis-detail-only">
-          <h2>失点しやすい場面</h2>
-          <p class="chart-note">自チームのミス失点と、相手に取られた形を分けて確認します。</p>
-          <div id="phaseBars" class="bars"></div>
-        </div>
-        <div class="chart-block emphasis rally-analysis-block analysis-detail-only">
-          <h2>ラリーの長さ</h2>
-          <p class="chart-note">サーブを1本目として、3本以内か4本以上かを確認します。</p>
-          <div id="rallyLengthBars" class="bars"></div>
-        </div>
+
         <div class="analysis-save">
           <button class="action-button action-save" id="saveAnalysisMemoButton" type="button">この振り返りを保存</button>
           <p class="analysis-save-note">今表示している練習テーマを、時刻・スコア付きで残します。サマリー画像にも反映されます。</p>
           <div id="analysisMemoList" class="analysis-memo-list"></div>
         </div>
-        <details class="detail-panel analysis-details analysis-detail-only">
-          <summary>試合後に詳しく見る</summary>
-          <div class="chart-block">
-            <h2>得点の内訳</h2>
-            <div id="scoringBars" class="bars"></div>
-          </div>
-          <div class="chart-block">
-            <h2>失点の内訳</h2>
-            <div id="errorBars" class="bars"></div>
-          </div>
-          <div class="chart-block momentum-block">
-            <h2>流れと勝負どころ</h2>
-            <p class="chart-note">ゲームの入り、連続得点、ゲームポイントを、発生したゲームとカウント付きで確認します。</p>
-            <div id="momentumBars" class="bars"></div>
-          </div>
-        </details>
       </section>
 
       <section class="panel" id="historyPanel">
@@ -423,7 +428,7 @@
       </section>
 
       <footer class="app-footer">
-        <span class="app-version">v204・2026-06-03</span>
+        <span class="app-version">v205・2026-06-03</span>
         <span>© 2026 OmiCreate</span>
         <span>無断転載・再配布・改変利用を禁じます</span>
       </footer>
@@ -546,11 +551,11 @@
           <dl>
             <div>
               <dt>現在の版</dt>
-              <dd>v204・2026-06-03</dd>
+              <dd>v205・2026-06-03</dd>
             </div>
             <div>
               <dt>更新内容</dt>
-              <dd>提示しやすい文言と全体デザインに調整。</dd>
+              <dd>分析を全体/個人に整理し、ラリー長さの入力を自動補助。</dd>
             </div>
           </dl>
         </details>
@@ -870,10 +875,10 @@
       </form>
     </dialog>
 
-    <script src="app-config.js?v=204" defer></script>
-    <script src="app-analysis.js?v=204" defer></script>
-    <script src="app-storage.js?v=204" defer></script>
-    <script src="app-rules.js?v=204" defer></script>
-    <script src="app.js?v=204" defer></script>
+    <script src="app-config.js?v=205" defer></script>
+    <script src="app-analysis.js?v=205" defer></script>
+    <script src="app-storage.js?v=205" defer></script>
+    <script src="app-rules.js?v=205" defer></script>
+    <script src="app.js?v=205" defer></script>
   </body>
 </html>
