@@ -101,10 +101,10 @@ function side(value) {
 
 function playerKey(value) {
   return {
-    自後衛A: "A後衛",
-    自前衛A: "A前衛",
-    相手後衛B: "B後衛",
-    相手前衛B: "B前衛"
+    自チーム選手1: "A後衛",
+    自チーム選手2: "A前衛",
+    相手チーム選手1: "B後衛",
+    相手チーム選手2: "B前衛"
   }[value] || "不明";
 }
 
@@ -181,7 +181,7 @@ vm.runInContext(`
   state.matchFormat = "7";
   state.gamesToWin = 4;
   state.teams = { A: "自チーム", B: "相手ペア" };
-  state.players = { ARear: "自後衛A", AFront: "自前衛A", BRear: "相手後衛B", BFront: "相手前衛B" };
+  state.players = { ARear: "自チーム選手1", AFront: "自チーム選手2", BRear: "相手チーム選手1", BFront: "相手チーム選手2" };
   state.matchInfo = {
     ...state.matchInfo,
     date: __fixtureExpected.match.date,
@@ -249,7 +249,7 @@ corpusExpected.fixtures.forEach((fixture) => {
     state.matchFormat = "7";
     state.gamesToWin = 4;
     state.teams = { A: "自チーム", B: "相手ペア" };
-    state.players = { ARear: "自後衛A", AFront: "自前衛A", BRear: "相手後衛B", BFront: "相手前衛B" };
+    state.players = { ARear: "自チーム選手1", AFront: "自チーム選手2", BRear: "相手チーム選手1", BFront: "相手チーム選手2" };
     state.matchInfo = {
       ...state.matchInfo,
       date: __corpusFixture.match.date,

@@ -42,7 +42,7 @@ const stableHeaders = [
 ];
 const scoring = new Set(["ストローク得点", "ボレー得点", "スマッシュ得点", "サービス得点", "レシーブ得点", "ロビング得点"]);
 const errors = new Set(["ダブルフォールト", "レシーブミス", "ストロークミス", "ボレーミス", "スマッシュミス", "その他"]);
-const allowedPlayerLabels = new Set(["自後衛A", "自前衛A", "相手後衛B", "相手前衛B", "不明"]);
+const allowedPlayerLabels = new Set(["自チーム選手1", "自チーム選手2", "相手チーム選手1", "相手チーム選手2", "不明"]);
 
 function parseCsv(text) {
   const rows = [];
