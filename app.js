@@ -2048,27 +2048,31 @@ function buildPlayerReviewItems(item) {
 
   if (item.diff < 0) {
     items.push(isOwn
-      ? `+${item.plus}/-${item.minus}。相手に与えた記録が${Math.abs(item.diff)}本多い`
-      : `+${item.plus}/-${item.minus}。相手側は与えた記録が${Math.abs(item.diff)}本多い`);
+      ? `+${item.plus}/-${item.minus}。この選手の記録では、相手に与えた点が${Math.abs(item.diff)}本多い`
+      : `+${item.plus}/-${item.minus}。この相手選手の記録では、自チームが取った点が${Math.abs(item.diff)}本多い`);
   } else if (item.diff > 0) {
     items.push(isOwn
-      ? `+${item.plus}/-${item.minus}。自分たちで取った記録が${item.diff}本多い`
-      : `+${item.plus}/-${item.minus}。相手に取られた記録が${item.diff}本多い`);
+      ? `+${item.plus}/-${item.minus}。この選手の記録では、自チームが取った点が${item.diff}本多い`
+      : `+${item.plus}/-${item.minus}。この相手選手の記録では、自チームが取られた点が${item.diff}本多い`);
   } else if (total) {
-    items.push(`+${item.plus}/-${item.minus}。取った記録と与えた記録は同数`);
+    items.push(`+${item.plus}/-${item.minus}。取った点と与えた点は同数`);
   }
 
   if (error[1] > 0) {
-    items.push(isOwn ? `${error[0]} ${error[1]}本が主な与えた形` : `${error[0]} ${error[1]}本が相手側の主な与えた形`);
+    items.push(isOwn
+      ? `主に相手へ与えた形は、${error[0]} ${error[1]}本`
+      : `この相手選手が主に自チームへ与えた形は、${error[0]} ${error[1]}本`);
   }
   if (scoring[1] > 0) {
-    items.push(isOwn ? `${scoring[0]} ${scoring[1]}本が主な取れた形` : `${scoring[0]} ${scoring[1]}本が相手に取られた主な形`);
+    items.push(isOwn
+      ? `主に取れた形は、${scoring[0]} ${scoring[1]}本`
+      : `この相手選手に主に取られた形は、${scoring[0]} ${scoring[1]}本`);
   }
   if (serveReceive.doubleFaults > 0) {
-    items.push(isOwn ? `サーブで与えたDF ${serveReceive.doubleFaults}本` : `相手側のDF ${serveReceive.doubleFaults}本`);
+    items.push(isOwn ? `サーブではDFで${serveReceive.doubleFaults}本与えた` : `この相手選手はDFで${serveReceive.doubleFaults}本与えた`);
   }
   if (serveReceive.receiveMisses > 0) {
-    items.push(isOwn ? `レシーブで与えたミス ${serveReceive.receiveMisses}本` : `相手側のレシーブミス ${serveReceive.receiveMisses}本`);
+    items.push(isOwn ? `レシーブではミスで${serveReceive.receiveMisses}本与えた` : `この相手選手はレシーブミスで${serveReceive.receiveMisses}本与えた`);
   }
   if (serveReceive.servePoints >= 2 && serveReceive.firstServeRate !== null) {
     items.push(`第1サービス ${serveReceive.firstServe}/${serveReceive.servePoints}本 (${serveReceive.firstServeRate}%)`);
@@ -2092,14 +2096,14 @@ function buildPlayerInvolvementComment(item) {
   const isOwn = item.side === "A";
   const parts = [];
 
-  if (!total && !srTotal) return "記録なし。役割評価ではなく、まず関わった本数を増やして確認";
+  if (!total && !srTotal) return "記録なし。役割評価ではなく、まず関わった本数を増やして確認する";
 
   parts.push(`関与 ${total}本（+${item.plus}/-${item.minus}/${formatPointDiff(item.diff)}）`);
-  if (item.diff > 0) parts.push(isOwn ? "取った記録が与えた記録を上回る" : "相手に取られた記録が多い");
-  if (item.diff < 0) parts.push(isOwn ? "相手に与えた記録が多い" : "相手側が与えた記録が多い");
-  if (item.diff === 0 && total) parts.push("取った記録と与えた記録は同数");
-  if (scoring[1] > 0) parts.push(isOwn ? `主な取れた形は${scoring[0]} ${scoring[1]}本` : `相手に取られた主な形は${scoring[0]} ${scoring[1]}本`);
-  if (error[1] > 0) parts.push(isOwn ? `主な与えた形は${error[0]} ${error[1]}本` : `相手が与えた主な形は${error[0]} ${error[1]}本`);
+  if (item.diff > 0) parts.push(isOwn ? "この選手の記録では、自チームが取った点が多い" : "この相手選手の記録では、自チームが取られた点が多い");
+  if (item.diff < 0) parts.push(isOwn ? "この選手の記録では、相手に与えた点が多い" : "この相手選手の記録では、自チームが取った点が多い");
+  if (item.diff === 0 && total) parts.push("取った点と与えた点は同数");
+  if (scoring[1] > 0) parts.push(isOwn ? `主に取れた形は${scoring[0]} ${scoring[1]}本` : `この相手選手に主に取られた形は${scoring[0]} ${scoring[1]}本`);
+  if (error[1] > 0) parts.push(isOwn ? `主に相手へ与えた形は${error[0]} ${error[1]}本` : `この相手選手が主に自チームへ与えた形は${error[0]} ${error[1]}本`);
   if (srTotal) parts.push(`S/R関与 ${srTotal}本`);
   return parts.slice(0, 5).join("。") || "大きな偏りはまだ見えません";
 }

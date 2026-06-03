@@ -508,6 +508,16 @@ const scenarioCode = `
   renderPlayerPlusMinus();
   assert.match(testElements.get("#playerBars").innerHTML, /自チーム[\\s\\S]*相手/, "プレイヤー別分析は自チームと相手を分けて表示する");
   assert.match(testElements.get("#playerBars").innerHTML, /記録から分かること/, "プレイヤー別分析に客観的な記録コメントを表示する");
+  assert.match(testElements.get("#playerBars").innerHTML, /この選手の記録では、自チームが取った点が1本多い/, "自チーム選手の個人別コメントは主語を明確にする");
+  assert.match(testElements.get("#playerBars").innerHTML, /主に取れた形は、(ストローク得点|ボレー得点) 1本/, "得点パターンの個人別コメントは自然な日本語で表示する");
+  assert.doesNotMatch(testElements.get("#playerBars").innerHTML, /主な与えた形|相手側は与えた記録/, "古い曖昧な個人別コメントを表示しない");
+
+  state.points = [
+    { winner: "A", player: "B後衛", outcome: "レシーブミス", shot: "レシーブ" }
+  ];
+  renderPlayerPlusMinus();
+  assert.match(testElements.get("#playerBars").innerHTML, /この相手選手の記録では、自チームが取った点が1本多い/, "相手選手の個人別コメントも自チーム目線で読める");
+  assert.doesNotMatch(testElements.get("#playerBars").innerHTML, /相手側が与えた記録|相手側の主な与えた形/, "相手選手コメントでも主語が曖昧な表現を避ける");
 
   state.players.ARear = "同名";
   state.players.BRear = "同名";
