@@ -96,20 +96,20 @@ function buildDenseMatchState() {
 test.describe("mobile layout", () => {
   test("record, analysis, history, archive and summary screens fit mobile widths", async ({ page }, testInfo) => {
     test.setTimeout(45000);
-    await page.goto("/index.html?v=206");
+    await page.goto("/index.html?v=207");
 
     await expect(page.getByText("ソフトテニス試合ノート").first()).toBeVisible();
-    await expect(page.getByText("v206・2026-06-03").first()).toBeVisible();
+    await expect(page.getByText("v207・2026-06-03").first()).toBeVisible();
     await expectNoHorizontalOverflow(page, "record screen");
 
     await page.getByRole("button", { name: "分析" }).click();
     await expect(page.locator("#analysisSectionControl").getByText("全体分析")).toBeVisible();
     await expect(page.locator("#analysisSectionControl").getByText("個人別分析")).toBeVisible();
-    await expect(page.locator("#opponentView").getByText("試合から分かったこと")).toBeVisible();
-    await expect(page.locator("#actionPlan").getByText("次に活かすポイント")).toBeVisible();
+    await expect(page.getByText("全体分析は、試合全体の流れと得点・失点の数字だけを確認します。")).toBeVisible();
     await expect(page.getByText("得点しやすい場面")).toBeVisible();
     await page.locator("#analysisSectionControl").getByRole("button", { name: "個人別分析" }).click();
     await expect(page.getByText("選手別 成長メモ")).toBeVisible();
+    await expect(page.getByRole("button", { name: "個人別コメントを保存" })).toBeVisible();
     await expect(page.getByText("選手別 サーブ/レシーブ")).toBeVisible();
     await expectNoHorizontalOverflow(page, "analysis screen");
 
@@ -168,7 +168,7 @@ test.describe("mobile layout", () => {
       localStorage.setItem("soft-tennis-logger-state-v1", JSON.stringify(state));
     }, buildDenseMatchState());
 
-    await page.goto("/index.html?v=206");
+    await page.goto("/index.html?v=207");
     await page.getByRole("button", { name: "メニュー" }).click();
     await page.getByRole("button", { name: "サマリー画像を見る" }).click();
 

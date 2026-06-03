@@ -146,10 +146,8 @@ const testCode = `
   renderStats();
   assert.match(elements.scoringSituationBars.innerHTML, /相手ミスで得点/, "相手ミスは得点しやすい場面に含める");
   assert.match(elements.errorBars.innerHTML, /まだ記録がありません/, "相手ミスを自チーム失点バーに表示しない");
-  assert.match(elements.opponentView.innerHTML, /試合から分かったこと/, "試合から分かったことを表示する");
-  assert.match(elements.opponentView.innerHTML, /自チーム/, "試合から分かったことに自チーム側を表示する");
-  assert.match(elements.opponentView.innerHTML, /相手/, "試合から分かったことに相手側を表示する");
-  assert.doesNotMatch(elements.opponentView.innerHTML, /短く見るポイント/, "短く見るポイントは表示しない");
+  assert.equal(elements.opponentView.innerHTML, "", "全体分析にチーム単位コメントを表示しない");
+  assert.equal(elements.actionPlan.innerHTML, "", "全体分析に次に活かすポイントを表示しない");
   assert.doesNotMatch(buildPriorityItems().join("\\n"), /。$/, "次に活かすポイントの文末には句点を付けない");
 
   setPoints([
@@ -452,7 +450,7 @@ const testCode = `
   saveAnalysisMemo();
   assert.equal(state.analysisMemos.length, 1, "振り返りを保存する");
   assert.match(elements.analysisMemoList.innerHTML, /点時点/, "保存した分析を表示する");
-  assert.match(elements.analysisMemoList.innerHTML, /次に活かすポイント/, "保存した分析に次に活かすポイントを含める");
+  assert.match(elements.analysisMemoList.innerHTML, /個人別コメント/, "保存した分析に個人別コメントを含める");
 `;
 
 context.assert = assert;

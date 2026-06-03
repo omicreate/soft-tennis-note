@@ -1308,8 +1308,8 @@ function renderAnalysisSectionMode() {
   });
   if (elements.analysisSectionNote) {
     elements.analysisSectionNote.textContent = playerMode
-      ? "選手ごとの + / -、関わったプレー、サーブ/レシーブを表示します。"
-      : "試合全体の流れ、得点・失点の傾向、次につなげる材料を表示します。";
+      ? "個人別分析は、選手ごとの + / -、関わったプレー、サーブ/レシーブ、記録コメントを確認します。"
+      : "全体分析は、試合全体の流れと得点・失点の数字だけを確認します。";
   }
 }
 
@@ -1955,8 +1955,6 @@ function renderStats() {
   renderAnalysisSummary();
   renderScoreQuality();
   renderRallyLengthAnalysis();
-  renderActionPlan();
-  renderOpponentView();
   renderBars(elements.scoringSituationBars, getScoringSituationCounts(), "own");
   renderBars(elements.phaseBars, getLosingSituationCounts(), "opp");
   renderBars(elements.scoringBars, countByOutcomeType("score", ownWon), "own");
@@ -1967,8 +1965,30 @@ function renderStats() {
   renderAnalysisMemos();
 }
 
+function buildPlayerAnalysisMemoItems(limit = 8) {
+  const serveReceiveByPlayer = Object.fromEntries(getPlayerServeReceiveStats().map((item) => [item.player, item]));
+  const entries = getPlayerPlusMinus()
+    .map((item) => ({ ...item, serveReceive: serveReceiveByPlayer[item.key] }))
+    .filter((item) => {
+      const sr = item.serveReceive || {};
+      return item.plus + item.minus > 0 || (sr.servePoints || 0) + (sr.receivePoints || 0) > 0;
+    })
+    .sort((a, b) => {
+      const aSr = (a.serveReceive?.servePoints || 0) + (a.serveReceive?.receivePoints || 0);
+      const bSr = (b.serveReceive?.servePoints || 0) + (b.serveReceive?.receivePoints || 0);
+      return (Math.abs(b.diff) + bSr) - (Math.abs(a.diff) + aSr);
+    });
+
+  const items = entries.flatMap((item) => {
+    const label = item.label;
+    return buildPlayerReviewItems(item).slice(0, 2).map((text) => `${label}: ${text}`);
+  });
+  const uniqueItems = uniqueAdviceItems(items).slice(0, limit);
+  return uniqueItems.length ? uniqueItems : ["まだ個人別コメントはありません。プレイヤー付きで記録すると保存できます"];
+}
+
 function saveAnalysisMemo() {
-  const items = buildPriorityAdviceItems();
+  const items = buildPlayerAnalysisMemoItems();
   const memo = {
     at: new Date().toISOString(),
     pointCount: state.points.length,
@@ -1992,7 +2012,7 @@ function renderAnalysisMemos() {
         const time = Number.isNaN(date.getTime()) ? "" : `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
         const score = `G ${memo.games?.A ?? 0}-${memo.games?.B ?? 0} / P ${memo.points?.A ?? 0}-${memo.points?.B ?? 0}`;
         const items = uniqueAdviceItems(memo.items || [...(memo.quickItems || []), ...(memo.reviewItems || [])]);
-        const itemsHtml = items.length ? `<p>次に活かすポイント</p><ol>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>` : "";
+        const itemsHtml = items.length ? `<p>個人別コメント</p><ol>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>` : "";
         return `<article><strong>${escapeHtml(time)} ${escapeHtml(score)} ${escapeHtml(memo.pointCount)}点時点</strong>${itemsHtml}</article>`;
       }).join("")
     : `<p>保存した分析はまだありません。</p>`;

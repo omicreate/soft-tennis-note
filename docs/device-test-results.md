@@ -1,8 +1,8 @@
 # 実機確認結果
 
 最終更新: 2026-06-03
-対象バージョン: v206
-公開URL: https://omicreate.github.io/soft-tennis-note/?v=206
+対象バージョン: v207
+公開URL: https://omicreate.github.io/soft-tennis-note/?v=207
 
 ## 1. 記入ルール
 
@@ -27,12 +27,12 @@
 URL:
 
 ```text
-https://omicreate.github.io/soft-tennis-note/?v=206
+https://omicreate.github.io/soft-tennis-note/?v=207
 ```
 
 確認すること:
 
-- 画面下部またはメニュー内に `v206・2026-06-03` が表示される
+- 画面下部またはメニュー内に `v207・2026-06-03` が表示される
 - スコアボードが画面幅に収まる
 - 下部タブが押せる
 - 横スクロールが発生しない

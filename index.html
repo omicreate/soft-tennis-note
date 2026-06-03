@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=206" />
-    <link rel="stylesheet" href="styles.css?v=206" />
+    <link rel="manifest" href="manifest.webmanifest?v=207" />
+    <link rel="stylesheet" href="styles.css?v=207" />
   </head>
   <body class="analysis-overall-mode">
     <main class="app-shell">
@@ -347,11 +347,9 @@
           <button class="active" data-analysis-section="overall" type="button">全体分析</button>
           <button data-analysis-section="players" type="button">個人別分析</button>
         </div>
-        <p class="analysis-view-note" id="analysisSectionNote">試合全体の流れ、得点・失点の傾向、次につなげる材料を表示します。</p>
+        <p class="analysis-view-note" id="analysisSectionNote">全体分析は、試合全体の流れと得点・失点の数字だけを確認します。</p>
 
         <div class="analysis-section analysis-overall-section">
-          <div class="opponent-view" id="opponentView"></div>
-          <div class="action-plan" id="actionPlan"></div>
           <div class="analysis-summary" id="analysisSummary"></div>
           <div class="score-quality" id="scoreQuality"></div>
           <div class="chart-block emphasis scoring-situation-block">
@@ -398,12 +396,12 @@
             <p class="chart-note">サービス順と初期設定をもとに、担当者を自動判定します。</p>
             <div id="serveReceiveBars" class="serve-receive-cards"></div>
           </div>
-        </div>
 
-        <div class="analysis-save">
-          <button class="action-button action-save" id="saveAnalysisMemoButton" type="button">この振り返りを保存</button>
-          <p class="analysis-save-note">今表示している次に活かすポイントを、時刻・スコア付きで残します。サマリー画像にも反映されます。</p>
-          <div id="analysisMemoList" class="analysis-memo-list"></div>
+          <div class="analysis-save">
+            <button class="action-button action-save" id="saveAnalysisMemoButton" type="button">個人別コメントを保存</button>
+            <p class="analysis-save-note">選手別の記録コメントを、時刻・スコア付きで残します。サマリー画像にも反映されます。</p>
+            <div id="analysisMemoList" class="analysis-memo-list"></div>
+          </div>
         </div>
       </section>
 
@@ -428,7 +426,7 @@
       </section>
 
       <footer class="app-footer">
-        <span class="app-version">v206・2026-06-03</span>
+        <span class="app-version">v207・2026-06-03</span>
         <span>© 2026 OmiCreate</span>
         <span>無断転載・再配布・改変利用を禁じます</span>
       </footer>
@@ -551,7 +549,7 @@
           <dl>
             <div>
               <dt>現在の版</dt>
-              <dd>v206・2026-06-03</dd>
+              <dd>v207・2026-06-03</dd>
             </div>
             <div>
               <dt>更新内容</dt>
@@ -875,10 +873,10 @@
       </form>
     </dialog>
 
-    <script src="app-config.js?v=206" defer></script>
-    <script src="app-analysis.js?v=206" defer></script>
-    <script src="app-storage.js?v=206" defer></script>
-    <script src="app-rules.js?v=206" defer></script>
-    <script src="app.js?v=206" defer></script>
+    <script src="app-config.js?v=207" defer></script>
+    <script src="app-analysis.js?v=207" defer></script>
+    <script src="app-storage.js?v=207" defer></script>
+    <script src="app-rules.js?v=207" defer></script>
+    <script src="app.js?v=207" defer></script>
   </body>
 </html>
