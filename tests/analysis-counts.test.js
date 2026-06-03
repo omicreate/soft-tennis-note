@@ -357,12 +357,46 @@ const testCode = `
   assert.equal(streaks.own.count, 2, "最長連続得点を集計する");
   assert.equal(streaks.opp.count, 3, "最長連続失点を集計する");
   const clutch = getClutchStats();
-  assert.equal(clutch.ownGamePointMissed >= 2, true, "ゲームポイント逸失を集計する");
+  assert.equal(clutch.ownGamePointMissed, 1, "ゲームポイント逸失はマッチポイント逸失と二重計上しない");
   assert.equal(clutch.ownMatchPointMissed >= 1, true, "マッチポイント逸失を集計する");
   renderMomentumRows(elements.momentumBars, getMomentumRows());
   assert.match(elements.momentumBars.innerHTML, /1ポイント目取得/, "流れと勝負どころを表示する");
   assert.match(elements.momentumBars.innerHTML, /momentum-card/, "流れと勝負どころは読みやすいカードで表示する");
   assert.match(elements.momentumBars.innerHTML, /1G 0-0|3G 3-2/, "流れと勝負どころにゲームとカウントを表示する");
+
+  setPoints([
+    point({ winner: "B", outcome: "ストローク得点", scoreBefore: score({ A: 0, B: 0 }) }),
+    point({ winner: "B", outcome: "ボレー得点", gameWonBy: "B", gameNumber: 1, scoreBefore: score({ A: 0, B: 1 }) }),
+    point({ winner: "B", outcome: "サービス得点", scoreBefore: score({ A: 0, B: 0 }, { A: 0, B: 1 }) }),
+    point({ winner: "A", outcome: "ストローク得点", gameWonBy: "A", scoreBefore: score({ A: 3, B: 2 }, { A: 0, B: 1 }) }),
+    point({ winner: "B", outcome: "ストロークミス", scoreBefore: score({ A: 0, B: 0 }, { A: 1, B: 1 }) }),
+    point({ winner: "B", outcome: "レシーブミス", scoreBefore: score({ A: 0, B: 1 }, { A: 1, B: 1 }) }),
+    point({ winner: "B", outcome: "スマッシュ得点", scoreBefore: score({ A: 0, B: 2 }, { A: 1, B: 1 }) })
+  ]);
+  const boundaryStreaks = getStreakDetails();
+  assert.equal(boundaryStreaks.opp.count, 3, "最長連続失点はゲームをまたいだ試合の流れとして集計する");
+  assert.equal(boundaryStreaks.opp.start, 1, "同じ長さの連続失点が複数ある場合は先に発生したものを表示する");
+  assert.equal(boundaryStreaks.opp.end, 3, "最長連続失点の終了位置を保持する");
+  const firstHalfGames = getFirstHalfGames();
+  assert.deepEqual(firstHalfGames, { A: 1, B: 1 }, "前半ゲーム数はgameNumberが欠けてもscoreBefore.gamesから補完して集計する");
+
+  setPoints([
+    point({ winner: "B", outcome: "ストローク得点", scoreBefore: score({ A: 3, B: 2 }, { A: 2, B: 1 }) }),
+    point({ winner: "B", outcome: "スマッシュ得点", scoreBefore: score({ A: 6, B: 5 }, { A: 3, B: 3 }) }),
+    point({ winner: "A", outcome: "ストローク得点", scoreBefore: score({ A: 5, B: 6 }, { A: 3, B: 3 }) })
+  ]);
+  const clutchBoundaries = getClutchStats();
+  assert.equal(clutchBoundaries.ownGamePointMissed, 1, "通常ゲームポイント逸失だけをGP逸失に数える");
+  assert.equal(clutchBoundaries.ownMatchPointMissed, 1, "ファイナルのマッチポイント逸失をMP逸失に数える");
+  assert.equal(clutchBoundaries.oppMatchPointMissed, 1, "相手側のマッチポイント逸失も集計できる");
+
+  setPoints([
+    point({ winner: "A", rally: "3", scoreBefore: score({ A: 0, B: 0 }) }),
+    point({ winner: "A", rally: "4", scoreBefore: score({ A: 1, B: 0 }) }),
+    point({ winner: "B", rally: "4", outcome: "ストロークミス", scoreBefore: score({ A: 2, B: 0 }) }),
+    point({ winner: "B", rally: "3", scoreBefore: score({ A: 3, B: 2 }) }),
+    point({ winner: "B", rally: "4", scoreBefore: { games: { A: 3, B: 2 }, points: { A: 3, B: 2 } } })
+  ]);
   renderStats();
   assert.match(elements.rallyLengthBars.innerHTML, /3本以内|4本以上/, "分析画面にラリーの長さを表示する");
   assert.match(buildSummaryComments(getAnalysisData()).join("\\n"), /4本以上/, "分析コメントにラリーの傾向を反映する");

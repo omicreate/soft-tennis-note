@@ -96,10 +96,10 @@ function buildDenseMatchState() {
 test.describe("mobile layout", () => {
   test("record, analysis, history, archive and summary screens fit mobile widths", async ({ page }, testInfo) => {
     test.setTimeout(45000);
-    await page.goto("/index.html?v=207");
+    await page.goto("/index.html?v=208");
 
     await expect(page.getByText("ソフトテニス試合ノート").first()).toBeVisible();
-    await expect(page.getByText("v207・2026-06-03").first()).toBeVisible();
+    await expect(page.getByText("v208・2026-06-03").first()).toBeVisible();
     await expectNoHorizontalOverflow(page, "record screen");
 
     await page.getByRole("button", { name: "分析" }).click();
@@ -168,7 +168,7 @@ test.describe("mobile layout", () => {
       localStorage.setItem("soft-tennis-logger-state-v1", JSON.stringify(state));
     }, buildDenseMatchState());
 
-    await page.goto("/index.html?v=207");
+    await page.goto("/index.html?v=208");
     await page.getByRole("button", { name: "メニュー" }).click();
     await page.getByRole("button", { name: "サマリー画像を見る" }).click();
 

@@ -1303,7 +1303,7 @@ function renderAnalysisSectionMode() {
   const playerMode = analysisSectionMode === "players";
   document.body.classList.toggle("analysis-overall-mode", !playerMode);
   document.body.classList.toggle("analysis-player-mode", playerMode);
-  elements.analysisSectionControl?.querySelectorAll("[data-analysis-section]").forEach((button) => {
+  elements.analysisSectionControl?.querySelectorAll?.("[data-analysis-section]")?.forEach((button) => {
     button.classList.toggle("active", button.dataset.analysisSection === analysisSectionMode);
   });
   if (elements.analysisSectionNote) {
@@ -1528,7 +1528,8 @@ function getFirstHalfGames() {
   const maxGames = state.gamesToWin * 2 - 1;
   const firstHalfLimit = Math.floor(maxGames / 2);
   return state.points.reduce((acc, point) => {
-    if (point.gameWonBy && point.gameNumber <= firstHalfLimit) {
+    const gameNumber = point.gameNumber || getGameNumber(point.scoreBefore?.games || { A: 0, B: 0 });
+    if (point.gameWonBy && gameNumber <= firstHalfLimit) {
       acc[point.gameWonBy] += 1;
     }
     return acc;
@@ -1822,7 +1823,10 @@ function isMatchPointOpportunity(point, side) {
 function getClutchStats() {
   return state.points.reduce((acc, point) => {
     ["A", "B"].forEach((side) => {
-      if (isGamePointOpportunity(point, side) && point.winner !== side) {
+      const missed = point.winner !== side;
+      const matchPoint = isMatchPointOpportunity(point, side);
+      const gamePoint = isGamePointOpportunity(point, side);
+      if (gamePoint && !matchPoint && missed) {
         if (side === "A") {
           acc.ownGamePointMissed += 1;
           acc.ownGamePointMissedPoints.push(point);
@@ -1831,7 +1835,7 @@ function getClutchStats() {
           acc.oppGamePointMissedPoints.push(point);
         }
       }
-      if (isMatchPointOpportunity(point, side) && point.winner !== side) {
+      if (matchPoint && missed) {
         if (side === "A") {
           acc.ownMatchPointMissed += 1;
           acc.ownMatchPointMissedPoints.push(point);
