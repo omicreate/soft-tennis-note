@@ -1170,10 +1170,10 @@ function summarize() {
     ["取れたポイントの割合", `${Math.round((ownPoints / total) * 100)}%`, "全体の中で自チームが取れた割合。試合の流れを大きく見る"],
     ["前半で取れたゲーム", `${firstHalf.A}-${firstHalf.B}`, "序盤で流れを作れたかを見る。少ない時は1ゲーム目の入り方とサービス/レシーブを確認"],
     ["自分たちで取った点", ownScoredByPattern, "相手ミスではなく、自分たちのプレーで取れた点。次も再現したい形を探す"],
-    ["最初の2本で落とした点", ownEarlyLost, "サービス、レシーブ、その次の1本で落とした点。試合中に直しやすい"],
-    ["ダブルフォールト", ownDoubleFaults, "自チームのサービスで相手に渡した点。多い時は2ndの安全度を優先"],
+    ["最初の2本で与えた点", ownEarlyLost, "サービス、レシーブ、その次の1本で与えた点。試合中に直しやすい"],
+    ["ダブルフォールト", ownDoubleFaults, "自チームのサービスで相手に与えた点。多い時は2ndの安全度を優先"],
     ["第2サービスから始まった点", secondServeStarts, "第1サービスが入らず不利に始まった点。攻める前の安定度を見る"],
-    ["レシーブミス", ownReceiveMisses, "相手サービスで返せず失った点。多い時は返球コースと構えを確認"],
+    ["レシーブミス", ownReceiveMisses, "相手サービスで返せず相手に与えた点。多い時は返球コースと構えを確認"],
     ["第1サービスで始められた割合", servePoints.length ? `${Math.round((firstServeStarts / servePoints.length) * 100)}%` : "-", "自チームサービスの入り。低い時は威力より確率を優先"],
     ["3本以内のポイント", rallyStats.recorded ? `${rallyStats.short}/${rallyStats.recorded}本` : "-", "サーブを1本目として、早く終わったポイントを見る"],
     ["4本以上のポイント", rallyStats.recorded ? `${rallyStats.long}/${rallyStats.recorded}本` : "-", "ラリーになった時に粘れているかを見る"]
@@ -1266,7 +1266,7 @@ function renderAnalysisSummary() {
   const openingTone = openingStats.total ? (openingStats.own >= openingStats.opp ? "own" : "opp") : "neutral";
   elements.analysisSummary.innerHTML = [
     ["ゲーム最初の1本", openingStats.total ? `${openingStats.own}/${openingStats.total}本` : "未記録", openingTone],
-    ["ミスで落とした", `${data.ownLostByOwnError}本`, "opp"],
+    ["ミスで与えた", `${data.ownLostByOwnError}本`, "opp"],
     ["自分たちで取った", `${data.ownScoredByPattern}本`, "own"],
     ["相手ミスで取った", `${data.ownPointsByOpponentError}本`, "own"]
   ].map(([label, value, tone]) => `
@@ -1339,19 +1339,19 @@ function buildActionPlanRows(data = getAnalysisData(), { limit = 6 } = {}) {
   const rows = [];
 
   if (!data.total) {
-    rows.push(["まず記録を増やす", "1ゲーム分を目安に記録し、サービス・レシーブ・ミスの傾向を見る", "neutral"]);
+    rows.push(["判断材料を増やす", "まず1ゲーム分を目安に記録し、サービス・レシーブ・誰のプレーかを見る", "neutral"]);
   } else {
-    if (data.ownDoubleFaults > 0) rows.push(["サービスを安定させる", `DF ${data.ownDoubleFaults}本。第2サービスは入れるコースを先に決める`, "opp"]);
-    if (data.ownReceiveMisses > 0) rows.push(["レシーブで相手に渡さない", `レシーブミス ${data.ownReceiveMisses}本。まず深く返す形を確認`, "opp"]);
-    if (data.openingPointRate !== null && data.openingPointRate < ANALYSIS_COMMENT_RULES.openingRateLow) rows.push(["ゲームの入りを作る", `1ポイント目 ${data.openingPointOwn}/${data.openingPointTotal}本。最初の1本は安全な形を固定`, "opp"]);
-    if (data.longestOppStreak >= ANALYSIS_COMMENT_RULES.longLostStreakAlert) rows.push(["連続失点を止める", `最長連続失点 ${data.longestOppStreakText}。1本返して流れを切るプレーを決める`, "opp"]);
-    if (data.ownGamePointMissed > 0 || data.ownMatchPointMissed > 0) rows.push(["勝負どころを整理する", `GP逸失 ${data.ownGamePointMissed}回 / MP逸失 ${data.ownMatchPointMissed}回。決め急がず先に形を作る`, "opp"]);
-    if (data.ownLostByOwnError > data.ownScoredByPattern) rows.push(["ミス失点を減らす", `ミス失点 ${data.ownLostByOwnError}本が得点パターン ${data.ownScoredByPattern}本を上回る`, "opp"]);
-    if (rallyStats.recorded >= ANALYSIS_COMMENT_RULES.rallyRecordedMin && data.rallyShortRate >= ANALYSIS_COMMENT_RULES.shortRallyRateHigh) rows.push(["3本以内を丁寧にする", `3本以内 ${rallyStats.short}/${rallyStats.recorded}本。サービス・レシーブ直後の選択を確認`, "neutral"]);
-    if (rallyStats.recorded >= ANALYSIS_COMMENT_RULES.rallyRecordedMin && data.rallyLongRate >= ANALYSIS_COMMENT_RULES.longRallyRateHigh) rows.push(["ラリー後に取り切る", `4本以上 ${rallyStats.long}/${rallyStats.recorded}本。粘った後の決め方を練習`, "neutral"]);
-    if (opponentScore[1] > 0) rows.push(["相手の得点形を消す", `相手の主な得点は ${opponentScore[0]} ${opponentScore[1]}本。先に止める守り方を確認`, "opp"]);
-    if (opponentError[1] > 0) rows.push(["相手のミスを誘う", `相手の主なミスは ${opponentError[0]} ${opponentError[1]}本。誘えた配球を再確認`, "own"]);
-    if (data.topScore[1] > 0) rows.push(["良い得点形を再現する", `${data.topScore[0]} ${data.topScore[1]}本。練習でも同じ入り方を作る`, "own"]);
+    if (data.ownDoubleFaults > 0) rows.push(["サービスで与えた点を減らす", `DF ${data.ownDoubleFaults}本。第2サービスは入れるコースを決めてから打つ`, "opp"]);
+    if (data.ownReceiveMisses > 0) rows.push(["レシーブで与えた点を減らす", `レシーブミス ${data.ownReceiveMisses}本。強く返す前に、深さか高さを決める`, "opp"]);
+    if (data.openingPointRate !== null && data.openingPointRate < ANALYSIS_COMMENT_RULES.openingRateLow) rows.push(["ゲーム最初の1本を取りにいく", `1ポイント目 ${data.openingPointOwn}/${data.openingPointTotal}本。最初に使う安全な入り方を決める`, "opp"]);
+    if (data.longestOppStreak >= ANALYSIS_COMMENT_RULES.longLostStreakAlert) rows.push(["連続で取られた流れを切る", `最長連続失点 ${data.longestOppStreakText}。次の1本はまず返して相手にもう一度打たせる`, "opp"]);
+    if (data.ownGamePointMissed > 0 || data.ownMatchPointMissed > 0) rows.push(["ゲームポイント後の1本を整理する", `GP逸失 ${data.ownGamePointMissed}回 / MP逸失 ${data.ownMatchPointMissed}回。決め急がず、先に入れる形を選ぶ`, "opp"]);
+    if (data.ownLostByOwnError > data.ownScoredByPattern) rows.push(["与えた点を先に減らす", `ミスで与えた点 ${data.ownLostByOwnError}本が、自分たちで取った点 ${data.ownScoredByPattern}本を上回る`, "opp"]);
+    if (rallyStats.recorded >= ANALYSIS_COMMENT_RULES.rallyRecordedMin && data.rallyShortRate >= ANALYSIS_COMMENT_RULES.shortRallyRateHigh) rows.push(["3本以内の入りを確認する", `3本以内 ${rallyStats.short}/${rallyStats.recorded}本。サービス・レシーブ直後の1本で取られた/与えた内容を見る`, "neutral"]);
+    if (rallyStats.recorded >= ANALYSIS_COMMENT_RULES.rallyRecordedMin && data.rallyLongRate >= ANALYSIS_COMMENT_RULES.longRallyRateHigh) rows.push(["4本以上の最後を確認する", `4本以上 ${rallyStats.long}/${rallyStats.recorded}本。続いた後に取れた形、取られた形を分ける`, "neutral"]);
+    if (opponentScore[1] > 0) rows.push(["相手に取られた形を止める", `相手に取られた主な形は ${opponentScore[0]} ${opponentScore[1]}本。先に打たせない配球を確認`, "opp"]);
+    if (opponentError[1] > 0) rows.push(["相手が与えた点を再現する", `相手が与えた主なミスは ${opponentError[0]} ${opponentError[1]}本。そこに至った配球を残す`, "own"]);
+    if (data.topScore[1] > 0) rows.push(["取れた形をもう一度使う", `${data.topScore[0]} ${data.topScore[1]}本。次の試合でも同じ入り方を選べるようにする`, "own"]);
   }
 
   return rows.filter((row, index, allRows) => allRows.findIndex((item) => item[0] === row[0]) === index).slice(0, limit);
@@ -1360,8 +1360,8 @@ function buildActionPlanRows(data = getAnalysisData(), { limit = 6 } = {}) {
 function renderActionPlan() {
   const rows = buildActionPlanRows(getAnalysisData(), { limit: 5 });
   elements.actionPlan.innerHTML = `
-    <strong>次の練習テーマ</strong>
-    <p>数字から優先度順に整理します。記録者が選手へ共有しやすい形にします。</p>
+    <strong>次に活かすポイント</strong>
+    <p>数字から、次に確認する順に整理します。試合後に話す材料として、事実と次の見方を並べます。</p>
     <div class="action-plan-list">
       ${rows.map(([title, note, tone], index) => `
         <article class="${escapeHtml(tone || "neutral")}">
@@ -1383,12 +1383,12 @@ function getSideInsightItems() {
   const ownTopScore = data.topScore;
   const ownItems = [
     `自分たちで取った形 ${data.ownScoredByPattern}本 / 相手ミスで取った ${data.ownPointsByOpponentError}本`,
-    `ミスで落とした ${data.ownLostByOwnError}本 / 主なミス ${ownError[1] ? `${ownError[0]} ${ownError[1]}本` : "未記録"}`,
+    `ミスで与えた ${data.ownLostByOwnError}本 / 主なミス ${ownError[1] ? `${ownError[0]} ${ownError[1]}本` : "未記録"}`,
     ownTopScore[1] ? `良い得点形は ${ownTopScore[0]} ${ownTopScore[1]}本` : "良い得点形はまだ未記録"
   ];
   const opponentItems = [
-    `相手が取り切った形 ${ownLost.filter((point) => isScoringOutcome(point.outcome)).length}本 / 自チームのミスで取った ${data.ownLostByOwnError}本`,
-    opponentScore[1] ? `相手の主な得点形は ${opponentScore[0]} ${opponentScore[1]}本` : "相手の得点形はまだ未記録",
+    `相手に取られた形 ${ownLost.filter((point) => isScoringOutcome(point.outcome)).length}本 / こちらが与えた点 ${data.ownLostByOwnError}本`,
+    opponentScore[1] ? `相手に取られた主な形は ${opponentScore[0]} ${opponentScore[1]}本` : "相手に取られた形はまだ未記録",
     opponentError[1] ? `相手の主なミスは ${opponentError[0]} ${opponentError[1]}本` : "相手ミスはまだ未記録"
   ];
   return { ownItems, opponentItems };
@@ -1401,7 +1401,7 @@ function renderOpponentView() {
 
   elements.opponentView.innerHTML = `
     <strong>試合から分かったこと</strong>
-    <p>自チームと相手を同じ基準で見て、次の練習材料を見つけます。</p>
+    <p>自チームと相手を同じ基準で見て、次に活かす材料を見つけます。</p>
     ${comments.length ? `<ul>${comments.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
     <div class="insight-side-grid">
       <article class="own-side"><b>自チーム</b><ul>${ownItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></article>
@@ -1427,13 +1427,13 @@ function buildPriorityItems() {
   const items = [];
 
   if (ownError[1] > 0) {
-    items.push(`失点で最も多いのは「${ownError[0]}」 ${ownError[1]}本`);
+    items.push(`相手に与えた形で最も多いのは「${ownError[0]}」 ${ownError[1]}本`);
   }
   if (phaseCounts["最初の2本で失点"] > 0) {
-    items.push(`最初の2本での失点 ${phaseCounts["最初の2本で失点"]}本。ゲームの入りで落としている`);
+    items.push(`最初の2本で取られた/与えた点 ${phaseCounts["最初の2本で失点"]}本。ゲームの入りで相手に流れを渡している`);
   }
   if (phaseCounts["ゲームポイント付近で失点"] > 0 || phaseCounts["デュース以降で失点"] > 0) {
-    items.push(`勝負所の失点 ${phaseCounts["ゲームポイント付近で失点"] + phaseCounts["デュース以降で失点"]}本。終盤の判断材料`);
+    items.push(`勝負所で取られた/与えた点 ${phaseCounts["ゲームポイント付近で失点"] + phaseCounts["デュース以降で失点"]}本。終盤の判断材料`);
   }
   if (opponentError[1] > 0) {
     const target = targetPlayer[1] > 0 && targetPlayer[0] !== "不明" ? ` 対象は ${targetPlayer[0]} が最多` : "";
@@ -1446,16 +1446,16 @@ function buildPriorityItems() {
     if (shortRate >= ANALYSIS_COMMENT_RULES.shortRallyRateHigh) {
       items.push(`3本以内のポイント ${rallyStats.short}/${rallyStats.recorded}本。サービス・レシーブ直後を最優先で確認`);
     } else if (longRate >= ANALYSIS_COMMENT_RULES.longRallyRateHigh) {
-      items.push(`4本以上のポイント ${rallyStats.long}/${rallyStats.recorded}本。粘った後に取り切る形を確認`);
+      items.push(`4本以上のポイント ${rallyStats.long}/${rallyStats.recorded}本。続いた後に取れた形、取られた形を確認`);
     }
   }
   if (opponentReceiveMissGain > 0) {
-    items.push(`相手サービス時のレシーブミス献上 ${opponentReceiveMissGain}本`);
+    items.push(`相手サービス時にレシーブミスで与えた点 ${opponentReceiveMissGain}本`);
   } else if (firstServeRate !== null && firstServeRate < ANALYSIS_COMMENT_RULES.firstServeLow) {
     items.push(`相手の第1サービス開始率 ${firstServeRate}%`);
   }
   if (opponentByPattern > 0) {
-    items.push(`相手に取り切られた点 ${opponentByPattern}本`);
+    items.push(`相手に取られた点 ${opponentByPattern}本`);
   }
   if (!items.length) items.push("大きな偏りはまだ見えていません。記録を続けて傾向確認");
 
@@ -1850,11 +1850,11 @@ function getMomentumRows() {
   const streaks = getStreakDetails();
   const clutch = getClutchStats();
   return [
-    ["1ポイント目取得", opening.rate === null ? "-" : `${opening.own}/${opening.total}本 (${opening.rate}%)`, "own", "各ゲームの入りを確認", `取った: ${formatPointLocations(opening.ownPoints)} / 落とした: ${formatPointLocations(opening.oppPoints)}`],
+    ["1ポイント目取得", opening.rate === null ? "-" : `${opening.own}/${opening.total}本 (${opening.rate}%)`, "own", "各ゲームの入りを確認", `取った: ${formatPointLocations(opening.ownPoints)} / 取られた: ${formatPointLocations(opening.oppPoints)}`],
     ["最長連続得点", formatStreak(streaks.own), "own", "連続して取れた場面", streaks.own ? `発生: ${formatPointLocations(streaks.own.points)}` : "発生: 該当なし"],
-    ["最長連続失点", formatStreak(streaks.opp), "opp", "連続して落とした場面", streaks.opp ? `発生: ${formatPointLocations(streaks.opp.points)}` : "発生: 該当なし"],
-    ["ゲームポイント逸失", `${clutch.ownGamePointMissed}回`, clutch.ownGamePointMissed ? "opp" : "neutral", "ゲームを取れる場面で落とした数", `発生: ${formatPointLocations(clutch.ownGamePointMissedPoints)}`],
-    ["マッチポイント逸失", `${clutch.ownMatchPointMissed}回`, clutch.ownMatchPointMissed ? "opp" : "neutral", "試合を終わらせる場面で落とした数", `発生: ${formatPointLocations(clutch.ownMatchPointMissedPoints)}`]
+    ["最長連続失点", formatStreak(streaks.opp), "opp", "連続して取られた場面", streaks.opp ? `発生: ${formatPointLocations(streaks.opp.points)}` : "発生: 該当なし"],
+    ["ゲームポイント逸失", `${clutch.ownGamePointMissed}回`, clutch.ownGamePointMissed ? "opp" : "neutral", "ゲームを取れる場面で与えた数", `発生: ${formatPointLocations(clutch.ownGamePointMissedPoints)}`],
+    ["マッチポイント逸失", `${clutch.ownMatchPointMissed}回`, clutch.ownMatchPointMissed ? "opp" : "neutral", "試合を終わらせる場面で与えた数", `発生: ${formatPointLocations(clutch.ownMatchPointMissedPoints)}`]
   ];
 }
 
@@ -1992,7 +1992,7 @@ function renderAnalysisMemos() {
         const time = Number.isNaN(date.getTime()) ? "" : `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
         const score = `G ${memo.games?.A ?? 0}-${memo.games?.B ?? 0} / P ${memo.points?.A ?? 0}-${memo.points?.B ?? 0}`;
         const items = uniqueAdviceItems(memo.items || [...(memo.quickItems || []), ...(memo.reviewItems || [])]);
-        const itemsHtml = items.length ? `<p>次の練習テーマ</p><ol>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>` : "";
+        const itemsHtml = items.length ? `<p>次に活かすポイント</p><ol>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>` : "";
         return `<article><strong>${escapeHtml(time)} ${escapeHtml(score)} ${escapeHtml(memo.pointCount)}点時点</strong>${itemsHtml}</article>`;
       }).join("")
     : `<p>保存した分析はまだありません。</p>`;
@@ -2023,24 +2023,28 @@ function buildPlayerReviewItems(item) {
   }
 
   if (item.diff < 0) {
-    items.push(`+${item.plus}/-${item.minus}。ミス記録が${Math.abs(item.diff)}本多い`);
+    items.push(isOwn
+      ? `+${item.plus}/-${item.minus}。相手に与えた記録が${Math.abs(item.diff)}本多い`
+      : `+${item.plus}/-${item.minus}。相手側は与えた記録が${Math.abs(item.diff)}本多い`);
   } else if (item.diff > 0) {
-    items.push(`+${item.plus}/-${item.minus}。得点記録が${item.diff}本多い`);
+    items.push(isOwn
+      ? `+${item.plus}/-${item.minus}。自分たちで取った記録が${item.diff}本多い`
+      : `+${item.plus}/-${item.minus}。相手に取られた記録が${item.diff}本多い`);
   } else if (total) {
-    items.push(`+${item.plus}/-${item.minus}。得点記録とミス記録は同数`);
+    items.push(`+${item.plus}/-${item.minus}。取った記録と与えた記録は同数`);
   }
 
   if (error[1] > 0) {
-    items.push(`${error[0]} ${error[1]}本が最多のミス`);
+    items.push(isOwn ? `${error[0]} ${error[1]}本が主な与えた形` : `${error[0]} ${error[1]}本が相手側の主な与えた形`);
   }
   if (scoring[1] > 0) {
-    items.push(`${scoring[0]} ${scoring[1]}本が最多の得点`);
+    items.push(isOwn ? `${scoring[0]} ${scoring[1]}本が主な取れた形` : `${scoring[0]} ${scoring[1]}本が相手に取られた主な形`);
   }
   if (serveReceive.doubleFaults > 0) {
-    items.push(`サーブ記録: DF ${serveReceive.doubleFaults}本`);
+    items.push(isOwn ? `サーブで与えたDF ${serveReceive.doubleFaults}本` : `相手側のDF ${serveReceive.doubleFaults}本`);
   }
   if (serveReceive.receiveMisses > 0) {
-    items.push(`レシーブ記録: ミス ${serveReceive.receiveMisses}本`);
+    items.push(isOwn ? `レシーブで与えたミス ${serveReceive.receiveMisses}本` : `相手側のレシーブミス ${serveReceive.receiveMisses}本`);
   }
   if (serveReceive.servePoints >= 2 && serveReceive.firstServeRate !== null) {
     items.push(`第1サービス ${serveReceive.firstServe}/${serveReceive.servePoints}本 (${serveReceive.firstServeRate}%)`);
@@ -2048,11 +2052,11 @@ function buildPlayerReviewItems(item) {
   if (serveReceive.receivePoints >= 2 && serveReceive.receiveKeepRate !== null) {
     items.push(`レシーブ成功 ${serveReceive.receiveKeep}/${serveReceive.receivePoints}本 (${serveReceive.receiveKeepRate}%)`);
   }
-  if (shot[1] > 0 && items.length < 3) {
-    items.push(`${shot[0]} ${shot[1]}本が最多のプレー`);
+  if (shot[1] > 0 && items.length < 4) {
+    items.push(`${shot[0]} ${shot[1]}本が多いプレー`);
   }
   if (!items.length) items.push("大きな偏りはまだ見えません。記録を続けて確認");
-  return uniqueAdviceItems(items).slice(0, 3);
+  return uniqueAdviceItems(items).slice(0, 4);
 }
 
 function buildPlayerInvolvementComment(item) {
@@ -2061,18 +2065,19 @@ function buildPlayerInvolvementComment(item) {
   const scoring = item.outcomes.filter(([label]) => isScoringOutcome(label))[0] || ["", 0];
   const error = item.outcomes.filter(([label]) => isErrorOutcome(label))[0] || ["", 0];
   const srTotal = (serveReceive.servePoints || 0) + (serveReceive.receivePoints || 0);
+  const isOwn = item.side === "A";
   const parts = [];
 
   if (!total && !srTotal) return "記録なし。役割評価ではなく、まず関わった本数を増やして確認";
 
   parts.push(`関与 ${total}本（+${item.plus}/-${item.minus}/${formatPointDiff(item.diff)}）`);
-  if (item.diff > 0) parts.push("得点記録がミス記録を上回る");
-  if (item.diff < 0) parts.push("ミス記録が得点記録を上回る");
-  if (item.diff === 0 && total) parts.push("得点記録とミス記録は同数");
-  if (scoring[1] > 0) parts.push(`主な得点は${scoring[0]} ${scoring[1]}本`);
-  if (error[1] > 0) parts.push(`主なミスは${error[0]} ${error[1]}本`);
+  if (item.diff > 0) parts.push(isOwn ? "取った記録が与えた記録を上回る" : "相手に取られた記録が多い");
+  if (item.diff < 0) parts.push(isOwn ? "相手に与えた記録が多い" : "相手側が与えた記録が多い");
+  if (item.diff === 0 && total) parts.push("取った記録と与えた記録は同数");
+  if (scoring[1] > 0) parts.push(isOwn ? `主な取れた形は${scoring[0]} ${scoring[1]}本` : `相手に取られた主な形は${scoring[0]} ${scoring[1]}本`);
+  if (error[1] > 0) parts.push(isOwn ? `主な与えた形は${error[0]} ${error[1]}本` : `相手が与えた主な形は${error[0]} ${error[1]}本`);
   if (srTotal) parts.push(`S/R関与 ${srTotal}本`);
-  return parts.slice(0, 4).join("。") || "大きな偏りはまだ見えません";
+  return parts.slice(0, 5).join("。") || "大きな偏りはまだ見えません";
 }
 
 function getPlayerInvolvementItems() {
@@ -2700,7 +2705,7 @@ function getSummaryImageData() {
   const pointBreakdownRows = [
     ["自分たちで取った", data.ownScoredByPattern, "own", "攻めて取れた点"],
     ["相手ミスで取った", data.ownPointsByOpponentError, "own", "相手のミスで取れた点"],
-    ["ミスで落とした", data.ownLostByOwnError, "opp", "自分たちのミスで落とした点"]
+    ["ミスで与えた", data.ownLostByOwnError, "opp", "自分たちのミスで与えた点"]
   ];
   const openingTone = openingStats.total ? (openingStats.own >= openingStats.opp ? "own" : "opp") : "neutral";
   const openingMetric = openingStats.total ? `${openingStats.own}/${openingStats.total}本` : "未記録";
@@ -2746,7 +2751,7 @@ function getSummaryImageData() {
     ].filter(Boolean),
     summaryRows: [
       ["ゲーム最初の1本", openingMetric, openingTone],
-      ["ミスで落とした", data.ownLostByOwnError, "opp"],
+      ["ミスで与えた", data.ownLostByOwnError, "opp"],
       ["自分たちで取った", data.ownScoredByPattern, "own"],
       ["相手ミスで取った", data.ownPointsByOpponentError, "own"],
       ["記録ポイント", data.total, "neutral"],
@@ -2764,11 +2769,11 @@ function getSummaryImageData() {
       ["各ゲーム", getGamePointScoreRows().slice(0, 9).map(([label, score]) => `${label} ${score}`).join(" / ")]
     ],
     analysisComments: buildSummaryComments(data),
-    quickTitle: latestMemo ? `次の練習テーマ ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "次の練習テーマ",
+    quickTitle: latestMemo ? `次に活かすポイント ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "次に活かすポイント",
     quickItems: latestMemo ? (latestMemo.quickItems || []) : buildQuickCoachItems(data),
     reviewTitle: "",
     reviewItems: latestMemo ? (latestMemo.reviewItems || latestMemo.items || []) : buildPriorityItems(),
-    analysisMemoTitle: latestMemo ? `保存した分析 ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "次の練習テーマ",
+    analysisMemoTitle: latestMemo ? `保存した分析 ${[latestMemoTime, latestMemoScore].filter(Boolean).join(" ")}` : "次に活かすポイント",
     analysisMemoItems: latestMemo ? [...(latestMemo.quickItems || []), ...(latestMemo.reviewItems || latestMemo.items || [])].slice(0, 4) : [...buildQuickCoachItems(data), ...buildPriorityItems()].slice(0, 4),
     priorityItems: latestMemo ? [...(latestMemo.quickItems || []), ...(latestMemo.reviewItems || latestMemo.items || [])].slice(0, 4) : buildPriorityItems(),
     detailRows: [
@@ -3130,14 +3135,14 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     drawText(value, x + 34, rowY + 78, { size: 31, weight: 900, color: textColor(tone), maxWidth: cardW - 54 });
   };
   const drawSocialShareCard = () => {
-    const sections = ["チーム共有サマリー", "試合結果", "試合から分かったこと", "次の練習テーマ", "主な数字", "選手別 + / -"];
+    const sections = ["チーム共有サマリー", "試合結果", "試合から分かったこと", "次に活かすポイント", "主な数字", "選手別 + / -"];
     const result = rowValue(summary.resultRows, "試合結果", summary.currentPointScore === "終了" ? "試合終了" : "試合中");
     const games = rowValue(summary.resultRows, "ゲームスコア", summary.gameScore);
     const gamePoints = rowValue(summary.resultRows, "各ゲーム", "各ゲーム 未記録");
     const opening = rowValue(summary.summaryRows, "ゲーム最初の1本", "-");
     const ownScore = rowValue(summary.summaryRows, "自分たちで取った", "0");
     const opponentMiss = rowValue(summary.summaryRows, "相手ミスで取った", "0");
-    const ownMiss = rowValue(summary.summaryRows, "ミスで落とした", "0");
+    const ownMiss = rowValue(summary.summaryRows, "ミスで与えた", "0");
     const sr = rowValue(summary.detailRows, "選手別S/R", rowValue(summary.summaryRows, "選手別S/R", "-"));
     const rallyTrend = rowValue(summary.detailRows, "ラリーの長さ", "-");
     const insightItems = summary.analysisComments.filter(Boolean).slice(0, 2);
@@ -3179,7 +3184,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
       });
     }
 
-    y = heading("次の練習テーマ", y + 6);
+    y = heading("次に活かすポイント", y + 6);
     if (actionItems.length === 0) {
       y = bullet("まずはサービス・レシーブとミスの本数を確認", y, "neutral", 1);
     } else {
@@ -3193,7 +3198,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     drawSocialMetric("試合の入り", opening, pageMargin, y, (contentWidth - 22) / 2, "neutral");
     drawSocialMetric("自分たちで取った", `${ownScore}本`, pageMargin + (contentWidth + 22) / 2, y, (contentWidth - 22) / 2, "own");
     drawSocialMetric("相手ミスで取った", `${opponentMiss}本`, pageMargin, y + 138, (contentWidth - 22) / 2, "own");
-    drawSocialMetric("ミスで落とした", `${ownMiss}本`, pageMargin + (contentWidth + 22) / 2, y + 138, (contentWidth - 22) / 2, "opp");
+    drawSocialMetric("ミスで与えた", `${ownMiss}本`, pageMargin + (contentWidth + 22) / 2, y + 138, (contentWidth - 22) / 2, "opp");
     y += 286;
 
     y = heading("選手別 + / -", y);
@@ -3234,12 +3239,12 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
   y = paragraph("数字から見えた試合の流れを、親子・コーチで同じ画面を見ながら確認します。", y, "neutral");
   y = drawItems(summary.analysisComments, y, ANALYSIS_COMMENT_RULES.detailSummaryComments, 2);
   y += 8;
-  y = heading("次の練習テーマ", y);
+  y = heading("次に活かすポイント", y);
   y = drawItems(summary.actionPlanRows.map(([title, note]) => `${title}: ${note}`), y, 3, 2);
   pageFooter(0);
 
-  y = pageHeader(1, "次の練習テーマ", "数字から練習テーマへ整理する");
-  y = heading("優先して練習すること", y);
+  y = pageHeader(1, "次に活かすポイント", "数字から次に確認することを整理する");
+  y = heading("優先して確認すること", y);
   y = paragraph("記録から優先度順に整理した確認項目です。画面の分析ページと同じ考え方で見返します。", y, "neutral");
   y = drawActionPlan(summary.actionPlanRows, y);
   pageFooter(1);
@@ -3257,13 +3262,13 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
   pageFooter(3);
 
   if (!isShareMode) {
-    y = pageHeader(4, "試合の流れと得点内訳", "流れと点の中身を練習テーマへつなげる");
+    y = pageHeader(4, "試合の流れと得点内訳", "流れと点の中身を次に活かす材料へつなげる");
     y = heading("流れと勝負所", y);
     y = paragraph("試合の入り、連続得点・連続失点、ゲームポイント/マッチポイントの逸失を確認します。", y, "neutral");
     y = drawFlowTimeline(summary.flowRows, y);
     y += 10;
     y = heading("得点と失点の内訳", y);
-    y = drawPanel("どの点で試合が動いたか", "青は自チームの得点要素、赤は自チームのミス失点。次の練習テーマを決める材料です。", y, "neutral");
+    y = drawPanel("どの点で試合が動いたか", "青は自チームの得点要素、赤は相手に与えた点。次に活かす材料です。", y, "neutral");
     y = drawStackedBar(summary.pointBreakdownRows, y);
     pageFooter(4);
 
@@ -3285,11 +3290,11 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     );
     pageFooter(5);
   } else {
-    y = pageHeader(2, "次の練習テーマ", "短く共有しやすい形で、試合から分かったことと練習テーマを残す");
+    y = pageHeader(2, "次に活かすポイント", "短く共有しやすい形で、試合から分かったことと次に活かす材料を残す");
     y = heading("試合から分かったこと", y);
     y = drawItems(summary.analysisComments, y, ANALYSIS_COMMENT_RULES.shareSummaryComments, 2);
     y += 8;
-    y = heading("次の練習テーマ", y);
+    y = heading("次に活かすポイント", y);
     y = drawItems([...summary.quickItems, ...summary.reviewItems], y, ANALYSIS_COMMENT_RULES.shareNextItems, 2);
     y += 10;
     y = heading("基本情報", y);

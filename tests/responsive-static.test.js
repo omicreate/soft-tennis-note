@@ -41,9 +41,9 @@ assert.match(fs.readFileSync("app.js", "utf8"), /setSummaryPreviewMode[\s\S]*sum
 assert.doesNotMatch(html, /拡大して確認|summaryPreviewZoomControl|data-summary-zoom/, "サマリー画像画面に拡大切替ボタンを出さない");
 assert.match(css, /\.summary-dialog \.dialog-actions\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/, "サマリー画像画面の主要ボタンはスマホで2列表示になる");
 assert.match(css, /\.summary-dialog \.dialog-actions \.action-close\s*\{[\s\S]*grid-column:\s*1 \/ -1/, "サマリー画像画面の閉じるボタンは下段全幅になる");
-assert.match(html, /app-config\.js\?v=205[\s\S]*app-analysis\.js\?v=205[\s\S]*app-storage\.js\?v=205[\s\S]*app-rules\.js\?v=205[\s\S]*app\.js\?v=205/, "設定、分析、保存、ルール、本体の順に読み込む");
-assert.match(html, /styles\.css\?v=205/, "styles.cssのキャッシュ更新バージョンが最新");
-assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v205/, "Service Workerのキャッシュ名が最新");
+assert.match(html, /app-config\.js\?v=206[\s\S]*app-analysis\.js\?v=206[\s\S]*app-storage\.js\?v=206[\s\S]*app-rules\.js\?v=206[\s\S]*app\.js\?v=206/, "設定、分析、保存、ルール、本体の順に読み込む");
+assert.match(html, /styles\.css\?v=206/, "styles.cssのキャッシュ更新バージョンが最新");
+assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v206/, "Service Workerのキャッシュ名が最新");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-config\.js/, "Service Workerのキャッシュ対象に設定ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-analysis\.js/, "Service Workerのキャッシュ対象に分析ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-storage\.js/, "Service Workerのキャッシュ対象に保存ファイルがある");
@@ -74,7 +74,7 @@ assert.doesNotMatch(html, /次に攻めたい相手ミス|opponentErrorBars/, "�
 assert.match(css, /#analysisPanel \.opponent-view > strong,[\s\S]*#analysisPanel \.chart-block > h2[\s\S]*font-size:\s*0\.94rem/, "分析画面の項目タイトルサイズを統一する");
 assert.match(css, /\.insight-side-grid[\s\S]*own-side[\s\S]*opp-side/, "試合から分かったことは自チームと相手を分けて表示する");
 assert.match(css, /\.analysis-section[\s\S]*analysis-overall-mode[\s\S]*analysis-player-mode/, "分析画面に全体分析/個人別分析切り替えのCSSがある");
-assert.match(css, /\.action-plan[\s\S]*\.action-plan-list/, "分析画面に次の練習テーマのCSSがある");
+assert.match(css, /\.action-plan[\s\S]*\.action-plan-list/, "分析画面に次に活かすポイントのCSSがある");
 assert.match(css, /\.serve-receive-cards/, "選手別S/RカードのCSSがある");
 assert.match(css, /\.sr-side-group[\s\S]*\.own-side[\s\S]*\.opp-side/, "選手別S/R分析も自チームと相手を視覚的に分ける");
 assert.match(html, /選手別 サーブ\/レシーブ[\s\S]*サービス順と初期設定をもとに/, "分析画面でS/R担当の自動判定を説明する");

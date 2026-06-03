@@ -1,5 +1,5 @@
 const SOFT_TENNIS_CONFIG = {
-  APP_VERSION: "v205",
+  APP_VERSION: "v206",
   STORAGE_KEY: "soft-tennis-logger-state-v1",
   ARCHIVE_STORAGE_KEY: "soft-tennis-logger-archive-v1",
   MAX_ARCHIVED_MATCHES: 30,
@@ -37,34 +37,34 @@ const SOFT_TENNIS_CONFIG = {
     quickNoRecord: "まだ記録がありません。まずは1ポイント記録してください。",
     quickDoubleFault: "第2サービスは安全優先。ダブルフォールトを止める。",
     quickReceiveMiss: "レシーブはまず返す。強打より深く入れる。",
-    quickEarlyLost: "最初の2本はまず返す。入りで簡単に落とさない。",
+    quickEarlyLost: "最初の2本はまず返す。入りで相手に与えない。",
     quickFirstServeLow: "第1サービスは確率重視。入れてから展開する。",
     quickOpponentErrorMore: "相手ミス得点が多め。自チームで取る形を1つ作る。",
     quickTopScore: "得点が多い形は「{topScore}」。再現できた場面を確認する。",
     quickOpeningLow: "ゲームの1ポイント目は、サービス/レシーブの入りを丁寧にする。",
-    quickStopStreak: "連続失点は早めに止める。まず返して流れを切る。",
+    quickStopStreak: "連続で取られた流れは早めに切る。まず返して相手にもう一度打たせる。",
     quickClutchMiss: "ゲームポイントでは決め急がず、先に安全な形を作る。",
     quickShortRallyHigh: "3本以内が多め。サービス・レシーブ直後を丁寧に入る。",
     quickLongRallyHigh: "4本以上で続けられている。粘った後の決め方を確認する。",
     quickBalanced: "大きな偏りは少なめ。今のリズムを崩さず、先にミスしない。",
     summaryNoRecord: "まだ記録が少ないため、数ポイント記録して傾向を見る",
     summaryPointDiffPositive: "合計ポイントは{pointDiff}。ゲーム結果だけでなく内容でも押せている",
-    summaryPointDiffNegative: "合計ポイントは{pointDiff}。ゲーム前半や簡単な失点を減らす余地がある",
+    summaryPointDiffNegative: "合計ポイントは{pointDiff}。相手に取られた形と、こちらが与えた点を分けて見たい",
     summaryPointDiffEven: "合計ポイントは{pointDiff}。勝敗に関係なく内容は接戦",
-    summaryOwnErrorHigh: "ミス失点{ownLostByOwnError}本が得点パターン{ownScoredByPattern}本を上回る。まず失点を減らす",
+    summaryOwnErrorHigh: "ミスで与えた点{ownLostByOwnError}本が、自分たちで取った点{ownScoredByPattern}本を上回る。まず与えた点を減らす",
     summaryAttackHigh: "得点の{attackRate}%が自チームの得点パターン。良い形を次の試合でも再現したい",
     summaryOpponentErrorHigh: "得点の{opponentErrorRate}%が相手ミス。相手が崩れた配球や狙い所を確認したい",
-    summaryServeReceive: "DF{ownDoubleFaults}本、レシーブミス{ownReceiveMisses}本。サービス・レシーブの入りを優先",
-    summaryEarlyLost: "最初の2本での失点が{ownEarlyLost}本。1本目、2本目はまず返す",
+    summaryServeReceive: "DF{ownDoubleFaults}本、レシーブミス{ownReceiveMisses}本。サービス・レシーブで与えた点を先に確認",
+    summaryEarlyLost: "最初の2本で取られた/与えた点が{ownEarlyLost}本。1本目、2本目はまず返す",
     summaryOpeningLow: "ゲームの1ポイント目は{openingPointOwn}/{openingPointTotal}本。序盤の入りで相手に流れを渡している",
     summaryOpeningHigh: "ゲームの1ポイント目は{openingPointOwn}/{openingPointTotal}本。序盤の入りは良い傾向",
-    summaryFirstHalfBehind: "前半で取れたゲームは{firstHalfGamesText}。追う展開になりやすく、序盤の失点を減らしたい",
+    summaryFirstHalfBehind: "前半で取れたゲームは{firstHalfGamesText}。追う展開になりやすく、序盤に与えた点を減らしたい",
     summaryFirstHalfAhead: "前半で取れたゲームは{firstHalfGamesText}。序盤で流れを作れている",
-    summaryLostStreak: "最長連続失点は{longestOppStreakText}。連続失点を止めるプレーを決めたい",
+    summaryLostStreak: "最長連続失点は{longestOppStreakText}。連続で取られた流れを切るプレーを決めたい",
     summaryClutchMiss: "ゲームポイント逸失{ownGamePointMissed}回、マッチポイント逸失{ownMatchPointMissed}回。勝負所は安全に形を作る",
     summaryShortRallyHigh: "3本以内が{rallyShort}/{rallyRecorded}本。短いポイントで試合が動いているため、サービス・レシーブ直後を確認",
-    summaryLongRallyHigh: "4本以上が{rallyLong}/{rallyRecorded}本。ラリーで粘れているため、最後に取り切る形を確認",
-    summaryTopScore: "主な得点は「{topScore}」{topScoreCount}本。練習でも同じ形を確認"
+    summaryLongRallyHigh: "4本以上が{rallyLong}/{rallyRecorded}本。続いた後に取れた形、取られた形を確認",
+    summaryTopScore: "主な得点は「{topScore}」{topScoreCount}本。次の試合でも同じ形を確認"
   },
   TRIAL_GUIDES: {
     record: {
@@ -78,9 +78,9 @@ const SOFT_TENNIS_CONFIG = {
     },
     analysis: {
       summary: "テスト利用の説明（分析）",
-      lead: "分析ページは、記録した数字から次の練習材料を整理する画面です。記録者が選手へ見せながら、味方と相手を同じ基準で確認できます。",
+      lead: "分析ページは、記録した数字から次に活かす材料を整理する画面です。記録者が選手へ見せながら、味方と相手を同じ基準で確認できます。",
       items: [
-        "上から、試合から分かったこと、次の練習テーマ、選手別の記録を確認する",
+        "上から、試合から分かったこと、次に活かすポイント、選手別の記録を確認する",
         "選手別は + / -、プレー内容、サーブ/レシーブを同じ粒度で見る",
         "残したい内容は「この振り返りを保存」で時刻とスコア付きで残せる"
       ]
