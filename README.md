@@ -2,7 +2,9 @@
 
 スマホで使うことを前提にした、ソフトテニス専用の試合記録・分析アプリです。
 
-現在の表示バージョン: `v153`
+公開URL: https://omicreate.github.io/soft-tennis-note/
+
+現在の表示バージョン: `v211`
 
 更新内容は `CHANGELOG.md` に残します。
 
@@ -11,7 +13,7 @@
 このリポジトリおよびアプリの著作権は OmiCreate に帰属します。  
 許可なく、コード・画面・設計書・画像・文言の転載、再配布、改変利用、販売、第三者サービスへの組み込みを行うことを禁じます。
 
-詳しくは `TERMS.md` を確認してください。
+詳しくは `TERMS.md`、`PRIVACY.md`、`SECURITY.md` を確認してください。
 
 ## テスト利用時の説明
 
@@ -102,8 +104,14 @@ https://www.jsta.or.jp/about_softtennis/words
 - `app.js`: 画面操作、記録、分析、保存、CSV出力
 - `manifest.webmanifest`: PWA用マニフェスト
 - `sw.js`: オフラインキャッシュ用サービスワーカー
+- `TERMS.md`: 利用条件、権利、免責
+- `PRIVACY.md`: 保存データ、外部送信、削除方法
+- `SECURITY.md`: セキュリティ方針、脆弱性連絡、運用方針
+- `LICENSE.md`: オープンソースではないこと、All rights reservedの明記
 - `CHANGELOG.md`: 更新履歴
 - `docs/00-document-map.md`: ドキュメント一覧と読む順番
+- `docs/security-and-compliance.md`: セキュリティ、プライバシー、権利、法令面の整理
+- `docs/release-readiness-review.md`: 最終リリース時点のレビュー、分割候補、残課題
 - `docs/requirements.md`: 要件定義
 - `docs/basic-design.md`: 基本設計・方式設計
 - `docs/detailed-design.md`: 詳細設計

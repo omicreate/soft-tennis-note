@@ -1,5 +1,12 @@
 # 更新履歴
 
+## v211 - 2026-06-03
+- 最終リリース向けに `README.md`、`TERMS.md`、`PRIVACY.md`、`SECURITY.md`、`LICENSE.md` を整理しました。
+- セキュリティ、プライバシー、権利、GitHub公開時の注意点を `docs/security-and-compliance.md` にまとめました。
+- コード分割候補、今すぐ分割しない判断、今後の優先対応を `docs/release-readiness-review.md` に整理しました。
+- 個人情報を含む実運用CSVをGit管理へ入れにくいよう `.gitignore` を更新し、`package.json` は誤公開防止のため `private: true` にしました。
+- `npm audit --audit-level=moderate` を実行し、脆弱性0件を確認しました。
+
 ## v210 - 2026-06-03
 - 分析画面の最長連続得点・最長連続失点の表示を、開始前カウントから最後のポイント後カウントまで分かる形へ修正しました。
 - `1G 1-0〜1G 1-1` のように途中までに見える表示を、`1G 1-0→1G 1-2` のような表示へ変更しました。

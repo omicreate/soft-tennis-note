@@ -41,9 +41,9 @@ assert.match(fs.readFileSync("app.js", "utf8"), /setSummaryPreviewMode[\s\S]*sum
 assert.doesNotMatch(html, /拡大して確認|summaryPreviewZoomControl|data-summary-zoom/, "サマリー画像画面に拡大切替ボタンを出さない");
 assert.match(css, /\.summary-dialog \.dialog-actions\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/, "サマリー画像画面の主要ボタンはスマホで2列表示になる");
 assert.match(css, /\.summary-dialog \.dialog-actions \.action-close\s*\{[\s\S]*grid-column:\s*1 \/ -1/, "サマリー画像画面の閉じるボタンは下段全幅になる");
-assert.match(html, /app-config\.js\?v=210[\s\S]*app-analysis\.js\?v=210[\s\S]*app-storage\.js\?v=210[\s\S]*app-rules\.js\?v=210[\s\S]*app\.js\?v=210/, "設定、分析、保存、ルール、本体の順に読み込む");
-assert.match(html, /styles\.css\?v=210/, "styles.cssのキャッシュ更新バージョンが最新");
-assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v210/, "Service Workerのキャッシュ名が最新");
+assert.match(html, /app-config\.js\?v=211[\s\S]*app-analysis\.js\?v=211[\s\S]*app-storage\.js\?v=211[\s\S]*app-rules\.js\?v=211[\s\S]*app\.js\?v=211/, "設定、分析、保存、ルール、本体の順に読み込む");
+assert.match(html, /styles\.css\?v=211/, "styles.cssのキャッシュ更新バージョンが最新");
+assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v211/, "Service Workerのキャッシュ名が最新");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-config\.js/, "Service Workerのキャッシュ対象に設定ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-analysis\.js/, "Service Workerのキャッシュ対象に分析ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-storage\.js/, "Service Workerのキャッシュ対象に保存ファイルがある");

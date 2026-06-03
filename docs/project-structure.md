@@ -70,6 +70,9 @@ soft-tennis-note/
 | `CHANGELOG.md` | 更新履歴 |
 | `TEST_REPORT.md` | 実際のテスト結果 |
 | `TERMS.md` | 利用条件、免責、権利関係 |
+| `PRIVACY.md` | 端末内保存、外部送信なし、削除方法 |
+| `SECURITY.md` | セキュリティ方針、公開禁止データ、脆弱性連絡 |
+| `LICENSE.md` | オープンソースではないこと、All rights reservedの明記 |
 | `docs/00-document-map.md` | ドキュメントの読み方 |
 | `docs/requirements.md` | 要件定義 |
 | `docs/basic-design.md` | 基本設計、方式設計 |
@@ -80,6 +83,8 @@ soft-tennis-note/
 | `docs/expansion-roadmap.md` | 他スポーツ、別アプリへの横展開メモ |
 | `docs/technical-review.md` | 技術レビュー、改善バックログ |
 | `docs/requirements-design.md` | 既存の統合版設計書 |
+| `docs/security-and-compliance.md` | セキュリティ、個人情報、権利、法令面の整理 |
+| `docs/release-readiness-review.md` | 最終リリース時点のレビュー、コード分割候補、残課題 |
 
 ## 5. テスト
 

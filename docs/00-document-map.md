@@ -1,6 +1,6 @@
 # ドキュメント一覧
 
-最終更新: 2026-06-01
+最終更新: 2026-06-03
 
 このフォルダは、ソフトテニス試合ノートの開発内容を後から見返せるように整理したものです。
 
@@ -40,7 +40,13 @@
 8. `deployment.md`
    - 検証環境と本番環境への反映手順
 
-9. `expansion-roadmap.md`
+9. `security-and-compliance.md`
+   - セキュリティ、個人情報、権利、GitHub公開時の注意点
+
+10. `release-readiness-review.md`
+   - 最終リリース時点のレビュー、コード分割候補、残課題
+
+11. `expansion-roadmap.md`
    - ピックルボール、テニス、ほかのソフトテニスアプリへ広げる時の考え方
 
 ## ファイルの役割
@@ -59,6 +65,8 @@
 | `expansion-roadmap.md` | 横展開、今後作りたいアプリの方向性 |
 | `technical-review.md` | 技術レビュー、改善バックログ |
 | `csv-spec.md` | CSV出力仕様。通常CSVと保存済み試合一括CSVの列順、用途、注意点 |
+| `security-and-compliance.md` | セキュリティ、プライバシー、権利、法令面の整理 |
+| `release-readiness-review.md` | 最終リリース時点のレビュー、コード分割候補、残課題 |
 | `ux-improvement-backlog.md` | 今後のユーザビリティ改善候補。親、学生、コーチそれぞれの使いやすさを優先度付きで整理 |
 | `research/google-drive-data-review.md` | Google Drive保存データの調査メモ。個人情報を持ち込まず、参考にできる構造だけ整理 |
 | `testing/test-strategy.md` | 開発時、UI確認時、リリース前でテスト実行を使い分けるための運用メモ |
@@ -70,4 +78,6 @@
 - テスト観点を増やしたら `test-design.md` を更新する
 - 実際の確認結果は `TEST_REPORT.md` に残す
 - 公開手順や環境を変えたら `deployment.md` を更新する
+- セキュリティ、権利、個人情報の扱いを変えたら `security-and-compliance.md` を更新する
+- 最終リリースや大きな節目では `release-readiness-review.md` を更新する
 - 将来アイデアは `expansion-roadmap.md` に残す
