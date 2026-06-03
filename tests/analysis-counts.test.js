@@ -381,6 +381,18 @@ const testCode = `
   assert.deepEqual(firstHalfGames, { A: 1, B: 1 }, "前半ゲーム数はgameNumberが欠けてもscoreBefore.gamesから補完して集計する");
 
   setPoints([
+    point({ winner: "A", scoreBefore: score({ A: 0, B: 0 }), scoreAfter: score({ A: 1, B: 0 }) }),
+    point({ winner: "B", outcome: "レシーブ得点", scoreBefore: score({ A: 1, B: 0 }), scoreAfter: score({ A: 1, B: 1 }) }),
+    point({ winner: "B", outcome: "レシーブ得点", scoreBefore: score({ A: 1, B: 1 }), scoreAfter: score({ A: 1, B: 2 }) }),
+    point({ winner: "A", scoreBefore: score({ A: 1, B: 2 }), scoreAfter: score({ A: 2, B: 2 }) })
+  ]);
+  const twoLostStreak = getStreakDetails().opp;
+  assert.equal(twoLostStreak.count, 2, "2本連続で取られた場面を連続失点として集計する");
+  assert.equal(formatStreak(twoLostStreak), "2本 (1G 1-0→1G 1-2 / レシーブ得点)", "連続失点の表示は最後の失点後カウントまで表示する");
+  renderMomentumRows(elements.momentumBars, getMomentumRows());
+  assert.match(elements.momentumBars.innerHTML, /発生: 1G 1-0→1G 1-2/, "連続失点カードの発生欄も開始から終了まで表示する");
+
+  setPoints([
     point({ winner: "B", outcome: "ストローク得点", scoreBefore: score({ A: 3, B: 2 }, { A: 2, B: 1 }) }),
     point({ winner: "B", outcome: "スマッシュ得点", scoreBefore: score({ A: 6, B: 5 }, { A: 3, B: 3 }) }),
     point({ winner: "A", outcome: "ストローク得点", scoreBefore: score({ A: 5, B: 6 }, { A: 3, B: 3 }) })

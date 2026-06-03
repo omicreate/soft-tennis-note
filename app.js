@@ -1754,6 +1754,22 @@ function formatPointLocation(point) {
   return `${gameNumberLabel(historyGameNumber(point))} ${before.A || 0}-${before.B || 0}`;
 }
 
+function inferScoreAfterPoints(point) {
+  const before = point?.scoreBefore?.points || { A: 0, B: 0 };
+  const after = { A: before.A || 0, B: before.B || 0 };
+  if (point?.winner === "A" || point?.winner === "B") {
+    after[point.winner] += 1;
+  }
+  return after;
+}
+
+function formatPointEndLocation(point) {
+  if (!point) return "場面なし";
+  const afterGames = point.scoreAfter?.games || point.scoreBefore?.games || { A: 0, B: 0 };
+  const after = point.scoreAfter?.points || inferScoreAfterPoints(point);
+  return `${gameNumberLabel(getGameNumber(afterGames))} ${after.A || 0}-${after.B || 0}`;
+}
+
 function formatPointLocations(points = [], limit = 3) {
   const locations = points.map(formatPointLocation);
   const unique = [...new Set(locations)].filter(Boolean);
@@ -1791,15 +1807,20 @@ function getStreakDetails() {
   return { own: bySide("A"), opp: bySide("B"), all: streaks };
 }
 
+function formatStreakRange(streak) {
+  if (!streak) return "該当なし";
+  const start = formatPointLocation(streak.points[0]);
+  const end = formatPointEndLocation(streak.points[streak.points.length - 1]);
+  return start === end ? start : `${start}→${end}`;
+}
+
 function formatStreak(streak) {
   if (!streak) return "0本";
   const topOutcome = topEntry(streak.outcomes.reduce((acc, outcome) => {
     acc[outcome] = (acc[outcome] || 0) + 1;
     return acc;
   }, {}));
-  const start = formatPointLocation(streak.points[0]);
-  const end = formatPointLocation(streak.points[streak.points.length - 1]);
-  const range = start === end ? start : `${start}〜${end}`;
+  const range = formatStreakRange(streak);
   return `${streak.count}本 (${range} / ${topOutcome[0]})`;
 }
 
@@ -1855,8 +1876,8 @@ function getMomentumRows() {
   const clutch = getClutchStats();
   return [
     ["1ポイント目取得", opening.rate === null ? "-" : `${opening.own}/${opening.total}本 (${opening.rate}%)`, "own", "各ゲームの入りを確認", `取った: ${formatPointLocations(opening.ownPoints)} / 取られた: ${formatPointLocations(opening.oppPoints)}`],
-    ["最長連続得点", formatStreak(streaks.own), "own", "連続して取れた場面", streaks.own ? `発生: ${formatPointLocations(streaks.own.points)}` : "発生: 該当なし"],
-    ["最長連続失点", formatStreak(streaks.opp), "opp", "連続して取られた場面", streaks.opp ? `発生: ${formatPointLocations(streaks.opp.points)}` : "発生: 該当なし"],
+    ["最長連続得点", formatStreak(streaks.own), "own", "連続して取れた場面", streaks.own ? `発生: ${formatStreakRange(streaks.own)}` : "発生: 該当なし"],
+    ["最長連続失点", formatStreak(streaks.opp), "opp", "連続して取られた場面", streaks.opp ? `発生: ${formatStreakRange(streaks.opp)}` : "発生: 該当なし"],
     ["ゲームポイント逸失", `${clutch.ownGamePointMissed}回`, clutch.ownGamePointMissed ? "opp" : "neutral", "ゲームを取れる場面で与えた数", `発生: ${formatPointLocations(clutch.ownGamePointMissedPoints)}`],
     ["マッチポイント逸失", `${clutch.ownMatchPointMissed}回`, clutch.ownMatchPointMissed ? "opp" : "neutral", "試合を終わらせる場面で与えた数", `発生: ${formatPointLocations(clutch.ownMatchPointMissedPoints)}`]
   ];
