@@ -2215,7 +2215,11 @@ function renderServeReceiveCard(item) {
     <article class="sr-card ${escapeHtml(item.tone)}">
       <div class="sr-card-head">
         <strong>${escapeHtml(item.label)}</strong>
-        <span class="sr-total-badge">+${escapeHtml(item.plus)} / -${escapeHtml(item.minus)} / ${escapeHtml(formatPointDiff(item.diff))}</span>
+        <span class="sr-card-score">
+          <b class="plus">+${escapeHtml(item.plus)}</b>
+          <b class="minus">-${escapeHtml(item.minus)}</b>
+          <b class="sr-total-badge">${escapeHtml(formatPointDiff(item.diff))}</b>
+        </span>
       </div>
       <div class="sr-metrics">
         <div class="sr-metric-row">
@@ -2972,6 +2976,14 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     strokeRoundedRect(ctx, x, y, w, h, Math.min(18, h / 2), "rgba(255,255,255,0.82)", 2);
     drawText(text, x + 12, y + Math.round(h * 0.66), { size, weight: 1000, color: "#ffffff", maxWidth: w - 24 });
   };
+  const plusMinusValueParts = (value) => {
+    const text = String(value || "");
+    return {
+      plus: text.match(/\+\d+/)?.[0] || "+0",
+      minus: text.match(/-\d+/)?.[0] || "-0",
+      total: text.split("/").map((part) => part.trim()).at(-1) || text
+    };
+  };
   const sections = [];
   const pageTop = (pageIndex) => pageIndex * pageHeight;
   const pageFooter = (pageIndex) => {
@@ -3099,6 +3111,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     summary.playerPlusMinusRows.forEach(([label, value, tone]) => {
       const plus = Number(String(value).match(/\+(\d+)/)?.[1] || 0);
       const minus = Number(String(value).match(/-(\d+)/)?.[1] || 0);
+      const totalText = plusMinusValueParts(value).total;
       const labelW = 220;
       const barX = pageMargin + labelW + 28;
       const barW = contentWidth - labelW - 300;
@@ -3112,7 +3125,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
       fillRoundedRect(ctx, barX, y + 56, barW, 18, 9, "#e5e7eb");
       fillRoundedRect(ctx, barX, y + 56, Math.max(minus > 0 ? 8 : 0, barW * (minus / max)), 18, 9, oppColor);
       drawText(`-${minus}`, barX + barW + 14, y + 73, { size: 22, weight: 900, color: oppColor, maxWidth: 72 });
-      drawWhiteBadge(value, pageMargin + contentWidth - 188, y + 28, 164, 48, tone, 22);
+      drawWhiteBadge(totalText, pageMargin + contentWidth - 188, y + 28, 164, 48, tone, 22);
       drawText(`内容: ${playByPlayer[label] || "記録なし"}`, pageMargin + 36, y + 104, { size: 19, weight: 800, color: mutedColor, maxWidth: contentWidth - 58, maxLines: 2, lineHeight: 25 });
       drawText(`関わり: ${involvementByPlayer[label] || reviewByPlayer[label] || "まだ傾向は判断しない"}`, pageMargin + 36, y + 154, { size: 19, weight: 900, color: textColor(tone), maxWidth: contentWidth - 58, maxLines: 2, lineHeight: 25 });
       y += 238;
@@ -3131,7 +3144,9 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     strokeRoundedRect(ctx, x, y, w, 250, 14, lineColor, 2);
     fillRoundedRect(ctx, x + 16, y + 16, 7, 218, 4, textColor(item.tone));
     drawText(item.label, x + 34, y + 38, { size: 26, weight: 900, color: textColor(item.tone), maxWidth: w - 52 });
-    drawWhiteBadge(`+${item.plus} / -${item.minus} / ${formatPointDiff(item.diff)}`, x + 34, y + 54, 220, 42, item.tone, 18);
+    drawText(`+${item.plus}`, x + 34, y + 82, { size: 22, weight: 900, color: ownColor, maxWidth: 64 });
+    drawText(`-${item.minus}`, x + 102, y + 82, { size: 22, weight: 900, color: oppColor, maxWidth: 64 });
+    drawWhiteBadge(formatPointDiff(item.diff), x + 170, y + 50, 96, 42, item.tone, 18);
     const firstServe = item.servePoints ? `${item.firstServe}/${item.servePoints}本 (${formatRate(item.firstServeRate)})` : "未記録";
     const receiveKeep = item.receivePoints ? `${item.receiveKeep}/${item.receivePoints}本 (${formatRate(item.receiveKeepRate)})` : "未記録";
     drawServeReceiveRow("サーブ", `第1 ${firstServe}`, `DF ${item.doubleFaults}本`, `得点 ${item.serveScores}本`, x, y + 94, w, item.tone);
@@ -3180,6 +3195,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     drawText(value, x + 34, y + 82, { size: 35, weight: 900, color: textColor(tone), maxWidth: w - 54 });
   };
   const drawSocialPlayerCard = ([label, value, tone], index, y) => {
+    const parts = plusMinusValueParts(value);
     const cardW = (contentWidth - 18) / 2;
     const x = pageMargin + (index % 2) * (cardW + 18);
     const rowY = y + Math.floor(index / 2) * 138;
@@ -3187,7 +3203,9 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     strokeRoundedRect(ctx, x, rowY, cardW, 122, 16, tone === "own" ? "#bfdbfe" : tone === "opp" ? "#fecdd3" : lineColor, 2);
     fillRoundedRect(ctx, x + 16, rowY + 18, 7, 86, 4, textColor(tone));
     drawText(sharePlayerLabel(label), x + 34, rowY + 36, { size: 22, weight: 900, color: inkColor, maxWidth: cardW - 54 });
-    drawWhiteBadge(value, x + 34, rowY + 58, Math.min(210, cardW - 54), 46, tone, 24);
+    drawText(parts.plus, x + 34, rowY + 83, { size: 27, weight: 900, color: ownColor, maxWidth: 66 });
+    drawText(parts.minus, x + 102, rowY + 83, { size: 27, weight: 900, color: oppColor, maxWidth: 66 });
+    drawWhiteBadge(parts.total, x + 172, rowY + 54, Math.min(104, cardW - 192), 46, tone, 24);
   };
   const drawSocialShareCard = () => {
     const sections = ["チーム共有サマリー", "試合結果", "試合から分かったこと", "次に活かすポイント", "主な数字", "選手別 + / -"];

@@ -1582,11 +1582,28 @@ body:has(.tab[data-tab="history"].active) .team input {
   overflow-wrap: anywhere;
 }
 
+.sr-card-score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.sr-card-score .plus {
+  color: var(--own);
+}
+
+.sr-card-score .minus {
+  color: var(--opp);
+}
+
 .sr-total-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 132px;
+  min-width: 52px;
   padding: 6px 10px;
   border-radius: 999px;
   border: 2px solid rgba(255, 255, 255, 0.8);
