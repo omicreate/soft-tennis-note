@@ -1067,7 +1067,7 @@ function renderPlayerSavePreview() {
     elements.playerSavePreview.textContent = `保存される選手: ${playerLabel(state.selectedPlayer)}`;
     return;
   }
-  elements.playerSavePreview.textContent = "選手を選ぶと、個人別の + / - に反映されます";
+  elements.playerSavePreview.textContent = "選手を選ぶと、選手別の貢献差に反映されます";
 }
 
 function renderServicePlayerButtons() {
@@ -1253,6 +1253,10 @@ function formatPointDiff(diff) {
   return "±0";
 }
 
+function formatContributionDiff(diff) {
+  return `貢献差 ${formatPointDiff(diff)}`;
+}
+
 function pointDiffTone(diff) {
   if (diff > 0) return "own";
   if (diff < 0) return "opp";
@@ -1308,7 +1312,7 @@ function renderAnalysisSectionMode() {
   });
   if (elements.analysisSectionNote) {
     elements.analysisSectionNote.textContent = playerMode
-      ? "個人別分析は、選手ごとの + / -、関わったプレー、サーブ/レシーブ、記録コメントを確認します。"
+      ? "個人別分析は、選手ごとの + / - と貢献差、関わったプレー、サーブ/レシーブ、記録コメントを確認します。"
       : "全体分析は、試合全体の流れと得点・失点の数字だけを確認します。";
   }
 }
@@ -1721,11 +1725,11 @@ function getTopPlayerPlusMinusLabel() {
   const entries = getPlayerPlusMinus();
   if (!entries.length || entries.every((entry) => entry.plus === 0 && entry.minus === 0)) return "未記録";
   const top = [...entries].sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff) || b.plus + b.minus - (a.plus + a.minus))[0];
-  return `${top.label} +${top.plus} / -${top.minus} / ${formatPointDiff(top.diff)}`;
+  return `${top.label} +${top.plus} / -${top.minus} / ${formatContributionDiff(top.diff)}`;
 }
 
 function getPlayerPlusMinusRows() {
-  return getPlayerPlusMinus().map((entry) => [entry.label, `+${entry.plus} / -${entry.minus} / ${formatPointDiff(entry.diff)}`, entry.diff > 0 ? "own" : entry.diff < 0 ? "opp" : "neutral"]);
+  return getPlayerPlusMinus().map((entry) => [entry.label, `+${entry.plus} / -${entry.minus} / ${formatContributionDiff(entry.diff)}`, entry.diff > 0 ? "own" : entry.diff < 0 ? "opp" : "neutral"]);
 }
 
 function getPlayerPlayRows(limit = 5) {
@@ -2119,7 +2123,7 @@ function buildPlayerInvolvementComment(item) {
 
   if (!total && !srTotal) return "記録なし。役割評価ではなく、まず関わった本数を増やして確認する";
 
-  parts.push(`関与 ${total}本（+${item.plus}/-${item.minus}/${formatPointDiff(item.diff)}）`);
+  parts.push(`関与 ${total}本（+${item.plus}/-${item.minus}/${formatContributionDiff(item.diff)}）`);
   if (item.diff > 0) parts.push(isOwn ? "この選手の記録では、自チームが取った点が多い" : "この相手選手の記録では、自チームが取られた点が多い");
   if (item.diff < 0) parts.push(isOwn ? "この選手の記録では、相手に与えた点が多い" : "この相手選手の記録では、自チームが取った点が多い");
   if (item.diff === 0 && total) parts.push("取った点と与えた点は同数");
@@ -2158,7 +2162,7 @@ function renderPlayerPlusMinusCard(item) {
     <article class="pm-card ${tone}">
       <div class="pm-card-head">
         <strong>${escapeHtml(item.label)}</strong>
-        <span class="pm-total-badge">${escapeHtml(formatPointDiff(item.diff))}</span>
+        <span class="pm-total-badge">${escapeHtml(formatContributionDiff(item.diff))}</span>
       </div>
       <div class="pm-score-row">
         <b class="plus">+${escapeHtml(item.plus)}</b>
@@ -2218,7 +2222,7 @@ function renderServeReceiveCard(item) {
         <span class="sr-card-score">
           <b class="plus">+${escapeHtml(item.plus)}</b>
           <b class="minus">-${escapeHtml(item.minus)}</b>
-          <b class="sr-total-badge">${escapeHtml(formatPointDiff(item.diff))}</b>
+          <b class="sr-total-badge">${escapeHtml(formatContributionDiff(item.diff))}</b>
         </span>
       </div>
       <div class="sr-metrics">
@@ -2737,7 +2741,7 @@ function getSummaryImageData() {
   const playerPlusMinusRows = getPlayerPlusMinusRows();
   const playerPlayRows = getPlayerPlayRows(5);
   const playerReviewRows = getPlayerReviewRows();
-  const playerInvolvementRows = getPlayerInvolvementItems().map((item) => [item.label, item.comment, item.tone, formatPointDiff(item.diff)]);
+  const playerInvolvementRows = getPlayerInvolvementItems().map((item) => [item.label, item.comment, item.tone, formatContributionDiff(item.diff)]);
   const playerServeReceiveStats = getPlayerServeReceiveStats().map((item) => ({
     label: item.label,
     tone: item.tone,
@@ -2808,7 +2812,7 @@ function getSummaryImageData() {
       ["自分たちで取った", data.ownScoredByPattern, "own"],
       ["相手ミスで取った", data.ownPointsByOpponentError, "own"],
       ["記録ポイント", data.total, "neutral"],
-      ["選手別 + / -", getTopPlayerPlusMinusLabel(), "neutral"],
+      ["選手別 貢献差", getTopPlayerPlusMinusLabel(), "neutral"],
       ["選手別S/R", getTopPlayerServeReceiveLabel(), "neutral"],
       ["最長連続得点", streakStats.own ? `${streakStats.own.count}本` : "0本", "own"],
       ["最長連続失点", streakStats.opp ? `${streakStats.opp.count}本` : "0本", "opp"],
@@ -3146,7 +3150,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     drawText(item.label, x + 34, y + 38, { size: 26, weight: 900, color: textColor(item.tone), maxWidth: w - 52 });
     drawText(`+${item.plus}`, x + 34, y + 82, { size: 22, weight: 900, color: ownColor, maxWidth: 64 });
     drawText(`-${item.minus}`, x + 102, y + 82, { size: 22, weight: 900, color: oppColor, maxWidth: 64 });
-    drawWhiteBadge(formatPointDiff(item.diff), x + 170, y + 50, 96, 42, item.tone, 18);
+    drawWhiteBadge(formatContributionDiff(item.diff), x + 170, y + 50, 124, 42, item.tone, 18);
     const firstServe = item.servePoints ? `${item.firstServe}/${item.servePoints}本 (${formatRate(item.firstServeRate)})` : "未記録";
     const receiveKeep = item.receivePoints ? `${item.receiveKeep}/${item.receivePoints}本 (${formatRate(item.receiveKeepRate)})` : "未記録";
     drawServeReceiveRow("サーブ", `第1 ${firstServe}`, `DF ${item.doubleFaults}本`, `得点 ${item.serveScores}本`, x, y + 94, w, item.tone);
@@ -3205,10 +3209,10 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     drawText(sharePlayerLabel(label), x + 34, rowY + 36, { size: 22, weight: 900, color: inkColor, maxWidth: cardW - 54 });
     drawText(parts.plus, x + 34, rowY + 83, { size: 27, weight: 900, color: ownColor, maxWidth: 66 });
     drawText(parts.minus, x + 102, rowY + 83, { size: 27, weight: 900, color: oppColor, maxWidth: 66 });
-    drawWhiteBadge(parts.total, x + 172, rowY + 54, Math.min(104, cardW - 192), 46, tone, 24);
+    drawWhiteBadge(parts.total, x + 172, rowY + 54, Math.min(132, cardW - 192), 46, tone, 22);
   };
   const drawSocialShareCard = () => {
-    const sections = ["チーム共有サマリー", "試合結果", "試合から分かったこと", "次に活かすポイント", "主な数字", "選手別 + / -"];
+    const sections = ["チーム共有サマリー", "試合結果", "試合から分かったこと", "次に活かすポイント", "主な数字", "選手別 貢献差"];
     const result = rowValue(summary.resultRows, "試合結果", summary.currentPointScore === "終了" ? "試合終了" : "試合中");
     const games = rowValue(summary.resultRows, "ゲームスコア", summary.gameScore);
     const gamePoints = rowValue(summary.resultRows, "各ゲーム", "各ゲーム 未記録");
@@ -3274,7 +3278,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     drawSocialMetric("ミスで与えた", `${ownMiss}本`, pageMargin + (contentWidth + 22) / 2, y + 138, (contentWidth - 22) / 2, "opp");
     y += 286;
 
-    y = heading("選手別 + / -", y);
+    y = heading("選手別 貢献差", y);
     summary.playerPlusMinusRows.slice(0, 4).forEach((row, index) => drawSocialPlayerCard(row, index, y));
     y += Math.ceil(Math.min(summary.playerPlusMinusRows.length, 4) / 2) * 138 + 12;
 

@@ -194,7 +194,7 @@ const testCode = `
   assert.match(elements.playerBars.innerHTML, /相手後衛/, "個人別に相手後衛を0件でも表示する");
   assert.match(elements.playerBars.innerHTML, /相手前衛/, "個人別に相手前衛を表示する");
   assert.match(elements.playerBars.innerHTML, /\\+0/, "未記録選手は0で表示する");
-  assert.match(elements.playerBars.innerHTML, /pm-total-badge/, "個人別+/-の合計値を強調表示する");
+  assert.match(elements.playerBars.innerHTML, /pm-total-badge/, "個人別+/-の貢献差を強調表示する");
   assert.match(elements.playerBars.innerHTML, /ストローク得点/, "プレイヤー別に記録した得点内容を表示する");
   assert.match(elements.playerBars.innerHTML, /ボレーミス/, "プレイヤー別に記録したミス内容を表示する");
   const involvementItems = getPlayerInvolvementItems();
@@ -311,7 +311,7 @@ const testCode = `
   assert.equal(shareLayout.height < detailLayout.height, true, "チーム共有用は振り返り用より短い画像にする");
   assert.deepEqual(
     shareLayout.sections.slice(0, 6),
-    ["チーム共有サマリー", "試合結果", "試合から分かったこと", "次に活かすポイント", "主な数字", "選手別 + / -"],
+    ["チーム共有サマリー", "試合結果", "試合から分かったこと", "次に活かすポイント", "主な数字", "選手別 貢献差"],
     "チーム共有用サマリーは結果、試合から分かったこと、次に活かすポイント、主な数字の順に表示する"
   );
   assert.equal(summaryImageTexts.some((text) => /TEAM SHARE/.test(String(text))), true, "チーム共有用サマリーはチーム共有向けの見出しを表示する");

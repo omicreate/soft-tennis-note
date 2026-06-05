@@ -493,7 +493,7 @@ const scenarioCode = `
   render();
   setSimpleOutcome("ボレー得点");
   renderPlayerSavePreview();
-  assert.match(testElements.get("#playerSavePreview").textContent, /選手を選ぶと、個人別の \\+ \\/ - に反映されます/, "未選択時は前衛への自動補助を出さない");
+  assert.match(testElements.get("#playerSavePreview").textContent, /選手を選ぶと、選手別の貢献差に反映されます/, "未選択時は前衛への自動補助を出さない");
 
   state = structuredClone(defaultState);
   state.points = [
