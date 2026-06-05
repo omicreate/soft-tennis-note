@@ -4,7 +4,7 @@
 
 公開URL: https://omicreate.github.io/soft-tennis-note/
 
-現在の表示バージョン: `v211`
+現在の表示バージョン: `v212`
 
 更新内容は `CHANGELOG.md` に残します。
 

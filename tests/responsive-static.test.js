@@ -3,6 +3,7 @@ const fs = require("node:fs");
 
 const html = fs.readFileSync("index.html", "utf8");
 const css = fs.readFileSync("styles.css", "utf8");
+const appJs = fs.readFileSync("app.js", "utf8");
 
 assert.match(html, /viewport-fit=cover/, "safe areaを考慮したviewport設定がある");
 assert.match(css, /max-width:\s*430px/, "スマホ幅を基準にしたアプリシェル幅がある");
@@ -36,14 +37,14 @@ assert.match(html, /class="winner-note"[\s\S]*相手のミスなら「自チー�
 assert.match(css, /\.save-point-section\s*\{[\s\S]*position:\s*sticky/, "得点保存ボタンが押しやすい位置に残る");
 assert.match(css, /#summaryImageDialog[\s\S]*height:\s*min\(96dvh,[\s\S]*height:\s*min\(96svh,[\s\S]*@media \(max-width:\s*640px\)[\s\S]*#summaryImageDialog[\s\S]*height:\s*100svh/, "サマリー画像画面はスマホで画面いっぱいに表示する");
 assert.match(css, /\.summary-preview-frame[\s\S]*overflow-y:\s*auto[\s\S]*-webkit-overflow-scrolling:\s*touch/, "サマリー画像プレビュー内を縦スクロールできる");
-assert.match(fs.readFileSync("app.js", "utf8"), /const drawScoreBoard = \(y\) => [\s\S]*return y \+ 286;/, "試合結果枠と次の見出しに十分な余白を残す");
-assert.match(fs.readFileSync("app.js", "utf8"), /setSummaryPreviewMode[\s\S]*summaryPreviewFrame\?\.scrollTo\?\.\(\{ top: 0, left: 0 \}\)/, "サマリー画像の用途切替時に先頭へ戻す");
+assert.match(appJs, /const drawScoreBoard = \(y\) => [\s\S]*return y \+ 286;/, "試合結果枠と次の見出しに十分な余白を残す");
+assert.match(appJs, /setSummaryPreviewMode[\s\S]*summaryPreviewFrame\?\.scrollTo\?\.\(\{ top: 0, left: 0 \}\)/, "サマリー画像の用途切替時に先頭へ戻す");
 assert.doesNotMatch(html, /拡大して確認|summaryPreviewZoomControl|data-summary-zoom/, "サマリー画像画面に拡大切替ボタンを出さない");
 assert.match(css, /\.summary-dialog \.dialog-actions\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/, "サマリー画像画面の主要ボタンはスマホで2列表示になる");
 assert.match(css, /\.summary-dialog \.dialog-actions \.action-close\s*\{[\s\S]*grid-column:\s*1 \/ -1/, "サマリー画像画面の閉じるボタンは下段全幅になる");
-assert.match(html, /app-config\.js\?v=211[\s\S]*app-analysis\.js\?v=211[\s\S]*app-storage\.js\?v=211[\s\S]*app-rules\.js\?v=211[\s\S]*app\.js\?v=211/, "設定、分析、保存、ルール、本体の順に読み込む");
-assert.match(html, /styles\.css\?v=211/, "styles.cssのキャッシュ更新バージョンが最新");
-assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v211/, "Service Workerのキャッシュ名が最新");
+assert.match(html, /app-config\.js\?v=212[\s\S]*app-analysis\.js\?v=212[\s\S]*app-storage\.js\?v=212[\s\S]*app-rules\.js\?v=212[\s\S]*app\.js\?v=212/, "設定、分析、保存、ルール、本体の順に読み込む");
+assert.match(html, /styles\.css\?v=212/, "styles.cssのキャッシュ更新バージョンが最新");
+assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v212/, "Service Workerのキャッシュ名が最新");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-config\.js/, "Service Workerのキャッシュ対象に設定ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-analysis\.js/, "Service Workerのキャッシュ対象に分析ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-storage\.js/, "Service Workerのキャッシュ対象に保存ファイルがある");
@@ -90,7 +91,9 @@ assert.match(html, /選手別 成長メモ[\s\S]*選手ごとの \+ \/ - と、�
 assert.match(css, /\.pm-side-group[\s\S]*\.own-side[\s\S]*\.opp-side/, "選手別分析は自チームと相手を視覚的に分ける");
 assert.match(css, /\.pm-detail-grid/, "プレイヤー別カードで決まり方とプレー別を分けて表示する");
 assert.match(css, /\.pm-review/, "プレイヤー別カードに記録から分かることを表示するCSSがある");
-assert.match(css, /\.pm-total-badge[\s\S]*font-weight:\s*1000/, "個人別+/-の合計値を強調表示する");
+assert.match(css, /\.pm-total-badge[\s\S]*background:\s*var\(--ink\)[\s\S]*color:\s*#fff[\s\S]*font-weight:\s*1000/, "個人別+/-の合計値を白文字バッジで表示する");
+assert.match(css, /\.sr-total-badge[\s\S]*background:\s*var\(--ink\)[\s\S]*color:\s*#fff/, "選手別S/Rの+/-合計値も白文字バッジで表示する");
+assert.match(appJs, /const drawWhiteBadge[\s\S]*color:\s*"#ffffff"[\s\S]*drawWhiteBadge\(value,[\s\S]*drawWhiteBadge\(`\+\$\{item\.plus\} \/ -\$\{item\.minus\}/, "サマリー画像の個人別+/-合計値を白抜きバッジで描画する");
 assert.match(css, /\.archive-item \.action-button[\s\S]*white-space:\s*nowrap/, "保存済み試合のボタンは短い表示で見切れにくくする");
 assert.match(css, /\.archive-item \.action-preview[\s\S]*grid-column:\s*1 \/ -1/, "スマホでは保存済み試合の画像ボタンを全幅にする");
 assert.match(html, /流れと勝負どころ[\s\S]*発生したゲームとカウント付きで確認/, "流れと勝負どころに具体場面の説明がある");

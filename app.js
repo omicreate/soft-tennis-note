@@ -2215,7 +2215,7 @@ function renderServeReceiveCard(item) {
     <article class="sr-card ${escapeHtml(item.tone)}">
       <div class="sr-card-head">
         <strong>${escapeHtml(item.label)}</strong>
-        <span>+${escapeHtml(item.plus)} / -${escapeHtml(item.minus)} / ${escapeHtml(formatPointDiff(item.diff))}</span>
+        <span class="sr-total-badge">+${escapeHtml(item.plus)} / -${escapeHtml(item.minus)} / ${escapeHtml(formatPointDiff(item.diff))}</span>
       </div>
       <div class="sr-metrics">
         <div class="sr-metric-row">
@@ -2952,6 +2952,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
   ctx.fillRect(0, 0, width, height);
 
   const textColor = (tone) => (tone === "own" ? ownColor : tone === "opp" ? oppColor : tone === "neutral" ? neutralColor : inkColor);
+  const badgeColor = (tone) => (tone === "own" ? ownColor : tone === "opp" ? oppColor : inkColor);
   const softColor = (tone) => (tone === "own" ? ownSoftColor : tone === "opp" ? oppSoftColor : neutralSoftColor);
   const setFont = (size, weight = 800) => {
     ctx.font = `${weight} ${size}px -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif`;
@@ -2965,6 +2966,11 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     ctx.fillStyle = options.color || inkColor;
     setFont(size, weight);
     return drawClampedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) + (options.after || 0);
+  };
+  const drawWhiteBadge = (text, x, y, w, h, tone = "neutral", size = 22) => {
+    fillRoundedRect(ctx, x, y, w, h, Math.min(18, h / 2), badgeColor(tone));
+    strokeRoundedRect(ctx, x, y, w, h, Math.min(18, h / 2), "rgba(255,255,255,0.82)", 2);
+    drawText(text, x + 12, y + Math.round(h * 0.66), { size, weight: 1000, color: "#ffffff", maxWidth: w - 24 });
   };
   const sections = [];
   const pageTop = (pageIndex) => pageIndex * pageHeight;
@@ -3106,7 +3112,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
       fillRoundedRect(ctx, barX, y + 56, barW, 18, 9, "#e5e7eb");
       fillRoundedRect(ctx, barX, y + 56, Math.max(minus > 0 ? 8 : 0, barW * (minus / max)), 18, 9, oppColor);
       drawText(`-${minus}`, barX + barW + 14, y + 73, { size: 22, weight: 900, color: oppColor, maxWidth: 72 });
-      drawText(value, pageMargin + contentWidth - 180, y + 52, { size: 23, weight: 900, color: textColor(tone), maxWidth: 158 });
+      drawWhiteBadge(value, pageMargin + contentWidth - 188, y + 28, 164, 48, tone, 22);
       drawText(`内容: ${playByPlayer[label] || "記録なし"}`, pageMargin + 36, y + 104, { size: 19, weight: 800, color: mutedColor, maxWidth: contentWidth - 58, maxLines: 2, lineHeight: 25 });
       drawText(`関わり: ${involvementByPlayer[label] || reviewByPlayer[label] || "まだ傾向は判断しない"}`, pageMargin + 36, y + 154, { size: 19, weight: 900, color: textColor(tone), maxWidth: contentWidth - 58, maxLines: 2, lineHeight: 25 });
       y += 238;
@@ -3125,7 +3131,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     strokeRoundedRect(ctx, x, y, w, 250, 14, lineColor, 2);
     fillRoundedRect(ctx, x + 16, y + 16, 7, 218, 4, textColor(item.tone));
     drawText(item.label, x + 34, y + 38, { size: 26, weight: 900, color: textColor(item.tone), maxWidth: w - 52 });
-    drawText(`+${item.plus} / -${item.minus} / ${formatPointDiff(item.diff)}`, x + 34, y + 72, { size: 21, weight: 900, color: textColor(item.tone), maxWidth: w - 52 });
+    drawWhiteBadge(`+${item.plus} / -${item.minus} / ${formatPointDiff(item.diff)}`, x + 34, y + 54, 220, 42, item.tone, 18);
     const firstServe = item.servePoints ? `${item.firstServe}/${item.servePoints}本 (${formatRate(item.firstServeRate)})` : "未記録";
     const receiveKeep = item.receivePoints ? `${item.receiveKeep}/${item.receivePoints}本 (${formatRate(item.receiveKeepRate)})` : "未記録";
     drawServeReceiveRow("サーブ", `第1 ${firstServe}`, `DF ${item.doubleFaults}本`, `得点 ${item.serveScores}本`, x, y + 94, w, item.tone);
@@ -3181,7 +3187,7 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     strokeRoundedRect(ctx, x, rowY, cardW, 122, 16, tone === "own" ? "#bfdbfe" : tone === "opp" ? "#fecdd3" : lineColor, 2);
     fillRoundedRect(ctx, x + 16, rowY + 18, 7, 86, 4, textColor(tone));
     drawText(sharePlayerLabel(label), x + 34, rowY + 36, { size: 22, weight: 900, color: inkColor, maxWidth: cardW - 54 });
-    drawText(value, x + 34, rowY + 78, { size: 31, weight: 900, color: textColor(tone), maxWidth: cardW - 54 });
+    drawWhiteBadge(value, x + 34, rowY + 58, Math.min(210, cardW - 54), 46, tone, 24);
   };
   const drawSocialShareCard = () => {
     const sections = ["チーム共有サマリー", "試合結果", "試合から分かったこと", "次に活かすポイント", "主な数字", "選手別 + / -"];

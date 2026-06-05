@@ -1582,12 +1582,38 @@ body:has(.tab[data-tab="history"].active) .team input {
   overflow-wrap: anywhere;
 }
 
+.sr-total-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 132px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  background: var(--ink);
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.1);
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .sr-card.own .sr-card-head {
   color: var(--own);
 }
 
 .sr-card.opp .sr-card-head {
   color: var(--opp);
+}
+
+.sr-card.own .sr-total-badge {
+  background: var(--own);
+  color: #fff;
+}
+
+.sr-card.opp .sr-total-badge {
+  background: var(--opp);
+  color: #fff;
 }
 
 .sr-metrics {
@@ -2292,15 +2318,17 @@ body.analysis-player-mode #analysisPanel .analysis-player-section {
 
 .pm-total-badge {
   min-width: 52px;
-  border: 2px solid currentColor;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  background: var(--ink);
+  color: #fff;
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.1);
   font-size: 0.9rem;
   font-weight: 1000;
 }
 
 .pm-card-head span {
-  background: #f8fafc;
-  color: var(--ink);
+  background: var(--ink);
+  color: #fff;
 }
 
 .pm-card.own .pm-card-head span {
