@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200" role="img" aria-label="ソフトテニス試合ノート">
+  <!-- qlmanage が正方形に整形するため、キャンバスは 1200x1200。
+       OGP(1200x630) の内容は中央帯 y∈[285,915] に配置し、後段で中央を切り出す。 -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1200" fill="url(#bg)"/>
+
+  <g transform="translate(0,285)">
+    <!-- 左: テニスボール -->
+    <g transform="translate(110,35)">
+      <circle cx="140" cy="140" r="140" fill="#ffffff"/>
+      <path d="M140 6 C 247 80, 43 196, 140 274" fill="none" stroke="#2563eb" stroke-width="14" stroke-linecap="round"/>
+      <circle cx="140" cy="140" r="140" fill="none" stroke="#1d4ed8" stroke-width="5" opacity="0.35"/>
+    </g>
+
+    <!-- 右: テキスト -->
+    <g font-family="'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif" fill="#ffffff">
+      <text x="470" y="150" font-size="82" font-weight="700" letter-spacing="2">ソフトテニス</text>
+      <text x="470" y="250" font-size="82" font-weight="700" letter-spacing="2">試合ノート</text>
+      <text x="470" y="330" font-size="37" font-weight="400" fill="#dbeafe">スマホで試合を記録・分析</text>
+      <text x="470" y="398" font-size="29" font-weight="400" fill="#bfdbfe">omicreate.github.io/soft-tennis-note</text>
+    </g>
+  </g>
+</svg>

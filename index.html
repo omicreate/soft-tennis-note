@@ -6,8 +6,29 @@
     <meta name="theme-color" content="#2563eb" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>ソフトテニス試合ノート</title>
-    <link rel="manifest" href="manifest.webmanifest?v=215" />
-    <link rel="stylesheet" href="styles.css?v=215" />
+    <meta name="description" content="スマホで使う、ソフトテニス専用の試合記録・分析アプリ。スコア進行、得点・ミスのパターン分析、サマリー画像の共有まで。データは端末内に保存し、外部送信なし。" />
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="試合ノート" />
+    <!-- OGP / Twitter card（LINE・SNS共有時のプレビュー） -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ソフトテニス試合ノート" />
+    <meta property="og:title" content="ソフトテニス試合ノート" />
+    <meta property="og:description" content="スマホで使う、ソフトテニス専用の試合記録・分析アプリ。記録・分析・サマリー共有まで。" />
+    <meta property="og:url" content="https://omicreate.github.io/soft-tennis-note/" />
+    <meta property="og:image" content="https://omicreate.github.io/soft-tennis-note/assets/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ソフトテニス試合ノート" />
+    <meta name="twitter:description" content="スマホで使う、ソフトテニス専用の試合記録・分析アプリ。記録・分析・サマリー共有まで。" />
+    <meta name="twitter:image" content="https://omicreate.github.io/soft-tennis-note/assets/og-image.png" />
+    <link rel="manifest" href="manifest.webmanifest?v=1.0.0" />
+    <link rel="stylesheet" href="styles.css?v=1.0.0" />
   </head>
   <body class="analysis-overall-mode">
     <main class="app-shell">
@@ -20,6 +41,7 @@
       </header>
 
       <div class="environment-badge" id="environmentBadge" hidden>検証環境</div>
+      <div class="practice-badge" id="practiceBadge" hidden>サンプル試合中</div>
 
       <section class="start-guide" aria-label="使い方">
         <strong id="nextStep">最初は自チームのサービス</strong>
@@ -30,21 +52,6 @@
         <span class="own">青: 自チーム</span>
         <span class="opp">赤: 相手</span>
       </div>
-
-      <details class="trial-guide">
-        <summary id="trialGuideSummary">テスト利用の説明（記録）</summary>
-        <div>
-          <p id="trialGuideLead">記録ページは、試合を見ている人がポイント後すぐに残す画面です。プレー中の選手が入力する想定ではありません。</p>
-          <ol id="trialGuideList">
-            <li>サービス開始（1st/2nd/DF）を確認する</li>
-            <li>ポイント内容、プレイヤー、得点側を選ぶ</li>
-            <li>細かいコースや打球面は、あとで履歴から補足できる</li>
-          </ol>
-          <p id="trialGuideStorage">入力データは、この端末のブラウザ内に保存されます。開発者、管理者、コーチの端末やサーバーには送られません。</p>
-          <p id="trialGuidePrivacy">本名を入れず、学校名・Aチーム・後衛/前衛などでも記録できます。サマリー画像やCSVを共有する時は、入力した名前が含まれる点に注意してください。</p>
-          <p id="trialGuideOffline">通信が不安定な会場に備えて、試合前に一度この画面を開いてください。保存容量やブラウザ設定によってはデータが消える場合があります。</p>
-        </div>
-      </details>
 
       <section class="match-info" id="matchInfo" aria-label="試合情報"></section>
 
@@ -426,7 +433,7 @@
       </section>
 
       <footer class="app-footer">
-        <span class="app-version">v215・2026-06-05</span>
+        <span class="app-version">v1.0.0・2026-06-23</span>
         <span>© 2026 OmiCreate</span>
         <span>無断転載・再配布・改変利用を禁じます</span>
       </footer>
@@ -544,16 +551,40 @@
         <button class="action-button action-history action-menu-main" id="openArchiveButton" type="button">保存済み試合</button>
         <button class="action-button action-preview" id="previewSummaryImageButton" type="button">サマリー画像を見る</button>
         <button class="action-button action-edit" id="editMatchInfoButton" type="button">試合情報を編集</button>
+        <details class="menu-help">
+          <summary>使い方 / サンプル</summary>
+          <div class="menu-help-body">
+            <section class="menu-practice" aria-label="初回練習モード">
+              <div>
+                <strong>初めてならサンプル試合で試す</strong>
+                <span>架空の試合を読み込み、分析と履歴の見え方をすぐ確認できます。</span>
+              </div>
+              <button class="action-button action-practice" id="loadPracticeButton" type="button">サンプル試合</button>
+            </section>
+            <section class="trial-guide" aria-label="現在の画面の使い方">
+              <h3 class="trial-guide-title" id="trialGuideSummary">使い方（記録）</h3>
+              <div>
+                <p id="trialGuideLead">記録ページは、試合を見ている人がポイント後すぐに残す画面です。プレー中の選手が入力する想定ではありません。</p>
+                <ol id="trialGuideList">
+                  <li>サービス開始（1st/2nd/DF）を確認する</li>
+                  <li>ポイント内容、プレイヤー、得点側を選ぶ</li>
+                  <li>細かいコースや打球面は、あとで履歴から補足できる</li>
+                </ol>
+              </div>
+            </section>
+            <p class="admin-help">入力データはこの端末のブラウザ内に保存されます。名前を入れたサマリー画像やCSVを共有する時は、共有先を確認してください。</p>
+          </div>
+        </details>
         <details class="version-menu">
           <summary>バージョン情報</summary>
           <dl>
             <div>
               <dt>現在の版</dt>
-              <dd>v215・2026-06-05</dd>
+              <dd>v1.0.0・2026-06-23</dd>
             </div>
             <div>
               <dt>更新内容</dt>
-              <dd>サマリー画像の下部ボタンと余白を再確認。</dd>
+              <dd>全世界リリース版。初回サンプル、使い方メニュー、+ / - 記録補助を整備。</dd>
             </div>
           </dl>
         </details>
@@ -873,10 +904,10 @@
       </form>
     </dialog>
 
-    <script src="app-config.js?v=215" defer></script>
-    <script src="app-analysis.js?v=215" defer></script>
-    <script src="app-storage.js?v=215" defer></script>
-    <script src="app-rules.js?v=215" defer></script>
-    <script src="app.js?v=215" defer></script>
+    <script src="app-config.js?v=1.0.0" defer></script>
+    <script src="app-analysis.js?v=1.0.0" defer></script>
+    <script src="app-storage.js?v=1.0.0" defer></script>
+    <script src="app-rules.js?v=1.0.0" defer></script>
+    <script src="app.js?v=1.0.0" defer></script>
   </body>
 </html>

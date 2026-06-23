@@ -1,5 +1,5 @@
 const SOFT_TENNIS_CONFIG = {
-  APP_VERSION: "v215",
+  APP_VERSION: "v1.0.0",
   STORAGE_KEY: "soft-tennis-logger-state-v1",
   ARCHIVE_STORAGE_KEY: "soft-tennis-logger-archive-v1",
   MAX_ARCHIVED_MATCHES: 30,
@@ -68,7 +68,7 @@ const SOFT_TENNIS_CONFIG = {
   },
   TRIAL_GUIDES: {
     record: {
-      summary: "テスト利用の説明（記録）",
+      summary: "使い方（記録）",
       lead: "記録ページは、ポイントが終わった直後に短く残す画面です。親、選手、コーチの誰が入力しても同じ形で残せます。",
       items: [
         "まずサービス、誰のプレー、何が起きたか、得点側を残す",
@@ -77,7 +77,7 @@ const SOFT_TENNIS_CONFIG = {
       ]
     },
     analysis: {
-      summary: "テスト利用の説明（分析）",
+      summary: "使い方（分析）",
       lead: "分析ページは、記録した数字から次に活かす材料を整理する画面です。記録者が選手へ見せながら、味方と相手を同じ基準で確認できます。",
       items: [
         "上から、試合から分かったこと、次に活かすポイント、選手別の記録を確認する",
@@ -86,7 +86,7 @@ const SOFT_TENNIS_CONFIG = {
       ]
     },
     history: {
-      summary: "テスト利用の説明（履歴）",
+      summary: "使い方（履歴）",
       lead: "履歴ページは、1点ごとの内容を確認し、必要なところだけ後から補足する画面です。",
       items: [
         "ゲームごとに得点側、内容、プレイヤー、スコア推移を確認する",
@@ -97,6 +97,7 @@ const SOFT_TENNIS_CONFIG = {
   },
   defaultState: {
     archiveId: "",
+    isPracticeMatch: false,
     matchType: "doubles",
     teams: { A: "自チーム", B: "相手ペア" },
     players: {

@@ -170,15 +170,15 @@ h2 {
 }
 
 .trial-guide {
-  margin-bottom: 12px;
+  margin: 0;
   border: 1px solid #bbf7d0;
   border-radius: 10px;
   background: #f0fdf4;
 }
 
-.trial-guide summary {
-  cursor: pointer;
-  padding: 10px 12px;
+.trial-guide-title {
+  margin: 0;
+  padding: 10px 12px 0;
   color: #166534;
   font-size: 0.84rem;
   font-weight: 900;
@@ -187,8 +187,7 @@ h2 {
 .trial-guide div {
   display: grid;
   gap: 8px;
-  border-top: 1px solid #bbf7d0;
-  padding: 0 12px 12px;
+  padding: 8px 12px 12px;
 }
 
 .trial-guide p,
@@ -202,6 +201,42 @@ h2 {
 
 .trial-guide ol {
   padding-left: 20px;
+}
+
+.menu-practice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fbff;
+}
+
+.menu-practice div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.menu-practice strong {
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 950;
+  line-height: 1.35;
+}
+
+.menu-practice span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.menu-practice .action-button {
+  min-height: 42px;
+  white-space: nowrap;
 }
 
 .match-info {
@@ -389,7 +424,7 @@ body.match-point .live-scorebar {
 
 body:has(.tab[data-tab="analysis"].active) .scoreboard,
 body:has(.tab[data-tab="history"].active) .scoreboard {
-  opacity: 0.82;
+  display: none;
 }
 
 #analysisPanel .opponent-view > strong,
@@ -844,6 +879,7 @@ body:has(.tab[data-tab="history"].active) .team input {
 .panel {
   display: none;
   padding: 12px;
+  scroll-margin-top: calc(var(--sticky-score-height) + 10px);
 }
 
 .panel.active {
@@ -965,6 +1001,7 @@ body:has(.tab[data-tab="history"].active) .team input {
 }
 
 .simple-outcome-control button {
+  position: relative;
   display: grid;
   place-items: center;
   align-content: center;
@@ -979,6 +1016,30 @@ body:has(.tab[data-tab="history"].active) .team input {
   word-break: keep-all;
   line-break: strict;
   white-space: normal;
+}
+
+.simple-outcome-control button::before {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.82);
+  color: currentColor;
+  font-size: 0.78rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.simple-outcome-control .outcome-score::before {
+  content: "+";
+}
+
+.simple-outcome-control .outcome-miss::before {
+  content: "-";
 }
 
 .simple-outcome-control button span {
@@ -1328,6 +1389,10 @@ body:has(.tab[data-tab="history"].active) .team input {
   content: "始";
 }
 
+.action-practice::before {
+  content: "試";
+}
+
 .action-save,
 .action-preview,
 .action-share,
@@ -1350,6 +1415,7 @@ body:has(.tab[data-tab="history"].active) .team input {
 }
 
 .action-new,
+.action-practice,
 .action-start,
 #startMatchButton.action-start {
   background: var(--own);
@@ -1775,6 +1841,33 @@ textarea {
   font-size: 0.88rem;
   font-weight: 950;
   letter-spacing: 0;
+}
+
+.practice-badge {
+  position: sticky;
+  top: 4px;
+  z-index: 16;
+  display: inline-grid;
+  place-items: center;
+  width: fit-content;
+  margin: 0 0 10px;
+  border: 1px solid #bfdbfe;
+  border-left: 5px solid var(--own);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.78rem;
+  font-weight: 950;
+  line-height: 1.2;
+}
+
+body.practice-match {
+  --sticky-score-height: 112px;
+}
+
+body.practice-match .live-scorebar {
+  top: 40px;
 }
 
 .undo-note {
@@ -2686,6 +2779,8 @@ dialog::backdrop {
   position: sticky;
   bottom: 0;
   z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 0.9fr);
   margin: 4px calc(clamp(12px, 3.6vw, 16px) * -1) calc(clamp(12px, 3.6vw, 16px) * -1);
   padding: 8px clamp(12px, 3.6vw, 16px) calc(10px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
@@ -2694,8 +2789,16 @@ dialog::backdrop {
 }
 
 .dialog-sticky-actions .action-button {
-  min-height: 44px;
+  min-width: 0;
+  min-height: 42px;
+  padding-inline: 8px;
+  font-size: clamp(0.78rem, 3.4vw, 0.9rem);
   opacity: 0.96;
+  white-space: nowrap;
+}
+
+.dialog-sticky-actions .action-button::before {
+  display: none;
 }
 
 .menu-dialog {
@@ -2737,6 +2840,28 @@ dialog::backdrop {
   font-size: 0.82rem;
   font-weight: 850;
   line-height: 1.45;
+}
+
+.menu-help {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--soft);
+}
+
+.menu-help summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.menu-help-body {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .menu-dialog .action-history,
@@ -3150,6 +3275,7 @@ dialog::backdrop {
   .start-guide,
   .howto-card,
   .detail-panel,
+  .menu-practice,
   .record-flow,
   .save-point-section,
   .chart-block.detail-analysis,
@@ -3167,22 +3293,24 @@ dialog::backdrop {
     color: #fed7aa;
   }
 
+  .practice-badge {
+    border-color: #1d4ed8;
+    background: #172554;
+    color: #bfdbfe;
+  }
+
   .trial-guide {
     border-color: #166534;
     background: #102016;
   }
 
-  .trial-guide summary {
+  .trial-guide-title {
     color: #bbf7d0;
   }
 
   .trial-guide p,
   .trial-guide ol {
     color: #dcfce7;
-  }
-
-  .trial-guide div {
-    border-top-color: #166534;
   }
 
   .live-scorebar {
@@ -3384,18 +3512,6 @@ dialog::backdrop {
     padding-right: max(10px, env(safe-area-inset-right));
   }
 
-  .scoreboard {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .match-state {
-    grid-column: 1 / -1;
-    width: auto;
-    min-height: 48px;
-    grid-template-columns: 1fr 1fr;
-  }
-
-
   .sr-metric-row {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -3444,6 +3560,10 @@ dialog::backdrop {
   }
 
   .side-legend {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-practice {
     grid-template-columns: 1fr;
   }
 }
@@ -3646,6 +3766,7 @@ dialog::backdrop {
 }
 
 .trial-guide,
+.menu-practice,
 .record-flow,
 .record-flow .control-group,
 .record-flow .save-point-section,

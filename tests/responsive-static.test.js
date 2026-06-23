@@ -31,6 +31,10 @@ assert.match(html, /id="summaryNameModeControl"/, "チーム共有用サマリ�
 assert.match(html, /役割のみ[\s\S]*チーム名あり[\s\S]*名前あり/, "表示名を3段階で選べる");
 assert.match(css, /\.summary-name-mode/, "表示名切替のCSSがある");
 assert.match(html, /入力1 サービス側[\s\S]*入力2 サービス結果[\s\S]*入力3 誰のプレー[\s\S]*自動判定（必要なら修正）[\s\S]*入力4 ポイントの決まり方[\s\S]*得点になったプレー[\s\S]*ストローク[\s\S]*打ち合い[\s\S]*ミスになったプレー[\s\S]*入力5 ラリーの長さ[\s\S]*3本以内[\s\S]*4本以上[\s\S]*入力6 得点した側を押して保存/, "かんたん入力は試合中に押す順で表示する");
+assert.match(html, /id="practiceBadge"[\s\S]*サンプル試合中/, "サンプル試合中の表示がある");
+assert.match(html, /使い方 \/ サンプル[\s\S]*初めてならサンプル試合で試す[\s\S]*現在の画面の使い方/, "メニュー内ではサンプル導線を使い方説明より先に表示する");
+assert.match(css, /\.simple-outcome-control \.outcome-score::before[\s\S]*content:\s*"\+"/, "得点系ボタンに+補助がある");
+assert.match(css, /\.simple-outcome-control \.outcome-miss::before[\s\S]*content:\s*"-"/, "ミス系ボタンに-補助がある");
 assert.match(css, /simple-outcome-control \.outcome-score\.active[\s\S]*var\(--own\)/, "得点系プレー結果の選択色がある");
 assert.match(css, /simple-outcome-control \.outcome-miss\.active[\s\S]*var\(--opp\)/, "ミス系プレー結果の選択色がある");
 assert.match(html, /class="winner-note"[\s\S]*相手のミスなら「自チーム」/, "得点側保存の迷いを減らす補足がある");
@@ -43,9 +47,9 @@ assert.doesNotMatch(html, /拡大して確認|summaryPreviewZoomControl|data-sum
 assert.match(css, /\.summary-dialog \.dialog-actions\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/, "サマリー画像画面の主要ボタンはスマホで2列表示になる");
 assert.match(css, /\.summary-dialog \.dialog-actions\s*\{[\s\S]*margin:\s*0[\s\S]*padding:\s*8px 0/, "サマリー画像画面の下部ボタンは画面幅からはみ出さない");
 assert.match(css, /\.summary-dialog \.dialog-actions \.action-close\s*\{[\s\S]*grid-column:\s*1 \/ -1/, "サマリー画像画面の閉じるボタンは下段全幅になる");
-assert.match(html, /app-config\.js\?v=215[\s\S]*app-analysis\.js\?v=215[\s\S]*app-storage\.js\?v=215[\s\S]*app-rules\.js\?v=215[\s\S]*app\.js\?v=215/, "設定、分析、保存、ルール、本体の順に読み込む");
-assert.match(html, /styles\.css\?v=215/, "styles.cssのキャッシュ更新バージョンが最新");
-assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v215/, "Service Workerのキャッシュ名が最新");
+assert.match(html, /app-config\.js\?v=1\.0\.0[\s\S]*app-analysis\.js\?v=1\.0\.0[\s\S]*app-storage\.js\?v=1\.0\.0[\s\S]*app-rules\.js\?v=1\.0\.0[\s\S]*app\.js\?v=1\.0\.0/, "設定、分析、保存、ルール、本体の順に読み込む");
+assert.match(html, /styles\.css\?v=1\.0\.0/, "styles.cssのキャッシュ更新バージョンが最新");
+assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v1\.0\.0/, "Service Workerのキャッシュ名が最新");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-config\.js/, "Service Workerのキャッシュ対象に設定ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-analysis\.js/, "Service Workerのキャッシュ対象に分析ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-storage\.js/, "Service Workerのキャッシュ対象に保存ファイルがある");

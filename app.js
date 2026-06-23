@@ -112,6 +112,7 @@ const elements = {
   matchStatus: $("#matchStatus"),
   matchInfo: $("#matchInfo"),
   matchAlert: $("#matchAlert"),
+  practiceBadge: $("#practiceBadge"),
   serverLabel: $("#serverLabel"),
   startGuide: $(".start-guide"),
   nextStep: $("#nextStep"),
@@ -179,6 +180,7 @@ const elements = {
   archiveCountLabel: $("#archiveCountLabel"),
   archiveStorageLabel: $("#archiveStorageLabel"),
   menuButton: $("#menuButton"),
+  loadPracticeButton: $("#loadPracticeButton"),
   openNewMatchButton: $("#openNewMatchButton"),
   editMatchInfoButton: $("#editMatchInfoButton"),
   previewSummaryImageButton: $("#previewSummaryImageButton"),
@@ -289,6 +291,7 @@ function normalizeState(raw) {
   };
 
   saved.archiveId = typeof saved.archiveId === "string" ? saved.archiveId : "";
+  saved.isPracticeMatch = saved.isPracticeMatch === true;
   saved.recordMode = ["simple", "detail"].includes(saved.recordMode) ? saved.recordMode : defaultState.recordMode;
   saved.selectedOutcome = outcomeAliases[saved.selectedOutcome] || saved.selectedOutcome || defaultState.selectedOutcome;
   saved.selectedCourse = courseAliases[saved.selectedCourse] || saved.selectedCourse || defaultState.selectedCourse;
@@ -782,6 +785,23 @@ function moveToNextPointInput() {
   });
 }
 
+function scrollActivePanelIntoView(tabName) {
+  const target = $(`#${tabName}Panel`);
+  if (!target) return;
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  requestAnimationFrame(() => {
+    target.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+  });
+}
+
+function activateTab(tabName, { scroll = true } = {}) {
+  const targetName = ["record", "analysis", "history"].includes(tabName) ? tabName : "record";
+  $$(".tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === targetName));
+  $$(".panel").forEach((panel) => panel.classList.toggle("active", panel.id === `${targetName}Panel`));
+  renderScreenGuide();
+  if (scroll) scrollActivePanelIntoView(targetName);
+}
+
 function undoPoint() {
   const last = state.points.pop();
   if (!last) return;
@@ -846,6 +866,130 @@ function newMatch() {
 
 function updateMatchInfo() {
   applyMatchDialogValues({ resetMatch: false });
+}
+
+function getPracticeServicePlayers(matchState) {
+  const server = ["A", "B"].includes(matchState.server) ? matchState.server : "A";
+  const receiver = RULES.switchSide(server);
+  return {
+    serverPlayer: `${server}後衛`,
+    receiverPlayer: `${receiver}後衛`
+  };
+}
+
+function appendPracticePoint(matchState, point, index, total) {
+  const servicePlayers = getPracticeServicePlayers(matchState);
+  const scoreBefore = {
+    games: { ...matchState.games },
+    points: { ...matchState.gamePoints }
+  };
+  const scoreResult = RULES.applyPointToScore(matchState, point.winner);
+  if (scoreResult.ignored) return;
+
+  const entry = {
+    id: crypto.randomUUID(),
+    at: new Date(Date.now() - (total - index) * 45000).toISOString(),
+    winner: point.winner,
+    server: matchState.server,
+    course: point.course || "未記録",
+    outcome: point.outcome,
+    result: point.result || "イン",
+    serveStart: point.serveStart || "第1サービスで開始",
+    serverPlayer: point.serverPlayer || servicePlayers.serverPlayer,
+    receiverPlayer: point.receiverPlayer || servicePlayers.receiverPlayer,
+    hand: point.hand || "不明",
+    player: point.player || "不明",
+    shot: point.shot || "ストローク",
+    rally: point.rally || "4",
+    firstServeIn: (point.serveStart || "第1サービスで開始") === "第1サービスで開始",
+    memo: point.memo || "",
+    phase: getPhaseLabel(matchState.gamePoints),
+    gameNumber: getGameNumber(matchState.games),
+    endTimeBefore: "",
+    scoreBefore
+  };
+
+  matchState.games = scoreResult.games;
+  matchState.gamePoints = scoreResult.gamePoints;
+  matchState.server = scoreResult.server;
+  matchState.finished = scoreResult.finished;
+  if (scoreResult.gameWonBy) entry.gameWonBy = scoreResult.gameWonBy;
+  entry.scoreAfter = {
+    games: { ...matchState.games },
+    points: { ...matchState.gamePoints }
+  };
+  matchState.points.push(entry);
+}
+
+function createPracticeMatchState() {
+  const practiceState = structuredClone(defaultState);
+  practiceState.archiveId = createArchiveId();
+  practiceState.isPracticeMatch = true;
+  practiceState.teams = { A: "青葉中 A", B: "白浜中 B" };
+  practiceState.players = {
+    AFront: "青葉 前衛",
+    ARear: "青葉 後衛",
+    BFront: "白浜 前衛",
+    BRear: "白浜 後衛"
+  };
+  practiceState.matchInfo = {
+    date: new Date().toISOString().slice(0, 10),
+    timeOfDay: "午後",
+    startTime: "14:00",
+    endTime: "",
+    weather: "晴れ",
+    temperature: "25-29",
+    wind: "弱い",
+    windSide: "未記録",
+    surface: "オムニ",
+    courtCondition: "乾いている",
+    opponentFormation: "雁行陣",
+    event: "練習試合",
+    tournament: "初回練習サンプル",
+    venueName: "サンプルコート",
+    venue: "第1コート"
+  };
+
+  const points = [
+    { winner: "A", outcome: "サービス得点", player: "A後衛", shot: "サービス", rally: "1", course: "中央奥", memo: "第1サービスから押せた" },
+    { winner: "B", outcome: "レシーブ得点", player: "B後衛", shot: "レシーブ", rally: "2", course: "左奥" },
+    { winner: "A", outcome: "ボレー得点", player: "A前衛", shot: "ボレー", rally: "3", course: "中央前", memo: "前衛が早く触れた" },
+    { winner: "A", outcome: "ストローク得点", player: "A後衛", shot: "ストローク", rally: "6-9", course: "右奥" },
+    { winner: "B", outcome: "ストロークミス", player: "A後衛", shot: "ストローク", rally: "4", result: "バックアウト", course: "バックアウト", memo: "深く狙って少し長い" },
+    { winner: "A", outcome: "ボレー得点", player: "A前衛", shot: "ボレー", rally: "3", course: "左前", memo: "1ゲーム目を前衛で取り切り" },
+    { winner: "B", outcome: "サービス得点", player: "B後衛", shot: "サービス", rally: "1", course: "中央奥" },
+    { winner: "A", outcome: "レシーブ得点", player: "A後衛", shot: "レシーブ", rally: "2", course: "右奥", memo: "相手サービスを先に攻めた" },
+    { winner: "B", outcome: "スマッシュ得点", player: "B前衛", shot: "スマッシュ", rally: "4", course: "中央前" },
+    { winner: "A", outcome: "ストローク得点", player: "A後衛", shot: "ストローク", rally: "6-9", course: "中央奥" }
+  ];
+  points.forEach((point, index) => appendPracticePoint(practiceState, point, index, points.length));
+
+  practiceState.selectedOutcome = "ストローク得点";
+  practiceState.selectedCourse = "未記録";
+  practiceState.selectedResult = "不明";
+  practiceState.selectedServe = "第1サービスで開始";
+  practiceState.selectedRallyLength = "long";
+  practiceState.selectedPlayer = "不明";
+  practiceState.selectedServerPlayer = getPracticeServicePlayers(practiceState).serverPlayer;
+  practiceState.selectedReceiverPlayer = getPracticeServicePlayers(practiceState).receiverPlayer;
+  practiceState.serviceSelectionKey = "";
+  return normalizeState(practiceState);
+}
+
+function loadPracticeMatch() {
+  if (matchHasRecordableData(state)) {
+    const confirmed = window.confirm?.("現在の試合を保存済み試合に残して、サンプル試合を読み込みますか？") ?? false;
+    if (!confirmed) return;
+    archiveCurrentMatch("before-practice");
+  }
+  if (elements.actionMenuDialog.open) elements.actionMenuDialog.close();
+  state = createPracticeMatchState();
+  ensureServicePlayerSelections();
+  saveState();
+  syncCurrentArchive("practice");
+  activateTab("analysis", { scroll: false });
+  render();
+  scrollActivePanelIntoView("analysis");
 }
 
 function setActiveButton(containerSelector, dataName, value) {
@@ -1040,6 +1184,13 @@ function renderMatchInfo() {
     info.venue !== "未記録" ? info.venue : ""
   ].filter(Boolean);
   elements.matchInfo.textContent = rows.length ? rows.join(" ・ ") : matchFormatLabel();
+}
+
+function renderPracticeBadge() {
+  if (!elements.practiceBadge) return;
+  const isPractice = state.isPracticeMatch === true;
+  elements.practiceBadge.hidden = !isPractice;
+  document.body.classList.toggle("practice-match", isPractice);
 }
 
 function renderPlayerButtons() {
@@ -2449,6 +2600,7 @@ function renderHistory() {
 }
 
 function render() {
+  renderPracticeBadge();
   renderScore();
   renderStats();
   renderHistory();
@@ -3738,6 +3890,7 @@ $$(".point-button").forEach((button) => {
 $("#undoButton").addEventListener("click", undoPoint);
 elements.saveAnalysisMemoButton.addEventListener("click", saveAnalysisMemo);
 elements.menuButton.addEventListener("click", () => elements.actionMenuDialog.showModal());
+elements.loadPracticeButton.addEventListener("click", loadPracticeMatch);
 elements.openNewMatchButton.addEventListener("click", () => {
   elements.actionMenuDialog.close();
   openMatchDialog("new");
@@ -3870,9 +4023,8 @@ elements.archiveSortSelect.addEventListener("change", renderArchivedMatches);
 
 $$(".tab").forEach((button) => {
   button.addEventListener("click", () => {
-    $$(".tab").forEach((tab) => tab.classList.toggle("active", tab === button));
-    $$(".panel").forEach((panel) => panel.classList.toggle("active", panel.id === `${button.dataset.tab}Panel`));
-    renderScreenGuide();
+    const wasActive = button.classList.contains("active");
+    activateTab(button.dataset.tab, { scroll: !wasActive });
   });
 });
 
