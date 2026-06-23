@@ -318,13 +318,13 @@ const testCode = `
   assert.equal(summaryImageTexts.some((text) => String(text).includes("佐藤")), false, "役割のみでは選手名を表示しない");
   assert.equal(summaryImageTexts.some((text) => String(text).includes("自チーム後衛")), true, "役割のみでは役割名を表示する");
   assert.equal(fullNameTexts.some((text) => String(text).includes("佐藤")), true, "名前ありでは選手名を表示する");
-  assert.deepEqual(
-    detailLayout.sections.slice(0, 8),
-    ["試合結果", "試合から分かったこと", "次に活かすポイント", "優先して確認すること", "選手別の関わり", "選手別 サーブ/レシーブ", "流れと勝負所", "得点と失点の内訳"],
-    "振り返り用サマリーは試合から分かったこと、次に活かすポイント、選手別の関わり、サーブ/レシーブの順に表示する"
-  );
+  ["試合後の振り返りノート", "優先して確認すること", "選手別の関わり", "選手別 サーブ・レシーブ", "試合の流れと得点内訳", "基本情報と根拠データ"].reduce((prevIndex, label) => {
+    const index = detailLayout.sections.indexOf(label);
+    assert.ok(index > prevIndex, "振り返り用サマリーは「" + label + "」をこの順番で表示する");
+    return index;
+  }, -1);
   assert.equal(shareLayout.pageCount, 1, "チーム共有用サマリーは1枚画像にする");
-  assert.equal(detailLayout.pageCount, 6, "振り返り用サマリーは次に活かすポイントを含む複数ページにする");
+  assert.equal(detailLayout.pageCount, 1, "振り返り用サマリーは空白を作らない連続1枚画像にする");
   assert.equal(detailLayout.footerTop - detailLayout.contentBottom > 24, true, "振り返り用サマリーは枠と文字が重ならない余白を残す");
   saveAnalysisMemo();
   const summaryImageWithMemo = getSummaryImageData();

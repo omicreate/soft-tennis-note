@@ -3085,7 +3085,7 @@ function strokeRoundedRect(ctx, x, y, width, height, radius, strokeStyle, lineWi
 }
 
 function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
-  const ctx = canvas.getContext("2d");
+  let ctx = canvas.getContext("2d");
   const width = 1080;
   const isShareMode = mode === "share";
   const pageHeight = isShareMode ? 1800 : 1500;
@@ -3464,82 +3464,123 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
 
   if (isShareMode) return drawSocialShareCard();
 
-  let y = pageHeader(0, "試合後の振り返りノート", `${summary.title} / ${summary.subtitle}`);
-  y = drawScoreBoard(y);
-  y = heading("試合から分かったこと", y);
-  y = paragraph("数字から見えた試合の流れを、親子・コーチで同じ画面を見ながら確認します。", y, "neutral");
-  y = drawItems(summary.analysisComments, y, ANALYSIS_COMMENT_RULES.detailSummaryComments, 2);
-  y += 8;
-  y = heading("次に活かすポイント", y);
-  y = drawItems(summary.actionPlanRows.map(([title, note]) => `${title}: ${note}`), y, 3, 2);
-  pageFooter(0);
+  // 振り返り用（detail）は、固定ページではなく中身の高さに合わせた連続1枚にする。
+  // 旧実装は6ページ固定(各1500px)で空白が多く「お粗末」に見えたため、空白を排して
+  // 1枚の縦長カードへ流し込む。高さは計測パスで先に求めてからキャンバスを確定する。
+  const detailTop = 84;
+  const sectionHeader = (title, subtitle, yy) => {
+    sections.push(title);
+    fillRoundedRect(ctx, pageMargin, yy, contentWidth, 8, 4, neutralColor);
+    fillRoundedRect(ctx, pageMargin, yy, contentWidth * 0.34, 8, 4, ownColor);
+    fillRoundedRect(ctx, pageMargin + contentWidth * 0.68, yy, contentWidth * 0.32, 8, 4, oppColor);
+    let cursor = yy + 44;
+    cursor = drawText(title, pageMargin, cursor, { size: 40, weight: 900, lineHeight: 50, after: 4 });
+    if (subtitle) cursor = drawText(subtitle, pageMargin, cursor, { size: 23, weight: 800, color: mutedColor, lineHeight: 30, after: 8 });
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pageMargin, cursor + 2);
+    ctx.lineTo(width - pageMargin, cursor + 2);
+    ctx.stroke();
+    return cursor + 34;
+  };
+  const sectionGap = (yy) => {
+    const lineY = yy + 26;
+    ctx.strokeStyle = softLineColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pageMargin, lineY);
+    ctx.lineTo(width - pageMargin, lineY);
+    ctx.stroke();
+    return lineY + 36;
+  };
+  const renderDetailBody = (startY) => {
+    let cy = startY;
+    cy = sectionHeader("試合後の振り返りノート", `${summary.title} / ${summary.subtitle}`, cy);
+    cy = drawScoreBoard(cy);
+    cy = heading("試合から分かったこと", cy);
+    cy = paragraph("数字から見えた試合の流れを、親子・コーチで同じ画面を見ながら確認します。", cy, "neutral");
+    cy = drawItems(summary.analysisComments, cy, ANALYSIS_COMMENT_RULES.detailSummaryComments, 2);
+    cy += 8;
+    cy = heading("次に活かすポイント", cy);
+    cy = drawItems(summary.actionPlanRows.map(([title, note]) => `${title}: ${note}`), cy, 3, 2);
 
-  y = pageHeader(1, "次に活かすポイント", "数字から次に確認することを整理する");
-  y = heading("優先して確認すること", y);
-  y = paragraph("記録から優先度順に整理した確認項目です。画面の分析ページと同じ考え方で見返します。", y, "neutral");
-  y = drawActionPlan(summary.actionPlanRows, y);
-  pageFooter(1);
+    cy = sectionGap(cy);
+    cy = sectionHeader("優先して確認すること", "数字から次に確認することを整理する", cy);
+    cy = drawActionPlan(summary.actionPlanRows, cy);
 
-  y = pageHeader(2, "選手別の関わり", "役割を決めつけず、記録された事実から見る");
-  y = heading("選手別の関わり", y);
-  y = paragraph("+は得点として記録されたプレー、-はミスとして記録されたプレーです。後衛・前衛の良し悪しは決めつけず、関与本数と結果を確認します。", y, "neutral");
-  y = drawPlayerImpact(y);
-  pageFooter(2);
+    cy = sectionGap(cy);
+    cy = sectionHeader("選手別の関わり", "役割を決めつけず、記録された事実から見る", cy);
+    cy = paragraph("+は得点として記録されたプレー、-はミスとして記録されたプレーです。後衛・前衛の良し悪しは決めつけず、関与本数と結果を確認します。", cy, "neutral");
+    cy = drawPlayerImpact(cy);
 
-  y = pageHeader(3, "サーブ・レシーブ", "何本中何本できたかを先に確認する");
-  y = heading("選手別 サーブ/レシーブ", y);
-  y = paragraph("選手ごとにサーブとレシーブを分け、成功・得点・ミスを確認します。", y, "neutral");
-  y = drawServeReceiveGrid(y);
-  pageFooter(3);
+    cy = sectionGap(cy);
+    cy = sectionHeader("選手別 サーブ・レシーブ", "何本中何本できたかを先に確認する", cy);
+    cy = paragraph("選手ごとにサーブとレシーブを分け、成功・得点・ミスを確認します。", cy, "neutral");
+    cy = drawServeReceiveGrid(cy);
 
-  if (!isShareMode) {
-    y = pageHeader(4, "試合の流れと得点内訳", "流れと点の中身を次に活かす材料へつなげる");
-    y = heading("流れと勝負所", y);
-    y = paragraph("試合の入り、連続得点・連続失点、ゲームポイント/マッチポイントの逸失を確認します。", y, "neutral");
-    y = drawFlowTimeline(summary.flowRows, y);
-    y += 10;
-    y = heading("得点と失点の内訳", y);
-    y = drawPanel("どの点で試合が動いたか", "青は自チームの得点要素、赤は相手に与えた点。次に活かす材料です。", y, "neutral");
-    y = drawStackedBar(summary.pointBreakdownRows, y);
-    pageFooter(4);
+    cy = sectionGap(cy);
+    cy = sectionHeader("試合の流れと得点内訳", "流れと点の中身を次に活かす材料へつなげる", cy);
+    cy = heading("流れと勝負所", cy);
+    cy = paragraph("試合の入り、連続得点・連続失点、ゲームポイント/マッチポイントの逸失を確認します。", cy, "neutral");
+    cy = drawFlowTimeline(summary.flowRows, cy);
+    cy += 10;
+    cy = heading("得点と失点の内訳", cy);
+    cy = drawPanel("どの点で試合が動いたか", "青は自チームの得点要素、赤は相手に与えた点。次に活かす材料です。", cy, "neutral");
+    cy = drawStackedBar(summary.pointBreakdownRows, cy);
 
-    y = pageHeader(5, "基本情報と根拠データ", "あとで同じ日の試合と混ざらないように残す");
-    y = heading("基本情報", y);
-    y = bullet(summary.teams, y, "neutral", 1);
+    cy = sectionGap(cy);
+    cy = sectionHeader("基本情報と根拠データ", "あとで同じ日の試合と混ざらないように残す", cy);
+    cy = heading("基本情報", cy);
+    cy = bullet(summary.teams, cy, "neutral", 1);
     summary.playerRows.forEach(([label, value]) => {
-      y = bullet(`${label}: ${value}`, y, "neutral", 1);
+      cy = bullet(`${label}: ${value}`, cy, "neutral", 1);
     });
-    y += 8;
-    y = heading("試合条件", y);
-    y = drawRows(summary.conditionRows.slice(0, 5), y, { maxLinesByLabel: { "開催地／会場": 2, コート: 2 } });
-    y += 8;
-    y = heading("根拠データ", y);
-    y = drawRows(
+    cy += 8;
+    cy = heading("試合条件", cy);
+    cy = drawRows(summary.conditionRows.slice(0, 5), cy, { maxLinesByLabel: { "開催地／会場": 2, コート: 2 } });
+    cy += 8;
+    cy = heading("根拠データ", cy);
+    cy = drawRows(
       [...summary.summaryRows, ...summary.detailRows, ...summary.phaseRows].filter(([label]) => label !== "記録ポイント").slice(0, 14),
-      y,
+      cy,
       { maxLinesByLabel: { "選手別S/R": 2, 最長連続得点: 2, 最長連続失点: 2 } }
     );
-    pageFooter(5);
-  } else {
-    y = pageHeader(2, "次に活かすポイント", "短く共有しやすい形で、試合から分かったことと次に活かす材料を残す");
-    y = heading("試合から分かったこと", y);
-    y = drawItems(summary.analysisComments, y, ANALYSIS_COMMENT_RULES.shareSummaryComments, 2);
-    y += 8;
-    y = heading("次に活かすポイント", y);
-    y = drawItems([...summary.quickItems, ...summary.reviewItems], y, ANALYSIS_COMMENT_RULES.shareNextItems, 2);
-    y += 10;
-    y = heading("基本情報", y);
-    y = bullet(summary.teams, y, "neutral", 1);
-    summary.playerRows.forEach(([label, value]) => {
-      y = bullet(`${label}: ${value}`, y, "neutral", 1);
-    });
-    summary.conditionRows.slice(0, 2).forEach(([label, value]) => {
-      y = bullet(`${label}: ${value}`, y, "neutral", 1);
-    });
-    pageFooter(2);
-  }
+    return cy;
+  };
 
-  return { contentBottom: y, footerTop: pageTop(pageCount - 1) + pageHeight - 112, height, mode, sections, pageCount };
+  // 計測パス: 使い捨てキャンバスに流し込み、必要な高さを求める。
+  const measureCanvas = document.createElement("canvas");
+  measureCanvas.width = width;
+  measureCanvas.height = 12000;
+  const realCtx = ctx;
+  ctx = measureCanvas.getContext("2d");
+  const measuredBottom = renderDetailBody(detailTop);
+  ctx = realCtx;
+
+  const totalHeight = Math.ceil(measuredBottom + 116);
+  canvas.width = width;
+  canvas.height = totalHeight;
+  ctx.fillStyle = appBgColor;
+  ctx.fillRect(0, 0, width, totalHeight);
+  fillRoundedRect(ctx, 24, 24, width - 48, totalHeight - 48, 18, paperColor);
+  strokeRoundedRect(ctx, 24, 24, width - 48, totalHeight - 48, 18, lineColor, 2);
+
+  sections.length = 0;
+  const contentBottom = renderDetailBody(detailTop);
+
+  const footerLineY = totalHeight - 84;
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(pageMargin, footerLineY);
+  ctx.lineTo(width - pageMargin, footerLineY);
+  ctx.stroke();
+  ctx.fillStyle = mutedColor;
+  setFont(22, 800);
+  drawClampedText(ctx, "端末内で画像生成。開発者や管理者へ送られません。", pageMargin, footerLineY + 38, contentWidth, 30, 1);
+
+  return { contentBottom, footerTop: footerLineY, height: totalHeight, mode, sections, pageCount: 1 };
 }
 function createSummaryImageDataUrl(matchState = state, mode = summaryPreviewMode, nameMode = summaryPreviewNameMode) {
   const canvas = document.createElement("canvas");
