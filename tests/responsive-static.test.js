@@ -47,9 +47,13 @@ assert.doesNotMatch(html, /拡大して確認|summaryPreviewZoomControl|data-sum
 assert.match(css, /\.summary-dialog \.dialog-actions\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/, "サマリー画像画面の主要ボタンはスマホで2列表示になる");
 assert.match(css, /\.summary-dialog \.dialog-actions\s*\{[\s\S]*margin:\s*0[\s\S]*padding:\s*8px 0/, "サマリー画像画面の下部ボタンは画面幅からはみ出さない");
 assert.match(css, /\.summary-dialog \.dialog-actions \.action-close\s*\{[\s\S]*grid-column:\s*1 \/ -1/, "サマリー画像画面の閉じるボタンは下段全幅になる");
-assert.match(html, /app-config\.js\?v=1\.0\.0[\s\S]*app-analysis\.js\?v=1\.0\.0[\s\S]*app-storage\.js\?v=1\.0\.0[\s\S]*app-rules\.js\?v=1\.0\.0[\s\S]*app\.js\?v=1\.0\.0/, "設定、分析、保存、ルール、本体の順に読み込む");
-assert.match(html, /styles\.css\?v=1\.0\.0/, "styles.cssのキャッシュ更新バージョンが最新");
-assert.match(fs.readFileSync("sw.js", "utf8"), /soft-tennis-logger-v1\.0\.0/, "Service Workerのキャッシュ名が最新");
+const appVersion = (fs.readFileSync("app-config.js", "utf8").match(/APP_VERSION:\s*"([^"]+)"/) || [])[1];
+assert.ok(appVersion, "app-config.jsにAPP_VERSIONがある");
+const escFull = appVersion.replace(/\./g, "\\.");
+const escNum = appVersion.replace(/^v/, "").replace(/\./g, "\\.");
+assert.match(html, new RegExp(`app-config\\.js\\?v=${escNum}[\\s\\S]*app-analysis\\.js\\?v=${escNum}[\\s\\S]*app-storage\\.js\\?v=${escNum}[\\s\\S]*app-rules\\.js\\?v=${escNum}[\\s\\S]*app\\.js\\?v=${escNum}`), "設定、分析、保存、ルール、本体の順にAPP_VERSIONで読み込む");
+assert.match(html, new RegExp(`styles\\.css\\?v=${escNum}`), "styles.cssのキャッシュ更新バージョンがAPP_VERSIONと一致する");
+assert.match(fs.readFileSync("sw.js", "utf8"), new RegExp(`soft-tennis-logger-${escFull}`), "Service Workerのキャッシュ名がAPP_VERSIONと一致する");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-config\.js/, "Service Workerのキャッシュ対象に設定ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-analysis\.js/, "Service Workerのキャッシュ対象に分析ファイルがある");
 assert.match(fs.readFileSync("sw.js", "utf8"), /app-storage\.js/, "Service Workerのキャッシュ対象に保存ファイルがある");

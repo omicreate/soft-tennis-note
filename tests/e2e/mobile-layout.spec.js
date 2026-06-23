@@ -1,4 +1,7 @@
 const { test, expect } = require("@playwright/test");
+const fs = require("node:fs");
+
+const APP_VERSION = (fs.readFileSync(require("node:path").join(__dirname, "../../app-config.js"), "utf8").match(/APP_VERSION:\s*"([^"]+)"/) || [])[1] || "v1.0.1";
 
 async function expectNoHorizontalOverflow(page, label) {
   const overflow = await page.evaluate(() => {
@@ -99,7 +102,7 @@ test.describe("mobile layout", () => {
     await page.goto("/index.html?v=1.0.0");
 
     await expect(page.getByText("ソフトテニス試合ノート").first()).toBeVisible();
-    await expect(page.getByText("v1.0.0・2026-06-23").first()).toBeVisible();
+    await expect(page.getByText(APP_VERSION, { exact: false }).first()).toBeVisible();
     await expectNoHorizontalOverflow(page, "record screen");
 
     await page.getByRole("button", { name: "分析" }).click();

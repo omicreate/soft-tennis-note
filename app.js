@@ -3395,15 +3395,17 @@ function drawSummaryImage(canvas, summary, mode = "detail", nameMode = "role") {
     drawText("TEAM SHARE", pageMargin + 22, 112, { size: 19, weight: 900, color: "#ffffff", maxWidth: 200 });
     drawText(summary.title, pageMargin, 164, { size: 42, weight: 900, color: inkColor, lineHeight: 52, maxWidth: contentWidth });
     drawText(`${summary.subtitle} / ${shareNameModeLabel}`, pageMargin, 206, { size: 23, weight: 900, color: neutralColor, maxWidth: contentWidth });
-    drawText(getTeamShareTitle(), pageMargin, 260, { size: 30, weight: 900, color: inkColor, maxWidth: contentWidth, lineHeight: 38, maxLines: 2 });
+    // チーム名は1〜2行に伸びるため、実際の高さを測ってから結果ボックスを配置する。
+    // 1行に収まる場合は従来と同じ位置(300)になり、2行のときだけ下げて重なりを防ぐ。
+    const teamsTitleBottom = drawText(getTeamShareTitle(), pageMargin, 250, { size: 28, weight: 900, color: inkColor, maxWidth: contentWidth, lineHeight: 36, maxLines: 2 });
+    const resultBoxTop = Math.max(300, Math.round(teamsTitleBottom) + 8);
+    fillRoundedRect(ctx, pageMargin, resultBoxTop, contentWidth, 218, 24, "#1f2937");
+    fillRoundedRect(ctx, pageMargin + 22, resultBoxTop + 24, 8, 170, 4, neutralColor);
+    drawText(shareSafeText(result), pageMargin + 44, resultBoxTop + 54, { size: 31, weight: 900, color: "#ffffff", maxWidth: contentWidth - 72 });
+    drawText(`ゲーム ${games}`, pageMargin + 44, resultBoxTop + 124, { size: 58, weight: 900, color: "#ffffff", maxWidth: contentWidth - 72 });
+    drawText(gamePoints, pageMargin + 44, resultBoxTop + 178, { size: 22, weight: 800, color: "#e2e8f0", maxWidth: contentWidth - 72, maxLines: 2, lineHeight: 30 });
 
-    fillRoundedRect(ctx, pageMargin, 300, contentWidth, 218, 24, "#1f2937");
-    fillRoundedRect(ctx, pageMargin + 22, 324, 8, 170, 4, neutralColor);
-    drawText(shareSafeText(result), pageMargin + 44, 354, { size: 31, weight: 900, color: "#ffffff", maxWidth: contentWidth - 72 });
-    drawText(`ゲーム ${games}`, pageMargin + 44, 424, { size: 58, weight: 900, color: "#ffffff", maxWidth: contentWidth - 72 });
-    drawText(gamePoints, pageMargin + 44, 478, { size: 22, weight: 800, color: "#e2e8f0", maxWidth: contentWidth - 72, maxLines: 2, lineHeight: 30 });
-
-    let y = 568;
+    let y = resultBoxTop + 268;
     y = heading("試合から分かったこと", y);
     if (insightItems.length === 0) {
       y = bullet("記録を続けると、試合の傾向が表示されます", y, "neutral", 1);
