@@ -10,11 +10,16 @@
   <rect width="1200" height="1200" fill="url(#bg)"/>
 
   <g transform="translate(0,285)">
-    <!-- 左: テニスボール -->
+    <!-- 左: 記録ノート（クリップボード） -->
     <g transform="translate(110,35)">
-      <circle cx="140" cy="140" r="140" fill="#ffffff"/>
-      <path d="M140 6 C 247 80, 43 196, 140 274" fill="none" stroke="#2563eb" stroke-width="14" stroke-linecap="round"/>
-      <circle cx="140" cy="140" r="140" fill="none" stroke="#1d4ed8" stroke-width="5" opacity="0.35"/>
+      <rect x="60" y="18" width="160" height="218" rx="22" fill="#ffffff"/>
+      <rect x="108" y="4" width="64" height="30" rx="12" fill="#1d4ed8"/>
+      <g fill="#cbd5e1">
+        <rect x="88" y="74" width="86" height="13" rx="6"/>
+        <rect x="88" y="108" width="108" height="13" rx="6"/>
+        <rect x="88" y="142" width="70" height="13" rx="6"/>
+      </g>
+      <path d="M132 176 l22 22 l46 -58" fill="none" stroke="#2563eb" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
     </g>
 
     <!-- 右: テキスト -->

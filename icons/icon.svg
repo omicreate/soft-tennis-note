@@ -1,12 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="ソフトテニス試合ノート">
   <!-- 背景: ブランドブルー（full-bleed = maskable safe） -->
   <rect width="512" height="512" fill="#2563eb"/>
-  <!-- ボール本体（白）。直径300/512 ≒ 58% で maskable の安全圏内に収める -->
-  <circle cx="256" cy="256" r="150" fill="#ffffff"/>
-  <!-- ソフトテニスの縫い目（S字カーブ）。ボール上に青で描く -->
-  <g fill="none" stroke="#2563eb" stroke-width="18" stroke-linecap="round">
-    <path d="M256 110 C 372 190, 150 322, 256 402"/>
+  <!-- 記録ノート（クリップボード）。安全圏内に収める -->
+  <rect x="146" y="118" width="220" height="290" rx="28" fill="#ffffff"/>
+  <!-- 上部クリップ -->
+  <rect x="210" y="94" width="92" height="48" rx="16" fill="#1d4ed8"/>
+  <!-- 記録行 -->
+  <g fill="#cbd5e1">
+    <rect x="180" y="190" width="120" height="16" rx="8"/>
+    <rect x="180" y="232" width="150" height="16" rx="8"/>
+    <rect x="180" y="274" width="96" height="16" rx="8"/>
   </g>
-  <!-- ボール輪郭をうっすら締める -->
-  <circle cx="256" cy="256" r="150" fill="none" stroke="#1d4ed8" stroke-width="6" opacity="0.35"/>
+  <!-- チェック（ブランドブルー） -->
+  <path d="M268 318 l30 30 l62 -78" fill="none" stroke="#2563eb" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
