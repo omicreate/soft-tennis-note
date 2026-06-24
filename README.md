@@ -115,6 +115,13 @@ https://www.jsta.or.jp/about_softtennis/words
 ## 確認方法
 
 ```sh
+npm run test
+```
+
+個別に確認する場合:
+
+```sh
+npm run check:public-info
 node --check app-config.js
 node --check app-analysis.js
 node --check app-storage.js

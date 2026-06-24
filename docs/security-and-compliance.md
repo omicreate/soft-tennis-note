@@ -110,8 +110,10 @@ AI機能を入れる場合は、現状とは別のリスクが発生する。
 - `CHANGELOG.md` に更新内容がある
 - `TEST_REPORT.md` に検証結果がある
 - `TERMS.md`、`PRIVACY.md`、`SECURITY.md` がある
+- `npm run check:public-info` が通る
 - `npm run test:quick` が通る
 - `npm run test:fixtures` が通る
 - `npm run test:visual` が通る
+- 本番反映前は `npm run test` が通る
 - `npm audit --audit-level=moderate` が通る
 - `git status` に実名CSVやバックアップファイルが混ざっていない
