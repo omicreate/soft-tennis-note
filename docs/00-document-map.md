@@ -61,7 +61,6 @@
 | `device-test-results.md` | 実機確認結果 |
 | `requirements-design.md` | 既存の統合版設計書。今後は上記ファイルへ分割して管理 |
 | `deployment.md` | 公開、検証、本番反映の運用手順 |
-| `project-structure.md` | ローカルフォルダ、GitHub、各ファイルの説明 |
 | `expansion-roadmap.md` | 横展開、今後作りたいアプリの方向性 |
 | `technical-review.md` | 技術レビュー、改善バックログ |
 | `csv-spec.md` | CSV出力仕様。通常CSVと保存済み試合一括CSVの列順、用途、注意点 |

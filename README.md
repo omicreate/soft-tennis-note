@@ -134,7 +134,6 @@ https://www.jsta.or.jp/about_softtennis/words
 - `docs/basic-design.md`: 基本設計・方式設計
 - `docs/detailed-design.md`: 詳細設計
 - `docs/test-design.md`: テスト設計
-- `docs/project-structure.md`: ローカル構成・管理ルール
 - `docs/expansion-roadmap.md`: 他スポーツや別アプリへの横展開メモ
 - `docs/technical-review.md`: 技術レビュー・改善バックログ
 - `docs/requirements-design.md`: 既存の統合版要件・設計書
