@@ -3187,6 +3187,7 @@ dialog::backdrop {
 }
 
 .version-menu,
+.transfer-menu,
 .admin-menu {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -3195,6 +3196,7 @@ dialog::backdrop {
 }
 
 .version-menu summary,
+.transfer-menu summary,
 .admin-menu summary {
   cursor: pointer;
   color: var(--ink);
