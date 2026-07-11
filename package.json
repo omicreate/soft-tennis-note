@@ -9,7 +9,8 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "npm run test:full",
+    "check:public-info": "node scripts/check-public-info.js",
+    "test": "npm run check:public-info && npm run test:full",
     "test:quick": "node --check app-config.js && node --check app-analysis.js && node --check app-storage.js && node --check app-rules.js && node --check app.js && node --check sw.js && node tests/analysis-counts.test.js && node tests/responsive-static.test.js",
     "test:unit": "node --check app-config.js && node --check app-analysis.js && node --check app-storage.js && node --check app-rules.js && node --check app.js && node --check sw.js && node tests/analysis-counts.test.js && node tests/match-flow.test.js && node tests/fixture-csv.test.js && node tests/fixture-corpus.test.js && node tests/fixture-analysis-regression.test.js && node tests/responsive-static.test.js",
     "test:fixtures": "node tests/fixture-csv.test.js && node tests/fixture-corpus.test.js && node tests/fixture-analysis-regression.test.js",

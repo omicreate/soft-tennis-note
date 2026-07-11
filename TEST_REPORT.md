@@ -10,6 +10,14 @@
 
 ## テスト観点
 
+### 公開前情報チェック追加確認
+
+| ID | 観点 | 条件 | 期待結果 | 実績 |
+| --- | --- | --- | --- | --- |
+| TC-113 | 公開情報チェック | `npm run check:public-info` を実行 | 個人環境由来の情報が検出されない | OK |
+| TC-114 | 軽量テスト | `npm run test:quick` を実行 | 構文、主要分析、静的確認が通る | OK |
+| TC-115 | 標準テスト導線 | `npm run test` を実行 | 公開情報チェックの後にフルテストへ進む | 一部保留: 公開情報チェックはOK。既存の `fixture-analysis-regression.test.js` で振り返り用サマリーページ数の期待値不一致が発生 |
+
 ### v1.0.0 追加確認
 
 | ID | 観点 | 条件 | 期待結果 | 実績 |
@@ -55,7 +63,7 @@
 | ID | 観点 | 条件 | 期待結果 | 実績 |
 | --- | --- | --- | --- | --- |
 | TC-094 | リリース文書 | README、利用条件、プライバシー、セキュリティを確認 | 無料利用、端末内保存、外部送信なし、権利方針が確認できる | OK |
-| TC-095 | Git管理除外 | `.gitignore` を確認 | 実運用CSVやローカルバックアップを誤ってGit管理しにくい | OK |
+| TC-095 | Git管理除外 | `.gitignore` を確認 | 実運用CSVや個人用バックアップを誤ってGit管理しにくい | OK |
 | TC-096 | 依存関係監査 | `npm audit --audit-level=moderate` を実行 | 脆弱性0件 | OK |
 | TC-097 | package公開防止 | `package.json` と `package-lock.json` を確認 | `private: true` と `UNLICENSED` が設定されている | OK |
 
@@ -246,7 +254,7 @@ npm run test:e2e
 対象:
 
 - 要件定義、基本設計、詳細設計、テスト設計の分割
-- ローカル構成、管理ルール、横展開メモの追加
+- 公開構成、管理ルール、横展開メモの追加
 - README、更新履歴、公開運用メモからの参照更新
 
 確認結果:
@@ -262,7 +270,7 @@ npm run test:e2e
 | `node tests/analysis-counts.test.js` | OK |
 | `node tests/match-flow.test.js` | OK |
 | ドキュメント入口 `docs/00-document-map.md` の追加 | OK |
-| ローカル構成 `docs/project-structure.md` の追加 | OK |
+| 公開構成と管理ルールの追加 | OK |
 | 横展開メモ `docs/expansion-roadmap.md` の追加 | OK |
 
 補足:

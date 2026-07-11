@@ -133,13 +133,14 @@
 | 画面チェック | `npm run test:visual` | スマホ表示、サマリー画像、ダイアログ変更 |
 | データ回帰 | `npm run test:fixtures` | CSV、分析集計、サンプルデータ変更 |
 | フル確認 | `npm run test:full` | 検証環境、本番環境への反映前 |
+| 公開前確認 | `npm run test` | 本番環境への反映前 |
 
 ## 6. リリース前チェック
 
 実行コマンド:
 
 ```sh
-npm run test:full
+npm run test
 ```
 
 確認項目:

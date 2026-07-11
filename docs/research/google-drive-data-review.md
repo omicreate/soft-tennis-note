@@ -29,11 +29,7 @@ Google Drive上に「テニス記録ノート」フォルダを確認した。
 
 Google Driveコネクタで確認した範囲では、フォルダ直下にCSVやスプレッドシートは見つからなかった。
 
-ただし、Mac内にはアプリから出力したCSVが存在する。
-
-- `/Users/omi/Documents/soft-tennis-points-20260601122044-自チーム-vs-相手ペア.csv`
-
-このCSVはすでに匿名化し、以下のテストfixtureとして取り込み済み。
+アプリから出力したCSVの構造を匿名化し、以下のテストfixtureとして取り込み済み。
 
 - `tests/fixtures/practice-match-7game-anonymized.csv`
 - `tests/fixtures/practice-match-7game-expected.json`

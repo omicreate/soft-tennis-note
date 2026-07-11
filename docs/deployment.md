@@ -16,24 +16,20 @@
 
 ## 基本方針
 
-- PC内の `/Users/omi/Documents/Apps/soft-tennis-note` を本番の元データとして扱う
-- PC内の `/Users/omi/Documents/Apps/soft-tennis-note-preview` をテスト公開用として扱う
 - 先にテスト用URLで確認し、問題がなければ本番用へ反映する
-- GitHub上で直接編集せず、PC側で編集してからGitHubへ反映する
+- 変更はGitで管理し、公開前に差分とテスト結果を確認する
 - 開発内容は `docs/00-document-map.md` を入口に、要件、設計、テスト、運用のMarkdownへ残す
 
 ## 通常の流れ
 
-1. `soft-tennis-note` で修正する
-2. ローカルで動作確認する
-3. テストが通ることを確認する
-4. `CHANGELOG.md` と必要なMarkdownを更新する
-5. `index.html` の読み込みバージョンと `sw.js` のキャッシュ名をそろえる
-6. `soft-tennis-note-preview` に同じ内容を反映する
-7. `soft-tennis-note-preview` をPushする
-8. スマホで `https://omicreate.github.io/soft-tennis-note-preview/` を確認する
-9. 問題なければ `soft-tennis-note` をPushする
-10. スマホで `https://omicreate.github.io/soft-tennis-note/` を確認する
+1. 修正する
+2. テストが通ることを確認する
+3. `CHANGELOG.md` と必要なMarkdownを更新する
+4. `index.html` の読み込みバージョンと `sw.js` のキャッシュ名をそろえる
+5. テスト用URLへ反映する
+6. スマホで `https://omicreate.github.io/soft-tennis-note-preview/` を確認する
+7. 問題なければ本番用へ反映する
+8. スマホで `https://omicreate.github.io/soft-tennis-note/` を確認する
 
 ## バージョン確認
 

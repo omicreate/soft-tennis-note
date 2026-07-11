@@ -15,7 +15,6 @@
 - `docs/detailed-design.md`: 詳細設計
 - `docs/test-design.md`: テスト設計
 - `TEST_REPORT.md`: テスト結果
-- `docs/project-structure.md`: ローカル構成・管理ルール
 - `docs/expansion-roadmap.md`: 横展開・今後の開発メモ
 
 まず読む場合は `docs/00-document-map.md` を入口にします。
@@ -686,21 +685,14 @@ node tests/match-flow.test.js
 
 ## 17. 開発・運用方針
 
-正本フォルダ:
-
-```text
-Documents/Apps/soft-tennis-note
-```
-
 基本運用:
 
-1. PC内の正本を編集する
-2. ローカルで確認する
-3. テストを実行する
-4. Gitにコミットする
-5. `CHANGELOG.md` と必要な設計書を更新する
-6. テスト環境へ反映して確認する
-7. 問題なければ本番へPushする
-8. GitHub Pages公開版を確認する
+1. 変更内容を編集する
+2. テストを実行する
+3. Gitにコミットする
+4. `CHANGELOG.md` と必要な設計書を更新する
+5. テスト環境へ反映して確認する
+6. 問題なければ本番へPushする
+7. GitHub Pages公開版を確認する
 
-GitHub上で直接編集するとPC側の正本とズレやすいため、基本的にはPC側で編集してからGitHubへ反映する。
+公開前に差分とテスト結果を確認し、Gitで変更履歴を残してからGitHubへ反映する。
