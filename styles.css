@@ -3186,6 +3186,12 @@ dialog::backdrop {
   font-weight: 900;
 }
 
+.app-footer-link {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .version-menu,
 .transfer-menu,
 .admin-menu {
